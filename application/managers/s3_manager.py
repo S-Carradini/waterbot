@@ -2,7 +2,8 @@ import boto3
 
 class S3Manager():
     def __init__(self, bucket_name, *args, **kwargs):
-        self.client = boto3.client('s3')
+        self.client = boto3.client('s3', region_name='us-east-1')
+
         self.bucket_name=bucket_name
         
         super().__init__(*args,**kwargs)
