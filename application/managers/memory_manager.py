@@ -32,7 +32,8 @@ class MemoryManager:
             }
 
     async def create_session(self, session_id):
-        self.sessions[session_id] = []
+        if session_id not in self.sessions:
+            self.sessions[session_id] = []
 
     async def add_message_to_session(self, session_id, message, source_list):
         if session_id not in self.sessions:
