@@ -9,7 +9,7 @@ class S3Manager():
         super().__init__(*args,**kwargs)
     
     async def upload(self,key,body):
-        self.client.put_object(Bucket=self.bucket_name, Key=key, Body=body.encode())
+        self.client.put_object(Bucket=self.bucket_name, Key=key, Body=body.encode(), ContentDisposition='attachment; filename="session-transcript.txt"', ContentType='text/plain')
     
     async def generate_presigned(self,key,expiration_seconds=1800):
         try:
