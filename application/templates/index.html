@@ -1,469 +1,321 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="en">
-  <head>
-    <meta charset="utf-8" />
 
-    <title>Arizona Water Chatbot</title>
-    <meta
-      name="description"
-      content="Arizona Water Chatbot is your trusted chatbot companion for all things related to water in the Grand Canyon State. Explore the challenges of drought, learn effective water conservation techniques, and explore innovative solutions to secure our desert oasis's precious resource. Let's dive in together and make a difference for Arizona's water future!"
-    />
-    <meta name="author" content="htmlGenerator" />
-    <meta name="viewport" content="width=device-width, initial-scale=1" />
-    <link
-      rel="icon"
-      type="image/png"
-      href="static/images/favicon-196x196.png"
-      sizes="196x196"
-    />
-    <script
-      src="https://kit.fontawesome.com/822f43696b.js"
-      crossorigin="anonymous"
-    ></script>
-    <script
-      src="https://code.jquery.com/jquery-3.2.1.slim.min.js"
-      integrity="sha384-KJ3o2DKtIkvYIK3UENzmM7KCkRr/rE9/Qpg6aAZGJwFDMVNA/GpGFF93hXpG5KkN"
-      crossorigin="anonymous"
-    ></script>
-    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
-    <link
-      href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css"
-      rel="stylesheet"
-    />
-    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
-    <link rel="stylesheet" href="static/css/styles.css" />
+<head>
+  <meta charset="utf-8" />
 
-    <script src="static/js/utils.js"></script>
-    <style>
-      .minimal-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        padding: 0 20px;
-        height: 150px;
-        width: 100%;
-        background: transparent;
-        box-sizing: border-box;
-      }
+  <title>Arizona Water Chatbot</title>
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="/static/js/utils.js"></script>
+  <meta name="description"
+    content="Arizona Water Chatbot is your trusted chatbot companion for all things related to water in the Grand Canyon State. Explore the challenges of drought, learn effective water conservation techniques, and explore innovative solutions to secure our desert oasis's precious resource. Let's dive in together and make a difference for Arizona's water future!" />
+  <meta name="author" content="htmlGenerator" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <link rel="icon" type="image/png" href="static/images/favicon-196x196.png" sizes="196x196" />
 
-      /* Left: ASU Logo Box */
-      .asu-logo-box {
-        width: 200px;
-        height: 80px;
-        background: #ffffff;
-        border: 1px solid #8c1d40;
-        border-radius: 20px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        box-sizing: border-box;
-      }
+  <script src="https://kit.fontawesome.com/822f43696b.js" crossorigin="anonymous"></script>
 
-      .asu-logo-img {
-        height: auto;
-        width: auto;
-      }
+  <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+  <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+  <link rel="stylesheet" href="static/css/styles.css" />
 
-      /* Right: Custom Icon */
-      .top-right-icon {
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        height: 60px;
-      }
-
-      .icon-img {
-        height: 70px;
-        width: 70px;
-      }
-      .chatbot-prompt {
-        scrollbar-width: none; /* Firefox */
-        overflow-y: scroll;
-      }
-
-      .chatbot-prompt::-webkit-scrollbar {
-        display: none; /* Chrome, Safari */
-      }
-      body {
-        background-image: url("../static/images/background.png");
-        background-size: 100% 100%; /* Stretch both width and height */
-        background-repeat: no-repeat;
-        background-attachment: scroll; /* So it scrolls with the page */
-        background-position: center center;
-        margin: 0;
-        padding: 0;
-        height: 100vh;
-      }
-
-      .container-xl {
-        overflow-y: auto;
-        max-height: 100vh;
-      }
-
-      .minimal-header {
-        position: relative;
-        display: flex;
-        align-items: center;
-        justify-content: space-between;
-        padding: 0 20px;
-        height: 120px;
-      }
-      /* Fullscreen transparent overlay */
-      .mic-modal {
-        display: none;
-        position: fixed;
-        z-index: 9999; /* semi-transparent backdrop */
-        top: 50%;
-        left: 50%;
-        justify-content: center;
-        align-items: center;
-      }
-
-      /* Center box with transparent background */
-      .mic-modal-content {
-        background: transparent;
-        border: none;
-        box-shadow: none;
-        text-align: center;
-      }
-
-      /* Size of animation */
-      #mic-animation {
-        width: 150px;
-        height: 150px;
-        background: rgba(0, 0, 0, 0);
-      }
-    </style>
-  </head>
-
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.9.6/lottie.min.js"></script>
-
-  <!-- Google tag (gtag.js) -->
-  <script
-    async
-    src="https://www.googletagmanager.com/gtag/js?id=G-28W41YFR82"
-  ></script>
-  <script>
-    window.dataLayer = window.dataLayer || [];
-    function gtag() {
-      dataLayer.push(arguments);
+  <style>
+    .minimal-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 0 20px;
+      height: 150px;
+      width: 100%;
+      background: transparent;
+      box-sizing: border-box;
     }
-    gtag("js", new Date());
 
-    gtag("config", "G-28W41YFR82");
-  </script>
+    /* Left: ASU Logo Box */
+    .asu-logo-box {
+      width: 200px;
+      height: 80px;
+      background: #ffffff;
+      border: 1px solid #8c1d40;
+      border-radius: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      box-sizing: border-box;
+    }
 
-  <body
-    data-spy="scroll"
-    data-target=".chatbot-prompt .welcome-message-scroll"
-    data-bs-offset="147"
-  >
-    <header>
-      <div id="micModal" class="mic-modal">
-        <div class="mic-modal-content">
-          <div id="mic-animation"></div>
+    .asu-logo-img {
+      height: auto;
+      width: auto;
+    }
+
+    /* Right: Custom Icon */
+    .top-right-icon {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      height: 60px;
+    }
+
+    .icon-img {
+      height: 70px;
+      width: 70px;
+    }
+
+    .chatbot-prompt {
+      scrollbar-width: none;
+      /* Firefox */
+      overflow-y: scroll;
+    }
+
+    .chatbot-prompt::-webkit-scrollbar {
+      display: none;
+      /* Chrome, Safari */
+    }
+
+    body {
+      background-image: url("../static/images/background.png");
+      background-size: 100% 100%;
+      /* Stretch both width and height */
+      background-repeat: no-repeat;
+      background-attachment: scroll;
+      /* So it scrolls with the page */
+      background-position: center center;
+      margin: 0;
+      padding: 0;
+      height: 100vh;
+    }
+
+    .container-xl {
+      overflow-y: auto;
+      max-height: 100vh;
+    }
+
+    .minimal-header {
+      position: relative;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 0 20px;
+      height: 120px;
+    }
+
+    /* Fullscreen transparent overlay */
+
+
+    /* Size of animation */
+    #mic-animation {
+     
+      background: rgba(0, 0, 0, 0);
+      width: 190%;
+      height: 190%;
+      display: none;
+      z-index: 1;
+    }
+  </style>
+</head>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.9.6/lottie.min.js"></script>
+
+<!-- Google tag (gtag.js) -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-28W41YFR82"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag() {
+    dataLayer.push(arguments);
+  }
+  gtag("js", new Date());
+
+  gtag("config", "G-28W41YFR82");
+</script>
+
+<body data-spy="scroll" data-target=".chatbot-prompt .welcome-message-scroll" data-bs-offset="147">
+
+
+
+  <!-- Main body -->
+  <main>
+    <div class="">
+      <div class="minimal-header">
+        <div class="asu-logo-box">
+          <img src="../static/images/ASU_Sunburst.png" alt="ASU Logo" class="asu-logo-img" />
+        </div>
+        <div class="top-right-icon" style="z-index: 2">
+          <img src="../static/images/downIcon.png" alt="Icon" class="icon-img" />
+          <div class="nav-items" id="nav-items">
+            <a href="#" class="nav-item"><i class="bi bi-house"></i></a>
+            <a href="#" class="nav-item nav-download"><i class="bi bi-download"></i></a>
+          </div>
         </div>
       </div>
+      <div class="row">
 
-      <header class="minimal-header">
-      <div class="asu-logo-box">
-        <img
-          src="../static/images/ASU_Sunburst.png"
-          alt="ASU Logo"
-          class="asu-logo-img"
-        />
-      </div>
-      <div class="top-right-icon" style="z-index: 2">
-        <img src="../static/images/downIcon.png" alt="Icon" class="icon-img" />
-        <div class="nav-items" id="nav-items">
-          <a href="#" class="nav-item"><i class="bi bi-house"></i></a>
-          <a href="#" class="nav-item nav-download"
-            ><i class="bi bi-download"></i
-          ></a>
-          <a href="#" class="nav-item" id="mic-button"
-            ><i class="bi bi-mic"></i
-          ></a>
-        </div>
-      </div>
-    </header>
+        <div class="chatbot-prompt-container">
 
-    <!-- Main body -->
-    <main>
-      <div class="">
-        <div class="row">
-          <div class="chatbot-prompt-container">
-            <div
-              class="chatbot-prompt"
-              id="chatbot-prompt"
-              data-bs-spy="scroll"
-              data-bs-offset="0"
-            >
-              <div class="card left">
-                <div class="card-body welcome-message">
-                  <div class="row justify-content-start">
-                    <div
-                      class="col-auto d-flex flex-wrap align-items-end justify-content-left"
+          <div class="chatbot-prompt" id="chatbot-prompt" data-bs-spy="scroll" data-bs-offset="0">
+
+            <div class="card left">
+              <div class="card-body welcome-message">
+                <div class="row justify-content-start">
+                  <div class="col-auto d-flex flex-wrap align-items-end justify-content-left">
                     >
-                      >
-                      <img class="waterdrop1" />
-                    </div>
-                    <div
-                      class="col-xs-9 col-sm-9 col-md-9 col-lg-9 col-xl-9 col-9 welcome-message-body"
-                    >
-                      <p>
-                        Hi! My name is Blue! I'm here to answer your questions
-                        about water in Arizona.
-                      </p>
-                      <p>
-                        Ask me anything you want about the story of water in our
-                        state!
-                      </p>
-                      <p>
-                        Not sure where to start? You can try asking questions
-                        about:
-                      </p>
-                      <ol>
-                        <li>
-                          Arizona's unique water landscape, rivers, lakes,
-                          groundwater, and aquifers
-                        </li>
-                        <li>Colorado River's role in Arizona's water supply</li>
-                        <li>
-                          What's on your mind about conserving water in our
-                          desert environment?
-                        </li>
-                        <li>
-                          Are there any government programs or initiatives to
-                          address drought in Arizona?
-                        </li>
-                      </ol>
-                      <p>
-                        Ask any question in the space below to start exploring
-                        Arizona's water situation with me!
-                      </p>
-                    </div>
+                    <img class="waterdrop1" />
+                  </div>
+                  <div class="col-xs-9 col-sm-9 col-md-9 col-lg-9 col-xl-9 col-9 welcome-message-body">
+                    <p>
+                      Hi! My name is Blue! I'm here to answer your questions
+                      about water in Arizona.
+                    </p>
+                    <p>
+                      Ask me anything you want about the story of water in our
+                      state!
+                    </p>
+                    <p>
+                      Not sure where to start? You can try asking questions
+                      about:
+                    </p>
+                    <ol>
+                      <li>
+                        Arizona's unique water landscape, rivers, lakes,
+                        groundwater, and aquifers
+                      </li>
+                      <li>Colorado River's role in Arizona's water supply</li>
+                      <li>
+                        What's on your mind about conserving water in our
+                        desert environment?
+                      </li>
+                      <li>
+                        Are there any government programs or initiatives to
+                        address drought in Arizona?
+                      </li>
+                    </ol>
+                    <p>
+                      Ask any question in the space below to start exploring
+                      Arizona's water situation with me!
+                    </p>
                   </div>
                 </div>
               </div>
             </div>
-
-            <div style="display: none"></div>
-
-            <form
-              autocomplete="off"
-              onsubmit="return false"
-              action="/chat_api"
-              method="post"
-              id="userBox"
-              style="display: flex; align-items: center"
-            >
-              <div
-                class="input-group mt-3"
-                style="position: relative; flex-grow: 1"
-              >
-                <input
-                  autocomplete="nope"
-                  type="text"
-                  id="user_query"
-                  name="user_query"
-                  class="input-chatbot-question form-control"
-                  placeholder="Type your question here"
-                  aria-label="Type your question here"
-                  aria-describedby="basic-addon2"
-                  style="padding-right: 90px; border-radius: 10px; height: 48px"
-                />
-
-                <button
-                  class="btn btn-submit"
-                  id="submit-button"
-                  type="button"
-                  style="
-                    position: absolute;
-                    right: 0;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    background: none;
-                    border: none;
-                    z-index: 99;
-                  "
-                >
-                  <i
-                    class="fa fa-send"
-                    style="color: #8c1d40; font-size: 24px"
-                  ></i>
-                </button>
-              </div>
-            </form>
-
-            <!-- <p class="disclosure">
-            <small>
-              Free Research Preview. Arizona Water Chatbot may produce
-              inaccurate information about people, places, or facts.</small>
-            <small>Answers provided are not the official policy positions of Julie Wrigley Global Futures Laboratory,
-              Arizona State University, or any affiliate organization of ASU.
-            </small><br>
-            <small><strong>~~Debug Purposes~~</strong></small><br>
-            <small>Hostname: {{ hostname }}</small><br>
-            <small>IP Address: {{ ip_address }}</small>
-          </p>
-          --></div>
-          <!-- Water droplet logo and New chat button 
-        <div class="col-xl-4 col-lg-4 col-md-4 col-sm-4 col-xs-4 col-12 chatbot-guidelines">
-          <div class="chatbot-welcome">
-            <div class="row mb-4">
-              <div class="col-xl-3 col-lg-3 col-md-12 col-sm-12 col-xs-12 col-3">
-                <img class="waterdrop1" /> -->
-          <!-- <img id="waterdropFeedback" class="waterdrop1" data-bs-toggle="popover" data-bs-content="Thanks for your feedback"  /> 
-              </div> -->
-          <!--
-              <div class="col-xl-9 col-lg-9 col-md-12 col-sm-12 col-xs-12 chatbottext-cta">
-                <span class="h5"><strong>Arizona Water Chatbot</strong></span>
-                <div style="display: inline-flex; align-items: center;">
-                <button type="button" class="btn btn-primary btn-lg btn-new-chat"
-                  onclick="window.location.href='/'">New Chat</button> -->
-        </div>
-      </div>
-      <!-- About Water chatbot -->
-      <!-- Chatbot Recent History -->
-      <!-- <div class="row">
-              <div class="col-12 chatbot-history">
-                <b>History</b>
-                <ul class="list-unstyled">
-                  <li class="list-group-item pb-2"> <i class="fa-regular fa-comment-alt"></i>&nbsp;&nbsp;Water
-                    policy questions
-                  <li class="list-group-item pb-2"><i class="fa-regular fa-comment-alt"></i>&nbsp;&nbsp;Relation between
-                    Lake Mead and Lake Powell</li>
-                  <li class="list-group-item"> <i class="fa-regular fa-comment-alt"></i>&nbsp;&nbsp;Conservation
-                    practices for residential owners</li>
-                </ul>
-              </div>
-            </div> -->
-
-      <div class="language-transcript-row row">
-        <!-- Language Section -->
-        <!-- <div class="col-12 col-md-6 language-section"> -->
-        <!-- <p class="language-text">Language</p> -->
-        <div class="language-toggle">
-          <button
-            class="language-button english-button active"
-            id="english-button"
-            onclick="window.location.href='/'"
-          >
-            ENGLISH
-          </button>
-          <button
-            class="language-button spanish-button"
-            id="spanish-button"
-            onclick="window.location.href='/spanish'"
-          >
-            ESPAÑOL
-          </button>
-        </div>
-        <!-- </div> -->
-
-        <!-- Transcript Section -->
-
-        <!--<div class="col-12 col-md-6 transcript-section">
-                <p class="transcript-heading">Chat Transcript</p>
-                <button class="transcript-button" id="transcript-button">Download</button>
-              </div>-->
-      </div>
-
-      <div class="toast-container position-fixed bottom-0 end-0 p-3">
-        <div
-          id="liveToast"
-          class="toast"
-          role="alert"
-          aria-live="assertive"
-          aria-atomic="true"
-        >
-          <div class="toast-header">
-            <strong class="me-auto">Bootstrap</strong>
-            <small>11 mins ago</small>
-            <button
-              type="button"
-              class="btn-close"
-              data-bs-dismiss="toast"
-              aria-label="Close"
-            ></button>
           </div>
-          <div class="toast-body">Hello, world! This is a toast message.</div>
-        </div>
-      </div>
-      <!-- </div> -->
-    </main>
+          <div class="text-input-container mt-3 d-flex ">
+            <div class="col-12">
+              <form autocomplete="off" onsubmit="return false" action="/chat_api" method="post" id="userBox"
+                style="display: flex; align-items: center">
+                <div class="input-group mt-3" style="position: relative; flex-grow: 1">
+                  <input autocomplete="nope" type="text" id="user_query" name="user_query"
+                    class="input-chatbot-question form-control" placeholder="Type your question here"
+                    aria-label="Type your question here" aria-describedby="basic-addon2" style="
+                          padding-right: 90px;
+                          border-radius: 10px;
+                          height: 48px;
+                        " />
 
-    <!-----adding script to handle audio to transcribe functionality------------------------>
+                  <button class="btn btn-submit" id="submit-button" type="button" style="
+                          position: absolute;
+                          right: 0;
+                          top: 50%;
+                          transform: translateY(-50%);
+                          background: none;
+                          border: none;
+                          z-index: 99;
+                        ">
+                    <i class="fa fa-send" style="color: #8c1d40; font-size: 24px"></i>
+                  </button>
+                </div>
+              </form>
+            </div>
+
+            <!-- Icon Div -->
+            <div class="col-auto align-items-center">
+              <a href="#" class="mic-button" id="mic-button">
+                <img src="/static/images/mic-icon.png" alt="Mic" id="mic-icon" class="mic-icon">
+                <div id="mic-animation" style="display:none; width:150px; height:150px;"></div>
+              </a>
+            </div>
+
+          </div>
+
+        </div>
+
+      </div>
+    </div </main>
+
 
     <script>
-      const micAnimation = lottie.loadAnimation({
-        container: document.getElementById("mic-animation"),
-        renderer: "svg",
-        loop: true,
-        autoplay: false,
-        path: "/static/animation/mic.json", // replace with your Lottie JSON path
-      });
+  const micAnimation = lottie.loadAnimation({
+    container: document.getElementById("mic-animation"),
+    renderer: "svg",
+    loop: true,
+    autoplay: false,
+    path: "/static/animation/mic.json",
+    rendererSettings: {
+      preserveAspectRatio: "xMidYMid slice",
+    },
+  });
 
-      const micModal = document.getElementById("micModal");
-      const SpeechRecognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-      if (SpeechRecognition) {
-        const recognition = new SpeechRecognition();
-        recognition.continuous = false; // stops automatically after a pause
-        recognition.interimResults = false; // only final results
-        recognition.lang = "en-US"; // set your language
+  const SpeechRecognition =
+    window.SpeechRecognition || window.webkitSpeechRecognition;
+  const micBtn = document.getElementById("mic-button");
+  const micIcon = document.getElementById("mic-icon");
+  const micAnim = document.getElementById("mic-animation");
+  const transcriptionDiv = document.getElementById("user_query");
 
-        const micBtn = document.getElementById("mic-button");
-        const micIcon = micBtn.querySelector("i");
-        const transcriptionDiv = document.getElementById("user_query");
+  if (SpeechRecognition) {
+    const recognition = new SpeechRecognition();
+    recognition.continuous = true; // ✅ keep listening until stopped manually
+    recognition.interimResults = false;
+    recognition.lang = "en-US";
 
-        let isListening = false;
+    let isListening = false;
 
-        micBtn.addEventListener("click", () => {
-          if (!isListening) {
-            recognition.start();
-            micIcon.classList.remove("bi-mic");
-            micIcon.classList.add("bi-pause");
-            micModal.style.display = "flex"; // show modal
-            micAnimation.play();
-            isListening = true;
-          } else {
-            recognition.stop();
-            micIcon.classList.remove("bi-pause");
-            micIcon.classList.add("bi-mic");
-            micModal.style.display = "none"; // hide modal
-            micAnimation.stop();
-            isListening = false;
-          }
-        });
-
-        recognition.onresult = function (event) {
-          const transcript = event.results[0][0].transcript;
-          console.log("Transcript:", transcript);
-
-          transcriptionDiv.value = transcript;
-        };
-
-        recognition.onerror = function (event) {
-          console.error("Speech recognition error", event.error);
-          micIcon.classList.remove("bi-pause");
-          micIcon.classList.add("bi-mic");
-          isListening = false;
-        };
-
-        recognition.onend = function () {
-          micIcon.classList.remove("bi-pause");
-          micIcon.classList.add("bi-mic");
-          micModal.style.display = "none";
-          micAnimation.stop();
-          isListening = false;
-        };
+    micBtn.addEventListener("click", () => {
+      if (!isListening) {
+        // ✅ Start recording
+        recognition.start();
+        micIcon.style.display = "none";
+        micAnim.style.display = "block";
+        micAnimation.play();
+        isListening = true;
       } else {
-        console.warn("Web Speech API not supported in this browser.");
-        document.getElementById("mic-button").disabled = true;
+        // ✅ Stop recording when clicked again
+        recognition.stop();
+        stopMicAnimation();
       }
-    </script>
-  </body>
-  <footer></footer>
+    });
+
+    recognition.onresult = function (event) {
+      let transcript = "";
+      for (let i = 0; i < event.results.length; i++) {
+        transcript += event.results[i][0].transcript + " ";
+      }
+      transcriptionDiv.value = transcript.trim();
+    };
+
+    recognition.onerror = function (event) {
+      console.error("Speech recognition error", event.error);
+      stopMicAnimation();
+    };
+
+    recognition.onend = function () {
+      // ✅ Don’t auto-stop unless user clicked
+      if (isListening) recognition.start(); // resume continuous listening
+    };
+
+    function stopMicAnimation() {
+      micIcon.style.display = "block";
+      micAnim.style.display = "none";
+      micAnimation.stop();
+      isListening = false;
+    }
+  } else {
+    console.warn("Web Speech API not supported in this browser.");
+    micBtn.disabled = true;
+  }
+</script>
+
+
+</body>
+
 </html>
