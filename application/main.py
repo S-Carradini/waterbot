@@ -76,8 +76,8 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
     
     async def dispatch(self, request: Request, call_next):
         # store session ID in memory if we are in situation where client has cookies disabled.
-        session_value = request.cookies.get(COOKIE_NAME) or self.client_cookie_disabled_uuid or str(uuid.uuid4())
-        self.client_cookie_disabled_uuid=session_value
+        session_value = request.cookies.get(COOKIE_NAME) or str(uuid.uuid4())
+        # self.client_cookie_disabled_uuid=session_value
     
         request.state.client_cookie_disabled_uuid = "COOKIE_DISABLED."+session_value
 
@@ -384,8 +384,9 @@ async def session_transcript_post(request: Request):
     # Get all session history
     session_history = await memory.get_session_history_all(session_uuid)
     
-    if not isinstance(session_history, (dict, list)):
-        raise HTTPException(status_code=500, detail="Session history is not serializable")
+    # Handle missing or invalid session data gracefully
+    if not session_history or not isinstance(session_history, list):
+        return {"message": "No chat history found for this session."}
 
     # Generate a unique filename for the S3 object
     filename = f"{session_uuid}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
@@ -394,7 +395,8 @@ async def session_transcript_post(request: Request):
     # Convert session history to plain text format
     session_text = ""
     for entry in session_history:
-        session_text += f"Role: {entry['role']}\nContent: {entry['content']}\n\n"
+        if isinstance(entry, dict) and "role" in entry and "content" in entry:
+            session_text += f"Role: {entry['role']}\nContent: {entry['content']}\n\n"
 
     # Upload the session history to S3 as plain text
     # print(session_text)  # Print for debugging (optional)
@@ -405,6 +407,7 @@ async def session_transcript_post(request: Request):
     url = await s3_manager.generate_presigned(key=object_key)
 
     return {'presigned_url': url}
+
 
 
 # Route to handle ratings

@@ -185,16 +185,19 @@ class AppStack(Stack):
                 resources=[dynamo_messages.table_arn], 
             )
         )
-        # Grant the task permission to access s3 for transcripts
-        task_definition.add_to_task_role_policy(
-            iam.PolicyStatement(
-                actions=[            
-                    "s3:PutObject",
-                    "s3:GetObject"
-                ],
-                resources=[f"{export_bucket.bucket_arn}/*"], 
-            )
-        )
+        # Grant the task permission to access s3 for export and transcripts
+        export_bucket.grant_read_write(task_definition.task_role)
+        transcript_bucket.grant_read_write(task_definition.task_role)
+ 
+        # task_definition.add_to_task_role_policy(
+        #     iam.PolicyStatement(
+        #         actions=[            
+        #             "s3:PutObject",
+        #             "s3:GetObject"
+        #         ],
+        #         resources=[f"{export_bucket.bucket_arn}/*"], 
+        #     )
+        # )
 
 
         # Create a container in the task definition & inject the secret into the container as an environment variable
