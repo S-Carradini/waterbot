@@ -383,8 +383,11 @@ async def session_transcript_post(request: Request):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
     # Get all session history
-    session_history = await memory.get_session_history_all(session_uuid)
-    
+    # session_history = await memory.get_session_history_all(session_uuid)
+    # Filter messages to include only the current session
+    all_sessions = memory.sessions
+    session_history = all_sessions.get(session_uuid, [])
+
     # Handle missing or invalid session data gracefully
     if not session_history or not isinstance(session_history, list):
         return {"message": "No chat history found for this session."}
