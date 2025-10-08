@@ -77,7 +77,7 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
     async def dispatch(self, request: Request, call_next):
         # Reuse cookie if exists, else reuse internal UUID, else make a new one
         session_value = request.cookies.get(COOKIE_NAME) or self.client_cookie_disabled_uuid or str(uuid.uuid4())
-        
+
         # Store this UUID for cases when cookies are disabled
         self.client_cookie_disabled_uuid=session_value
     
@@ -384,10 +384,7 @@ async def session_transcript_post(request: Request):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
     # Get all session history
-    # session_history = await memory.get_session_history_all(session_uuid)
-    # Filter messages to include only the current session
-    all_sessions = memory.sessions
-    session_history = all_sessions.get(session_uuid, [])
+    session_history = await memory.get_session_history_all(session_uuid)
 
     # Handle missing or invalid session data gracefully
     if not session_history or not isinstance(session_history, list):
