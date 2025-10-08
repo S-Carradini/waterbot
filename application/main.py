@@ -75,12 +75,13 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
 
     
     async def dispatch(self, request: Request, call_next):
-        # store session ID in memory if we are in situation where client has cookies disabled.
-        session_value = request.cookies.get(COOKIE_NAME) or str(uuid.uuid4())
-        # Make the session unique per user/IP
-        unique_session_value = f"{session_value}_{request.client.host}"
-        # Store the unique ID for cookie-disabled users
-        request.state.client_cookie_disabled_uuid = "COOKIE_DISABLED." + unique_session_value
+        # Reuse cookie if exists, else reuse internal UUID, else make a new one
+        session_value = request.cookies.get(COOKIE_NAME) or self.client_cookie_disabled_uuid or str(uuid.uuid4())
+
+        # Store this UUID for cases when cookies are disabled
+        self.client_cookie_disabled_uuid=session_value
+    
+        request.state.client_cookie_disabled_uuid = "COOKIE_DISABLED."+session_value
 
         response = await call_next(request)
         # Set the application cookie in the response headers
@@ -383,10 +384,7 @@ async def session_transcript_post(request: Request):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
     # Get all session history
-    # session_history = await memory.get_session_history_all(session_uuid)
-    # Filter messages to include only the current session
-    all_sessions = memory.sessions
-    session_history = all_sessions.get(session_uuid, [])
+    session_history = await memory.get_session_history_all(session_uuid)
 
     # Handle missing or invalid session data gracefully
     if not session_history or not isinstance(session_history, list):

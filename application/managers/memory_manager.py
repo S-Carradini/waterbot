@@ -33,7 +33,11 @@ class MemoryManager:
 
     async def create_session(self, session_id):
         if session_id not in self.sessions:
+            print(f"Creating new session for: {session_id}")
             self.sessions[session_id] = []
+        else:
+            print(f"Session already exists for: {session_id}, keeping history.")
+
 
     async def add_message_to_session(self, session_id, message, source_list):
         if session_id not in self.sessions:
