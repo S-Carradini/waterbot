@@ -69,31 +69,30 @@ def detect_language(text):
 COOKIE_NAME = "WATERBOT"
 
 class SetCookieMiddleware(BaseHTTPMiddleware):
-    def __init__(self,app,client_cookie_disabled_uuid=None):
+    def __init__(self, app):
         super().__init__(app)
-        self.client_cookie_disabled_uuid = client_cookie_disabled_uuid
-
     
     async def dispatch(self, request: Request, call_next):
-        # Reuse cookie if exists, else reuse internal UUID, else make a new one
-        session_value = request.cookies.get(COOKIE_NAME) or self.client_cookie_disabled_uuid or str(uuid.uuid4())
-
-        # Store this UUID for cases when cookies are disabled
-        self.client_cookie_disabled_uuid=session_value
-    
-        request.state.client_cookie_disabled_uuid = "COOKIE_DISABLED."+session_value
-
+        # Get existing cookie or generate a new UUID for this request
+        session_value = request.cookies.get(COOKIE_NAME)
+        
+        if not session_value:
+            session_value = str(uuid.uuid4())
+        
+        # Store in request state - this is unique per request
+        request.state.client_cookie_disabled_uuid = session_value
+        
         response = await call_next(request)
+        
         # Set the application cookie in the response headers
         response.set_cookie(
             key=COOKIE_NAME,
-            value=session_value,  # You can set any value you want
-            max_age=7200,  # Cookie expiration time in seconds (1 hour in this example)
-            httponly=True,  # Set to True for better security
-            samesite="Strict"  # Strict mode to prevent CSRF attacks
+            value=session_value,
+            max_age=7200,  # 2 hours
+            httponly=True,
+            samesite="Strict"
         )
         
-
         return response
 
 class MyEventHandler(TranscriptResultStreamHandler):
