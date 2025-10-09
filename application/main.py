@@ -71,6 +71,7 @@ COOKIE_NAME = "WATERBOT_V2"  # Changed from WATERBOT
 class SetCookieMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
         super().__init__(app)
+        print("🔧 SetCookieMiddleware initialized")
     
     async def dispatch(self, request: Request, call_next):
         # Get existing cookie or generate a new UUID for this request
@@ -78,9 +79,13 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         
         if not session_value:
             session_value = str(uuid.uuid4())
+            print(f"🆕 NEW USER - Generated UUID: {session_value}")
+        else:
+            print(f"🔄 RETURNING USER - Cookie UUID: {session_value}")
         
         # Store in request state - this is unique per request
         request.state.client_cookie_disabled_uuid = session_value
+        print(f"✅ Set request.state.client_cookie_disabled_uuid = {session_value}")
         
         response = await call_next(request)
         
@@ -92,6 +97,7 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
             httponly=True,
             samesite="Strict"
         )
+        print(f"🍪 Set cookie {COOKIE_NAME} = {session_value}")
         
         return response
 
@@ -382,8 +388,22 @@ async def session_transcript_post(request: Request):
     # Get the session UUID from the cookie
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
+    # ADD THIS DEBUG BLOCK
+    print("=" * 60)
+    print(f"📥 TRANSCRIPT REQUEST")
+    print(f"Cookie value: {request.cookies.get(COOKIE_NAME)}")
+    print(f"State value: {request.state.client_cookie_disabled_uuid}")
+    print(f"Final session_uuid: {session_uuid}")
+    print(f"All sessions: {list(memory.sessions.keys())}")
+
     # Get all session history
     session_history = await memory.get_session_history_all(session_uuid)
+    print(f"This session has {len(session_history)} messages")
+
+    if session_history:
+        print(f"First message: {session_history[0] if session_history else 'None'}")
+        print(f"Last message: {session_history[-1] if session_history else 'None'}")
+    print("=" * 60)
 
     # Handle missing or invalid session data gracefully
     if not session_history or not isinstance(session_history, list):
@@ -768,6 +788,16 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
     user_query=user_query
 
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
+
+    # ADD THIS DEBUG BLOCK
+    print("=" * 60)
+    print(f"📨 CHAT REQUEST RECEIVED")
+    print(f"User query: {user_query[:50]}...")
+    print(f"Cookie value: {request.cookies.get(COOKIE_NAME)}")
+    print(f"State value: {request.state.client_cookie_disabled_uuid}")
+    print(f"Final session_uuid: {session_uuid}")
+    print(f"Current sessions in memory: {list(memory.sessions.keys())}")
+    print("=" * 60)
 
     await memory.create_session(session_uuid)
         
