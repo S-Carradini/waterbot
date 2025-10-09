@@ -252,8 +252,8 @@ class AppStack(Stack):
         )
         # Enable stickiness
         ecs_service.target_group.enable_cookie_stickiness(
-            duration=Duration.hours(2),  # Set the cookie duration
-            cookie_name="WATERBOT"  # Set the cookie name
+            duration=Duration.hours(2),
+            cookie_name="WATERBOT_V2"  # Changed from WATERBOT
         )
     
 
