@@ -250,11 +250,11 @@ class AppStack(Stack):
             interval=Duration.minutes(1),
             timeout=Duration.seconds(5)
         )
-        # Enable stickiness
-        ecs_service.target_group.enable_cookie_stickiness(
-            duration=Duration.hours(2),
-            cookie_name="WATERBOT_V2"  # Changed from WATERBOT
-        )
+        # # Enable stickiness
+        # ecs_service.target_group.enable_cookie_stickiness(
+        #     duration=Duration.hours(2),
+        #     cookie_name="WATERBOT_V2"  # Changed from WATERBOT
+        # )
     
 
         # overwrite default action implictly created above (will cause warning)
