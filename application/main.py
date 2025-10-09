@@ -66,7 +66,7 @@ def detect_language(text):
         return None
 
 # Set the cookie name to match the one configured in the CDK
-COOKIE_NAME = "WATERBOT_V2"  # Changed from WATERBOT
+COOKIE_NAME = "USER_SESSION"  # Changed from WATERBOT
 
 class SetCookieMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
