@@ -250,11 +250,11 @@ class AppStack(Stack):
             interval=Duration.minutes(1),
             timeout=Duration.seconds(5)
         )
-        # # Enable stickiness
-        # ecs_service.target_group.enable_cookie_stickiness(
-        #     duration=Duration.hours(2),
-        #     cookie_name="WATERBOT_V2"  # Changed from WATERBOT
-        # )
+        # Enable stickiness
+        ecs_service.target_group.enable_cookie_stickiness(
+            duration=Duration.hours(2),
+            cookie_name="AWSALB"  # Changed from WATERBOT
+        )
     
 
         # overwrite default action implictly created above (will cause warning)
@@ -345,9 +345,24 @@ class AppStack(Stack):
                 ],
                 viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
                 allowed_methods=cloudfront.AllowedMethods.ALLOW_ALL,
-                cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,
+                cache_policy=cloudfront.CachePolicy.CACHING_DISABLED,
                 origin_request_policy=cloudfront.OriginRequestPolicy.ALL_VIEWER,
             ),
+            # Additional behavior for static assets
+            additional_behaviors={
+                "/static/*": cloudfront.BehaviorOptions(
+                    origin=origins.LoadBalancerV2Origin(
+                        ecs_service.load_balancer,
+                        protocol_policy=cloudfront.OriginProtocolPolicy.HTTP_ONLY,
+                        custom_headers={
+                            "X-Custom-Header": secret_header_value
+                        },
+                    ),
+                    viewer_protocol_policy=cloudfront.ViewerProtocolPolicy.REDIRECT_TO_HTTPS,
+                    cache_policy=cloudfront.CachePolicy.CACHING_OPTIMIZED,  # ✅ Cache static files
+                    allowed_methods=cloudfront.AllowedMethods.ALLOW_GET_HEAD,
+                )
+            },
             enabled=True,
             error_responses=[
                 cloudfront.ErrorResponse(
