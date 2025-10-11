@@ -250,10 +250,20 @@ class AppStack(Stack):
             interval=Duration.minutes(1),
             timeout=Duration.seconds(5)
         )
-        # Enable stickiness
+
+        # ✅ Use default ALB cookie name (no custom name)
         ecs_service.target_group.enable_cookie_stickiness(
-            duration=Duration.hours(2),
-            cookie_name="APP_LB_STICKY"  # Changed from WATERBOT
+        duration=Duration.hours(2)
+        )
+
+        # ✅ Explicitly set stickiness attributes to ensure they're applied
+        ecs_service.target_group.set_attribute(
+            key="stickiness.enabled",
+            value="true"
+        )
+        ecs_service.target_group.set_attribute(
+            key="stickiness.lb_cookie.duration_seconds",
+            value="7200"  # 2 hours
         )
     
 
