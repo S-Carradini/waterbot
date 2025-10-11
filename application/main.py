@@ -94,8 +94,10 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
             key=COOKIE_NAME,
             value=session_value,
             max_age=7200,  # 2 hours
+            path="/",      # ✅ Valid for all paths
             httponly=True,
-            samesite="Strict"
+            secure=True,   # ✅ Required for HTTPS through CloudFront
+            samesite="Lax" # ✅ Changed from "Strict" to allow cross-site navigation
         )
         print(f"🍪 Set cookie {COOKIE_NAME} = {session_value}")
         
