@@ -3,6 +3,8 @@ from aws_cdk import (
     Duration,
     Size,
     Stack,
+    RemovalPolicy,                    # ← NEW: For RDS deletion behavior
+    CustomResource,                   # ← NEW: For db_init Lambda trigger
     aws_ecs as ecs,
     aws_ec2 as ec2,
     aws_secretsmanager as secretsmanager,
@@ -12,15 +14,18 @@ from aws_cdk import (
     aws_cloudfront as cloudfront,
     aws_cloudfront_origins as origins,
     aws_dynamodb as dynamodb,
+    aws_rds as rds,                   # ← NEW: For PostgreSQL RDS
     aws_s3 as s3,
     aws_lambda as lambda_,
     aws_ssm as ssm,
     aws_events as events,
     aws_events_targets as targets,
     aws_sqs as sqs,
-    aws_ecs_patterns as ecs_patterns
+    aws_ecs_patterns as ecs_patterns,
+    custom_resources                  # ← NEW: For custom resource provider
 )
 import os
+import json                           # ← NEW: For JSON handling in secrets
 
 class AppStack(Stack):
 
@@ -56,6 +61,15 @@ class AppStack(Stack):
 
         last_export_time_param = ssm.StringParameter(self,"LastExportTimeParam",
             string_value="1970-01-01T00:00:00Z"
+        )
+      
+        # Create S3 bucket for PostgreSQL backups
+        postgres_backup_bucket = s3.Bucket(self, "cdk-postgres-backup-bucket")
+        
+        # SSM Parameter to track last PostgreSQL backup timestamp
+        last_postgres_backup_param = ssm.StringParameter(
+            self, "LastPostgresBackupParam",
+            string_value="1970-01-01T00:00:00Z"  # Initial value (will trigger FULL backup first time)
         )
 
         fn_dynamo_export = lambda_.Function(
@@ -112,6 +126,179 @@ class AppStack(Stack):
         
         # Create a VPC for the Fargate cluster
         vpc = ec2.Vpc(self, "WaterbotVPC", max_azs=2)
+
+        # ================================================================
+        # RDS POSTGRESQL DATABASE (PRODUCTION-READY)
+        # ================================================================
+        
+        # Create security group for RDS
+        rds_security_group = ec2.SecurityGroup(
+            self, "RDSSecurityGroup",
+            vpc=vpc,
+            description="Security group for PostgreSQL RDS instance",
+            allow_all_outbound=True
+        )
+        
+        # Allow inbound PostgreSQL traffic from within the VPC
+        rds_security_group.add_ingress_rule(
+            peer=ec2.Peer.ipv4(vpc.vpc_cidr_block),
+            connection=ec2.Port.tcp(5432),
+            description="Allow PostgreSQL access from VPC"
+        )
+        
+        # Create database credentials in Secrets Manager
+        db_credentials_secret = secretsmanager.Secret(
+            self, "DBCredentialsSecret",
+            description="PostgreSQL Database Credentials for Waterbot",
+            generate_secret_string=secretsmanager.SecretStringGenerator(
+                secret_string_template=json.dumps({"username": "waterbot_admin"}),
+                generate_string_key="password",
+                exclude_punctuation=True,
+                include_space=False,
+                password_length=32
+            )
+        )
+        
+        # Create the RDS PostgreSQL database instance (PRODUCTION CONFIG)
+        db_instance = rds.DatabaseInstance(
+            self, "WaterbotPostgresDB",
+            engine=rds.DatabaseInstanceEngine.postgres(
+                version=rds.PostgresEngineVersion.VER_15_4
+            ),
+            instance_type=ec2.InstanceType.of(
+                ec2.InstanceClass.BURSTABLE3,
+                ec2.InstanceSize.SMALL  # t3.small for production (2 vCPU, 2 GB RAM)
+            ),
+            vpc=vpc,
+            vpc_subnets=ec2.SubnetSelection(
+                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS
+            ),
+            security_groups=[rds_security_group],
+            credentials=rds.Credentials.from_secret(db_credentials_secret),  # Use generated secret
+            database_name="waterbot_db",  # Initial database name
+            allocated_storage=20,  # Start with 20 GB
+            max_allocated_storage=100,  # Auto-scale up to 100 GB if needed
+            backup_retention=Duration.days(30),  # Keep automated backups for 30 days
+            deletion_protection=True,  # Prevent accidental deletion
+            publicly_accessible=False,  # NOT accessible from internet (security best practice)
+            storage_encrypted=True,  # Encrypt data at rest
+            multi_az=True,  # True for production high availability
+            auto_minor_version_upgrade=True,  # Automatically apply minor version patches
+            cloudwatch_logs_exports=["postgresql"],  # Send PostgreSQL logs to CloudWatch
+            removal_policy=RemovalPolicy.SNAPSHOT  # Create snapshot before deletion
+        )
+
+        # ================================================================
+        # DATABASE INITIALIZATION LAMBDA
+        # ================================================================
+        
+        # Lambda to initialize PostgreSQL database schema
+        # This runs once during CDK deployment via CustomResource
+        fn_db_init = lambda_.Function(
+            self, "fn-db-init",
+            description="Initialize PostgreSQL database schema (creates tables and indexes)",
+            runtime=lambda_.Runtime.PYTHON_3_11,
+            handler="index.handler",
+            code=lambda_.Code.from_asset(os.path.join("lambda", "db_init")),
+            timeout=Duration.minutes(2),  # Schema creation should be fast
+            vpc=vpc,  # Must be in VPC to reach RDS
+            vpc_subnets=ec2.SubnetSelection(
+                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS  # Same subnet as RDS
+            ),
+            environment={
+                "DB_HOST": db_instance.db_instance_endpoint_address,  # RDS endpoint
+                "DB_NAME": "waterbot_db",
+                "DB_SECRET_ARN": db_credentials_secret.secret_arn  # Get password from Secrets Manager
+            }
+        )
+        
+        # Grant Lambda permission to read database credentials from Secrets Manager
+        db_credentials_secret.grant_read(fn_db_init)
+        
+        # Allow Lambda to connect to RDS (security group rule)
+        db_instance.connections.allow_from(
+            fn_db_init,
+            port_range=ec2.Port.tcp(5432),
+            description="Allow db_init Lambda to connect to PostgreSQL"
+        )
+        
+        # Create a custom resource provider
+        # This wraps our Lambda function to make it a CloudFormation custom resource
+        db_init_provider = custom_resources.Provider(
+            self, "DBInitProvider",
+            on_event_handler=fn_db_init
+        )
+        
+        # Create the custom resource
+        # This triggers the Lambda during CDK deployment
+        db_init_resource = CustomResource(
+            self, "DBInitResource",
+            service_token=db_init_provider.service_token
+        )
+        
+        # Ensure RDS is fully created before running db_init
+        db_init_resource.node.add_dependency(db_instance)
+
+        # ================================================================
+        # POSTGRESQL BACKUP LAMBDA (Daily S3 Exports)
+        # ================================================================
+        
+        # Lambda to backup PostgreSQL data to S3 (runs daily)
+        fn_postgres_backup = lambda_.Function(
+            self, "fn-postgres-backup",
+            description="Backup PostgreSQL messages table to S3 (incremental exports)",
+            runtime=lambda_.Runtime.PYTHON_3_11,
+            handler="index.handler",
+            code=lambda_.Code.from_asset(os.path.join("lambda", "postgres_backup")),
+            timeout=Duration.minutes(5),  # Backup can take a few minutes for large datasets
+            vpc=vpc,  # Must be in VPC to reach RDS
+            vpc_subnets=ec2.SubnetSelection(
+                subnet_type=ec2.SubnetType.PRIVATE_WITH_EGRESS  # Same subnet as RDS
+            ),
+            environment={
+                "S3_BUCKET": postgres_backup_bucket.bucket_name,  # Where to store backups
+                "LAST_BACKUP_TIME_PARAM": last_postgres_backup_param.parameter_name,  # Track last backup
+                "DB_SECRET_ARN": db_credentials_secret.secret_arn,  # Get DB password
+                "DB_HOST": db_instance.db_instance_endpoint_address,  # RDS endpoint
+                "DB_NAME": "waterbot_db"
+            }
+        )
+        
+        # Grant Lambda permissions
+        last_postgres_backup_param.grant_read(fn_postgres_backup)  # Read last backup time
+        last_postgres_backup_param.grant_write(fn_postgres_backup)  # Update last backup time
+        postgres_backup_bucket.grant_write(fn_postgres_backup)  # Upload to S3
+        db_credentials_secret.grant_read(fn_postgres_backup)  # Read DB password
+        
+        # Allow Lambda to connect to RDS
+        db_instance.connections.allow_from(
+            fn_postgres_backup,
+            port_range=ec2.Port.tcp(5432),
+            description="Allow postgres_backup Lambda to connect to PostgreSQL"
+        )
+        
+        # Schedule daily backups using EventBridge
+        postgres_backup_rule = events.Rule(
+            self, "DailyPostgresBackupRule",
+            description="Trigger PostgreSQL backup to S3 every 24 hours",
+            schedule=events.Schedule.rate(Duration.hours(24))  # Run every 24 hours
+        )
+        
+        # Dead Letter Queue for failed backup attempts
+        postgres_backup_dlq = sqs.Queue(
+            self, "PostgresBackupDLQ",
+            retention_period=Duration.days(14)  # Keep failed messages for 2 weeks
+        )
+        
+        # Add Lambda as target of the scheduled rule
+        postgres_backup_rule.add_target(
+            targets.LambdaFunction(
+                fn_postgres_backup,
+                dead_letter_queue=postgres_backup_dlq,  # Send failures here
+                retry_attempts=2,  # Retry twice if backup fails
+                max_event_age=Duration.minutes(10)  # Discard event after 10 minutes
+            )
+        )
 
         # Get the repository URL
         repository = imports["repository"]
@@ -207,10 +394,19 @@ class AppStack(Stack):
             port_mappings=[ecs.PortMapping(container_port=8000)],
             environment={
                 "MESSAGES_TABLE": dynamo_messages.table_name,
-                "TRANSCRIPT_BUCKET_NAME": transcript_bucket.bucket_name
+                "TRANSCRIPT_BUCKET_NAME": transcript_bucket.bucket_name,
+                # PostgreSQL connection details (NEW) ✅
+                "DB_HOST": db_instance.db_instance_endpoint_address,
+                "DB_NAME": "waterbot_db",
+                "DB_USER": "waterbot_admin"  # Username from secret
             },
             secrets={
-                "OPENAI_API_KEY": ecs.Secret.from_secrets_manager(secret)
+                "OPENAI_API_KEY": ecs.Secret.from_secrets_manager(secret),
+                # PostgreSQL password (NEW) ✅
+                "DB_PASSWORD": ecs.Secret.from_secrets_manager(
+                    db_credentials_secret,
+                    field="password"
+                )
             },
             health_check=ecs.HealthCheck(
                 command=["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"],
