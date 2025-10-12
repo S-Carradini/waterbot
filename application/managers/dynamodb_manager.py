@@ -6,7 +6,7 @@ import mappings.custom_tags as custom_tags
 
 class DynamoDBManager():
     def __init__(self, messages_table, *args, **kwargs):
-        self.client = boto3.resource('dynamodb', region_name='us-east-1')
+        self.client = boto3.resource('dynamodb', region_name='us-west-2')
         self.messages_table=messages_table
         
         super().__init__(*args,**kwargs)

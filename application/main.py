@@ -351,7 +351,7 @@ async def transcribe(websocket: WebSocket):
     await websocket.accept()
     # print("Headers received during handshake:", websocket.request_headers)
     # print("Response headers sent:", websocket.response_headers)
-    client = TranscribeStreamingClient(region="us-east-1")
+    client = TranscribeStreamingClient(region="us-west-2")
     stream = await client.start_stream_transcription(
         language_code="en-US",
         media_sample_rate_hz=16000,
