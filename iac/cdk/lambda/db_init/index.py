@@ -2,7 +2,6 @@ import os
 import boto3
 import json
 import psycopg2
-import cfnresponse
 
 # Initialize AWS clients
 secretsmanager_client = boto3.client('secretsmanager')
@@ -30,25 +29,29 @@ def handler(event, context):
     This function is triggered by CDK during stack deployment.
     It creates the necessary tables and indexes in PostgreSQL.
     
-    CloudFormation sends three types of requests:
+    CDK Provider Framework sends three types of requests:
     - Create: When the resource is first created
     - Update: When the resource properties change
     - Delete: When the stack is being deleted
-    """
     
-    response_data = {}
+    Returns a dictionary that CDK Provider Framework converts to CloudFormation response.
+    """
     
     try:
         # Get the request type from CloudFormation
-        request_type = event['RequestType']
+        request_type = event.get('RequestType', 'Create')
         print(f"Received {request_type} request from CloudFormation")
         
         # On Delete, we don't drop tables (to preserve data)
-        # Just send success response back to CloudFormation
+        # Just return success response
         if request_type == 'Delete':
             print("Delete request - skipping database operations")
-            cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
-            return
+            return {
+                'PhysicalResourceId': 'db-init-resource',
+                'Data': {
+                    'Message': 'Delete request - no action taken to preserve data'
+                }
+            }
         
         # Get environment variables (injected by CDK)
         db_host = os.environ['DB_HOST']
@@ -117,8 +120,6 @@ def handler(event, context):
         
         if table_count == 1:
             print("Verified: messages table exists")
-            response_data['Message'] = 'Database initialized successfully'
-            response_data['TablesCreated'] = ['messages']
         else:
             raise Exception("Table verification failed")
         
@@ -126,14 +127,21 @@ def handler(event, context):
         cursor.close()
         conn.close()
         
-        # Send success response to CloudFormation
-        cfnresponse.send(event, context, cfnresponse.SUCCESS, response_data)
+        # Return success response (CDK Provider Framework handles CloudFormation)
+        return {
+            'PhysicalResourceId': 'db-init-resource',
+            'Data': {
+                'Message': 'Database initialized successfully',
+                'TablesCreated': 'messages',
+                'Status': 'SUCCESS'
+            }
+        }
         
     except Exception as e:
-        # If anything goes wrong, log the error and send failure to CloudFormation
+        # If anything goes wrong, log the error and raise it
+        # CDK Provider Framework will handle sending failure to CloudFormation
         error_message = f"Error initializing database: {str(e)}"
         print(error_message)
-        response_data['Message'] = error_message
         
-        # Send failure response to CloudFormation
-        cfnresponse.send(event, context, cfnresponse.FAILED, response_data)
+        # Raise the exception so CDK Provider Framework knows it failed
+        raise Exception(error_message)
