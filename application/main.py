@@ -48,9 +48,9 @@ import logging
 
 # Configure logging
 logging.basicConfig(
-    filename='app.log',  # Log to a file named app.log
-    level=logging.INFO,  # Log all INFO level messages and above
-    format='%(asctime)s - %(levelname)s - %(message)s'  # Include timestamp, log level, and message
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s',
+    handlers=[logging.StreamHandler()]  # ✅ Log to stdout (CloudWatch)
 )
 
 # Ensure reproducibility by setting the seed
@@ -321,29 +321,47 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
 
 def log_message(session_uuid, msg_id, user_query, response_content, source):
     """Insert a message into the PostgreSQL database."""
+    print("=" * 60)
+    print(f"🔵 log_message() called")
+    print(f"   Session UUID: {session_uuid}")
+    print(f"   Message ID: {msg_id}")
+    print(f"   DB_HOST: {db_host}")
+    print(f"   DB_NAME: {db_name}")
+    print(f"   DB_USER: {db_user}")
+    print(f"   DB_PASSWORD: {'***SET***' if db_password else '❌ NOT SET'}")
+    print("=" * 60)
+    
     try:
-        source_json = json.dumps(source)  # Convert source (list/dict) to a JSON string
-        msg_id_str = str(msg_id)  # Ensure msg_id is a string
+        source_json = json.dumps(source)
+        msg_id_str = str(msg_id)
 
-        # Connect to PostgreSQL
+        print(f"🔵 Attempting PostgreSQL connection...")
         conn = psycopg2.connect(**DB_PARAMS)
+        print(f"✅ PostgreSQL connection successful!")
+        
         cursor = conn.cursor()
 
-        # Insert the message
         query = """
         INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, created_at) 
         VALUES (%s, %s, %s, %s, %s, %s);
         """
-        # Execute query
+        
+        print(f"🔵 Executing INSERT INTO messages...")
         cursor.execute(query, (session_uuid, msg_id_str, user_query, response_content, source_json, datetime.datetime.utcnow()))
 
-        # Commit and close
         conn.commit()
+        print(f"✅ INSERT successful - data committed to PostgreSQL!")
         cursor.close()
         conn.close()
+        print(f"✅ Database connection closed")
         logging.info("Message logged successfully in PostgreSQL.")
 
     except Exception as e:
+        print(f"=" * 60)
+        print(f"❌ DATABASE ERROR!")
+        print(f"   Error type: {type(e).__name__}")
+        print(f"   Error message: {str(e)}")
+        print(f"=" * 60)
         logging.error("Database Error: %s", e, exc_info=True)
 
 @app.websocket("/transcribe")
