@@ -315,7 +315,7 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
             msg_dict = dict(msg)
             serializable_messages.append({k: convert_datetime_to_str(v) for k, v in msg_dict.items()})
 
-        return json.dumps(serializable_messages)
+        return serializable_messages
     except Exception as e:
         logging.error("Database Error: %s", e, exc_info=True)
 
