@@ -305,7 +305,7 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
 
         # Convert datetime objects to strings
         def convert_datetime_to_str(obj):
-            if isinstance(obj, datetime):
+            if isinstance(obj, datetime.datetime):
                 return obj.isoformat()  # Convert datetime to ISO format string
             return obj
 
