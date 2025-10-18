@@ -319,12 +319,13 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
     except Exception as e:
         logging.error("Database Error: %s", e, exc_info=True)
 
-def log_message(session_uuid, msg_id, user_query, response_content, source):
+def log_message(session_uuid, msg_id, user_query, response_content, source, chatbot_type="waterbot"):
     """Insert a message into the PostgreSQL database."""
     print("=" * 60)
     print(f"🔵 log_message() called")
     print(f"   Session UUID: {session_uuid}")
     print(f"   Message ID: {msg_id}")
+    print(f"   Chatbot Type: {chatbot_type}")  # ✅ NEW
     print(f"   DB_HOST: {db_host}")
     print(f"   DB_NAME: {db_name}")
     print(f"   DB_USER: {db_user}")
@@ -341,20 +342,29 @@ def log_message(session_uuid, msg_id, user_query, response_content, source):
         
         cursor = conn.cursor()
 
+        # ✅ UPDATED QUERY - Added chatbot_type
         query = """
-        INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, created_at) 
-        VALUES (%s, %s, %s, %s, %s, %s);
+        INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, chatbot_type, created_at) 
+        VALUES (%s, %s, %s, %s, %s, %s, %s);
         """
         
         print(f"🔵 Executing INSERT INTO messages...")
-        cursor.execute(query, (session_uuid, msg_id_str, user_query, response_content, source_json, datetime.datetime.utcnow()))
+        cursor.execute(query, (
+            session_uuid, 
+            msg_id_str, 
+            user_query, 
+            response_content, 
+            source_json, 
+            chatbot_type,  # ✅ NEW
+            datetime.datetime.utcnow()
+        ))
 
         conn.commit()
-        print(f"✅ INSERT successful - data committed to PostgreSQL!")
+        print(f"✅ INSERT successful - data committed to PostgreSQL! (chatbot_type: {chatbot_type})")
         cursor.close()
         conn.close()
         print(f"✅ Database connection closed")
-        logging.info("Message logged successfully in PostgreSQL.")
+        logging.info(f"Message logged successfully in PostgreSQL for {chatbot_type}.")
 
     except Exception as e:
         print(f"=" * 60)
@@ -513,7 +523,8 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=bot_response,
-        source=[] 
+        source=[],
+        chatbot_type="riverbot"
     )
 
     return {
@@ -562,7 +573,8 @@ async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=bot_response,
-        source=[] 
+        source=[],
+        chatbot_type="waterbot" 
     )
 
     return {
@@ -620,7 +632,8 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=response_content,
-        source=sources
+        source=sources,
+        chatbot_type="riverbot"
     )
 
     return {
@@ -678,7 +691,8 @@ async def chat_action_items_api_post(request: Request, background_tasks:Backgrou
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=response_content,
-        source=sources
+        source=sources,
+        chatbot_type="waterbot"
     )
 
 
@@ -736,7 +750,8 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=response_content,
-        source=sources
+        source=sources,
+        chatbot_type="riverbot"
     )
 
     return {
@@ -793,7 +808,8 @@ async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTa
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=response_content,
-        source=sources
+        source=sources,
+        chatbot_type="waterbot"
     )
 
 
@@ -850,7 +866,8 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
             msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
             user_query=generated_user_query, 
             response_content=response_content,
-            source=[]
+            source=[],
+            chatbot_type="waterbot"
         )
 
         return {
@@ -900,7 +917,8 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=user_query, 
         response_content=response_content,
-        source=docs["sources"]
+        source=docs["sources"],
+        chatbot_type="waterbot"
     )
 
     return {
@@ -946,7 +964,8 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
             msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
             user_query=generated_user_query, 
             response_content=response_content,
-            source=[]
+            source=[],
+            chatbot_type="riverbot"
         )
 
         return {
@@ -996,7 +1015,8 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=user_query, 
         response_content=response_content,
-        source=docs["sources"]
+        source=docs["sources"],
+        chatbot_type="riverbot"
     )
 
     return {

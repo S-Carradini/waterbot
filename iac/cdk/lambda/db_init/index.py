@@ -89,6 +89,7 @@ def handler(event, context):
             user_query TEXT NOT NULL,
             response_content TEXT NOT NULL,
             source JSONB,  -- JSONB allows efficient querying of JSON data
+            chatbot_type VARCHAR(50) DEFAULT 'waterbot',  -- ✅ NEW: Track which chatbot (waterbot/riverbot)
             created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
         );
         
@@ -103,6 +104,9 @@ def handler(event, context):
         
         -- Composite index for session + time queries (common pattern)
         CREATE INDEX IF NOT EXISTS idx_session_created ON messages(session_uuid, created_at);
+        
+        -- Index on chatbot_type for filtering by bot type
+        CREATE INDEX IF NOT EXISTS idx_chatbot_type ON messages(chatbot_type);  -- ✅ NEW: Index for filtering
         """
         
         print("Executing table creation SQL...")
@@ -123,6 +127,20 @@ def handler(event, context):
         else:
             raise Exception("Table verification failed")
         
+        # ✅ NEW: Verify chatbot_type column was created
+        cursor.execute("""
+            SELECT column_name, data_type, column_default
+            FROM information_schema.columns 
+            WHERE table_name = 'messages' 
+            AND column_name = 'chatbot_type';
+        """)
+        
+        chatbot_type_column = cursor.fetchone()
+        if chatbot_type_column:
+            print(f"✅ Verified: chatbot_type column exists ({chatbot_type_column[1]}) with default {chatbot_type_column[2]}")
+        else:
+            print("⚠️  Warning: chatbot_type column not found")
+        
         # Clean up
         cursor.close()
         conn.close()
@@ -133,6 +151,7 @@ def handler(event, context):
             'Data': {
                 'Message': 'Database initialized successfully',
                 'TablesCreated': 'messages',
+                'ColumnsInclude': 'id, session_uuid, msg_id, user_query, response_content, source, chatbot_type, created_at',
                 'Status': 'SUCCESS'
             }
         }

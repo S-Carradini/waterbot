@@ -126,6 +126,8 @@ def handler(event, context):
         rows = cursor.fetchall()
         column_names = [desc[0] for desc in cursor.description]
         
+        # ✅ NEW: Log column names (helps verify schema)
+        print(f"📋 Table columns: {', '.join(column_names)}")
         print(f"📦 Retrieved {len(rows)} records from database")
         
         # Convert rows to list of dictionaries
@@ -139,6 +141,14 @@ def handler(event, context):
             serialized_row = serialize_row(row_dict)
             data.append(serialized_row)
         
+        # ✅ NEW: Log sample chatbot_type distribution (if data exists)
+        if len(data) > 0:
+            chatbot_types = {}
+            for record in data:
+                bot_type = record.get('chatbot_type', 'unknown')
+                chatbot_types[bot_type] = chatbot_types.get(bot_type, 0) + 1
+            print(f"📊 Chatbot type distribution: {chatbot_types}")
+        
         # Step 7: Create export metadata and data package
         export_data = {
             "export_metadata": {
@@ -148,7 +158,8 @@ def handler(event, context):
                 "end_time": new_backup_time.isoformat(),
                 "record_count": len(data),
                 "database": db_name,
-                "table": "messages"
+                "table": "messages",
+                "columns": column_names  # ✅ NEW: Include column list in metadata
             },
             "records": data
         }
