@@ -74,6 +74,7 @@ echo "📄 Creating detailed TXT report..."
   "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
   "Session UUID:  " + .session_uuid + "\n" +
   "Message ID:    " + .msg_id + "\n" +
+  "Chatbot Type:  " + (.chatbot_type // "waterbot") + "\n" +
   "Created At:    " + .created_at + "\n" +
   "\n" +
   "👤 USER QUERY:\n" + .user_query + "\n" +
@@ -104,12 +105,13 @@ echo "📊 Creating CSV file for spreadsheet analysis..."
 
 echo "$MESSAGES" | jq -r '
 # CSV Header
-["id", "session_uuid", "msg_id", "user_query", "response_content", "source_count", "created_at"],
+["id", "session_uuid", "msg_id", "chatbot_type", "user_query", "response_content", "source_count", "created_at"],
 # CSV Data (clean HTML tags from response)
 (.[] | [
   .id,
   .session_uuid,
   .msg_id,
+  (.chatbot_type // "waterbot"),
   .user_query,
   (.response_content | gsub("<br><br>"; " ") | gsub("<br>"; " ") | gsub("</p><p>"; " ") | gsub("<[^>]*>"; "")),
   (.source | length),
@@ -150,6 +152,14 @@ echo "   • Date Range: $FIRST_DATE to $LAST_DATE"
 # Get messages with sources
 WITH_SOURCES=$(echo "$MESSAGES" | jq '[.[] | select((.source | length) > 0)] | length')
 echo "   • Messages with Sources: $WITH_SOURCES"
+
+# ✅ NEW: Show chatbot type breakdown
+echo ""
+echo "📊 Chatbot Type Breakdown:"
+WATERBOT_COUNT=$(echo "$MESSAGES" | jq '[.[] | select((.chatbot_type // "waterbot") == "waterbot")] | length')
+RIVERBOT_COUNT=$(echo "$MESSAGES" | jq '[.[] | select(.chatbot_type == "riverbot")] | length')
+echo "   • Waterbot: $WATERBOT_COUNT messages"
+echo "   • Riverbot: $RIVERBOT_COUNT messages"
 
 echo ""
 echo "================================================================================================"
