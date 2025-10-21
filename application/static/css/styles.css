@@ -6,7 +6,6 @@
   /* background-color: white !important; */
   margin: 0;
   box-sizing: border-box;
-  position: relative;
   font-size: 1rem;
 }
 
@@ -17,6 +16,7 @@ p .h6 {
 
 html {
   height: 100%;
+  overflow: hidden;
 }
 
 /* First Header */
@@ -546,9 +546,7 @@ waterdrop5 {
   padding-bottom: 5px;
 }
 
-.message-body {
-  
-}
+.message-body {}
 
 .nav-items .nav-download {
   cursor: pointer;
@@ -586,7 +584,7 @@ waterdrop5 {
   padding: 1rem 1rem;
   margin: 0.12rem 0.5rem;
   margin-right: 9rem;
-  
+
   /* margin-left: 20%; */
 }
 
@@ -1025,13 +1023,66 @@ waterdrop5 {
 }
 
 @media (max-width: 768px) {
+  body {
+    min-height: 100dvh;
+    /* dynamic viewport height on mobile */
+    height: auto;
+    /* prevent forced viewport mismatch */
+    background-size: cover;
+  }
+  .chatbot-prompt {
+    height: 60vh;
+  }
+
   .row {
-    flex-direction: column;
+    flex-direction: row;
   }
 
   .language-toggle-container {
     margin-bottom: 10px;
   }
+
+  .message-body {
+    font-size: 12px !important;
+  }
+
+  .welcome-message-body,
+  .welcome-message-body p,
+  .welcome-message-body ol,
+  .welcome-message-body li {
+    max-width: 75vw !important;
+    font-size: 12px !important;
+    line-height: 15px;
+  }
+
+  .waterdrop1 {
+    width: 1.625rem;
+    height: 2.25rem;
+  }
+
+  .mic-button {
+    width: 81px;
+    height: 110px;
+    display: flex;
+    justify-content: center;
+    margin: 12px auto;
+    border-radius: 50%;
+    text-decoration: none;
+    overflow: hidden;
+    padding: 0;
+
+  }
+
+  .text-input-container {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-bottom: max(env(safe-area-inset-bottom), 12px);
+    max-width: 76%;
+    padding-bottom: 50px;
+
+  }
+
+
+
 }
 
 /* Main body */
@@ -1136,4 +1187,104 @@ main {
 .itdiqF .nav-link[href="/"].active,
 .itdiqF .nav-link#transcript-button.active {
   border-bottom: none !important;
+}
+
+.minimal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0 20px;
+  height: 150px;
+  width: 100%;
+  background: transparent;
+  box-sizing: border-box;
+}
+
+/* Left: ASU Logo Box */
+.asu-logo-box {
+  width: 200px;
+  height: 80px;
+  background: #ffffff;
+  border: 1px solid #8c1d40;
+  border-radius: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-sizing: border-box;
+}
+
+.asu-logo-img {
+  height: auto;
+  width: auto;
+}
+
+/* Right: Custom Icon */
+.top-right-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+}
+
+.icon-img {
+  height: 70px;
+  width: 70px;
+}
+
+.chatbot-prompt {
+  scrollbar-width: none;
+  /* Firefox */
+  overflow-y: scroll;
+}
+
+.chatbot-prompt::-webkit-scrollbar {
+  display: none;
+  /* Chrome, Safari */
+}
+
+body {
+  background-image: url("../images/background.png");
+  background-size: cover;
+  /* maintain aspect ratio, no gaps */
+  background-repeat: no-repeat;
+  background-attachment: scroll;
+  background-position: center center;
+  margin: 0;
+  padding: 0;
+  min-height: 100dvh;
+  /* mobile-safe full height */
+  height: auto;
+  overflow: hidden;
+}
+
+.container-xl {
+  overflow-y: auto;
+  max-height: 100vh;
+}
+
+.minimal-header {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 20px;
+  height: 120px;
+}
+
+/* Fullscreen transparent overlay */
+
+
+/* Size of animation */
+#mic-animation {
+
+  background: rgba(0, 0, 0, 0);
+  width: 190%;
+  height: 190%;
+  display: none;
+  z-index: 1;
+}
+
+.welcome-message .row,
+.chatbot-prompt .row {
+  flex-wrap: nowrap !important;
 }

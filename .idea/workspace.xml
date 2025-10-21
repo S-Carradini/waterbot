@@ -5,11 +5,8 @@
   </component>
   <component name="ChangeListManager">
     <list default="true" id="16472e32-0ddb-431f-9627-8024df7d61aa" name="Changes" comment="">
-      <change afterPath="$PROJECT_DIR$/application/static/images/mic-icon.png" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/application/scripts/Add_single_file_to_DB.py" beforeDir="false" afterPath="$PROJECT_DIR$/application/scripts/Add_single_file_to_DB.py" afterDir="false" />
+      <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/application/static/css/styles.css" beforeDir="false" afterPath="$PROJECT_DIR$/application/static/css/styles.css" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/application/static/js/utils.js" beforeDir="false" afterPath="$PROJECT_DIR$/application/static/js/utils.js" afterDir="false" />
-      <change beforePath="$PROJECT_DIR$/application/templates/aboutWaterbot.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/aboutWaterbot.html" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/application/templates/index.html" beforeDir="false" afterPath="$PROJECT_DIR$/application/templates/index.html" afterDir="false" />
     </list>
     <option name="SHOW_DIALOG" value="false" />
@@ -52,7 +49,7 @@
     &quot;RunOnceActivity.ShowReadmeOnStart&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.TerminalTabsStorage.copyFrom.TerminalArrangementManager.252&quot;: &quot;true&quot;,
     &quot;RunOnceActivity.git.unshallow&quot;: &quot;true&quot;,
-    &quot;git-widget-placeholder&quot;: &quot;UI-fixes&quot;,
+    &quot;git-widget-placeholder&quot;: &quot;responsive-design&quot;,
     &quot;junie.onboarding.icon.badge.shown&quot;: &quot;true&quot;,
     &quot;last_opened_file_path&quot;: &quot;/Users/hasheerama/WebstormProjects/waterbot/application/static/images&quot;,
     &quot;node.js.detected.package.eslint&quot;: &quot;true&quot;,
@@ -102,6 +99,7 @@
       <workItem from="1759834221340" duration="16988000" />
       <workItem from="1759856220175" duration="1868000" />
       <workItem from="1759858109510" duration="44000" />
+      <workItem from="1761079129289" duration="453000" />
     </task>
     <servers />
   </component>
