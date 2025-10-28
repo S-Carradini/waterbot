@@ -9,10 +9,34 @@
 # Get the directory where THIS script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Configuration
-PROD_URL="https://azwaterbot.org"
-USERNAME="admin"
-PASSWORD="supersecurepassword"
+# Get the directory where THIS script is located
+SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
+
+# Load environment variables from .env file
+if [ -f "$SCRIPT_DIR/.env" ]; then
+    echo "📄 Loading .env from: $SCRIPT_DIR/.env"
+    export $(grep -v '^#' "$SCRIPT_DIR/.env" | xargs)
+elif [ -f "$SCRIPT_DIR/../.env" ]; then
+    echo "📄 Loading .env from: $SCRIPT_DIR/../.env"
+    export $(grep -v '^#' "$SCRIPT_DIR/../.env" | xargs)
+elif [ -f "$SCRIPT_DIR/../../.env" ]; then
+    echo "📄 Loading .env from: $SCRIPT_DIR/../../.env"
+    export $(grep -v '^#' "$SCRIPT_DIR/../../.env" | xargs)
+else
+    echo "❌ Error: .env file not found in any of these locations:"
+    echo "   - $SCRIPT_DIR/.env"
+    echo "   - $SCRIPT_DIR/../.env"
+    echo "   - $SCRIPT_DIR/../../.env"
+    echo ""
+    echo "💡 Your .env file should be in the application directory."
+    echo "   Expected location: application/.env"
+    exit 1
+fi
+
+# Configuration (now loaded from environment)
+PROD_URL="${PROD_URL:-https://azwaterbot.org}"
+USERNAME="${API_USERNAME}"
+PASSWORD="${API_PASSWORD}"
 TXT_OUTPUT="$SCRIPT_DIR/prod_database_messages_detailed.txt"
 CSV_OUTPUT="$SCRIPT_DIR/prod_database_messages.csv"
 
