@@ -195,10 +195,6 @@ llm_adapter=ADAPTERS["openai-gpt4.1"]
 embeddings = llm_adapter.get_embeddings()
 
 
-<<<<<<< Updated upstream
-
-=======
->>>>>>> Stashed changes
 # Manager classes
 memory = MemoryManager()  # Assuming you have a MemoryManager class
 datastore = DynamoDBManager(messages_table=MESSAGES_TABLE)
@@ -903,12 +899,8 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         kb_data=doc_content_str,
         temperature=.5,
         max_tokens=500,
-<<<<<<< Updated upstream
-        endpoint_type="default" )
-=======
-        language=language
-    )
->>>>>>> Stashed changes
+        endpoint_type="default" ,
+        language=language)
 
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
