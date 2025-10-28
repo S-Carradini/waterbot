@@ -26,8 +26,12 @@ class OpenAIAdapter(ModelAdapter):
         )  
     
 
-    async def get_llm_detailed_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5 ):
+    async def get_llm_detailed_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language="en" ):
         system_prompt=await self.get_chat_detailed_prompt(kb_data)
+
+        if language == "es":
+            system_prompt += "\n\nFor this entire chat please translate each prompt into Spanish with correct grammar prior to your response, then respond in Spanish"
+
         messages=[]
         messages.append(
             {
@@ -43,9 +47,11 @@ class OpenAIAdapter(ModelAdapter):
         return openai_payload
     
 
-    async def get_llm_nextsteps_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5 ):
+    async def get_llm_nextsteps_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language="en" ):
         system_prompt=await self.get_action_item_prompt(kb_data)
 
+        if language == "es":
+            system_prompt += "\n\nFor this entire chat please translate each prompt into Spanish with correct grammar prior to your response, then respond in Spanish"
 
         messages=[]
         messages.append(
@@ -62,7 +68,7 @@ class OpenAIAdapter(ModelAdapter):
         return openai_payload
     
 
-    async def get_llm_body( self, kb_data, chat_history, max_tokens=512, temperature=.5, endpoint_type="default" ):
+    async def get_llm_body( self, kb_data, chat_history, max_tokens=512, temperature=.5, endpoint_type="default", language="en"):
         # system_prompt = """
         # You are a helpful assistant named Blue that provides information about water in Arizona.
 
@@ -128,6 +134,10 @@ class OpenAIAdapter(ModelAdapter):
 
         "I would love to tell you more! Just click the buttons below or ask a follow-up question."
         """
+
+        if language == "es":
+            system_prompt += "\n\nFor this entire chat please translate each prompt into Spanish with correct grammar prior to your response, then respond in Spanish"
+
 
         messages=[
             {

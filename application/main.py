@@ -195,7 +195,10 @@ llm_adapter=ADAPTERS["openai-gpt4.1"]
 embeddings = llm_adapter.get_embeddings()
 
 
+<<<<<<< Updated upstream
 
+=======
+>>>>>>> Stashed changes
 # Manager classes
 memory = MemoryManager()  # Assuming you have a MemoryManager class
 datastore = DynamoDBManager(messages_table=MESSAGES_TABLE)
@@ -668,7 +671,7 @@ async def chat_action_items_api_post(request: Request, background_tasks:Backgrou
         # print("Inside english chromaDB")
         doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
 
-    llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
+    llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response, language=language )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
     generated_user_query = f'{custom_tags.tags["NEXTSTEPS_REQUEST"][0]}Provide me the action items{custom_tags.tags["NEXTSTEPS_REQUEST"][1]}'
@@ -784,7 +787,7 @@ async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTa
         # print("Inside enlgish chromaDB")
         doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
 
-    llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
+    llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response, language=language)
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
     generated_user_query = f'{custom_tags.tags["MOREDETAIL_REQUEST"][0]}Provide me a more detailed response.{custom_tags.tags["MOREDETAIL_REQUEST"][1]}'
@@ -900,7 +903,12 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         kb_data=doc_content_str,
         temperature=.5,
         max_tokens=500,
+<<<<<<< Updated upstream
         endpoint_type="default" )
+=======
+        language=language
+    )
+>>>>>>> Stashed changes
 
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
