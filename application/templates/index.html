@@ -3,7 +3,6 @@
 
 <head>
   <meta charset="utf-8" />
-
   <title>Arizona Water Chatbot</title>
   <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="/static/js/utils.js"></script>
@@ -12,18 +11,452 @@
   <meta name="author" content="htmlGenerator" />
   <meta name="viewport" content="width=device-width, initial-scale=1" />
   <link rel="icon" type="image/png" href="static/images/favicon-196x196.png" sizes="196x196" />
-
   <script src="https://kit.fontawesome.com/822f43696b.js" crossorigin="anonymous"></script>
-
   <script src="https://cdn.jsdelivr.net/npm/popper.js@1.16.0/dist/umd/popper.min.js"></script>
   <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
   <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
   <link rel="stylesheet" href="static/css/styles.css" />
-
-
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.9.6/lottie.min.js"></script>
+  
+  <style>
+    @import url('https://fonts.googleapis.com/css2?family=Libre+Franklin:wght@800&family=SF+Pro:wght@400;500;700&display=swap');
+    
+    * {
+      box-sizing: border-box;
+    }
+    
+    body {
+      background-color: #7dc8e0;
+      margin: 0;
+      padding: 0;
+      font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+      height: 100vh;
+      overflow: hidden;
+      position: relative;
+    }
+    
+    .desktop-container {
+      width: 100vw;
+      height: 100vh;
+      position: relative;
+      background-color: #7dc8e0;
+      overflow: hidden;
+    }
+    
+    /* Header section */
+    .header-white-box {
+      position: absolute;
+      left: 0.97%;
+      top: 2.25%;
+      width: 88.75%;
+      height: 11.23%;
+      background: white;
+      border-radius: 50px;
+      z-index: 1;
+    }
+    
+    .asu-logo-header {
+      position: absolute;
+      left: 2.36%;
+      top: 2.54%;
+      width: 12.24%;
+      height: 10.46%;
+      z-index: 2;
+    }
+    
+    .asu-logo-header img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    
+    .chat-with-blue-title {
+      position: absolute;
+      left: 30.76%;
+      top: 4.1%;
+      width: 35.98%;
+      height: 7.52%;
+      font-family: 'Libre Franklin', sans-serif;
+      font-weight: 800;
+      font-size: 64px;
+      line-height: 100px;
+      color: #7dc8e0;
+      letter-spacing: 0.64px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    
+    /* Chat message area */
+    .chatbot-prompt-container {
+      position: absolute;
+      left: 25.76%;
+      top: 18.36%;
+      width: 43.98%;
+      height: 37.4%;
+      background: white;
+      border-radius: 30px;
+      padding: 20px;
+      overflow-y: auto;
+      z-index: 2;
+    }
+    
+    .chatbot-prompt {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .chatbot-prompt .card {
+      background: transparent;
+      border: none;
+      border-radius: 0;
+      padding: 0;
+    }
+    
+    .chatbot-prompt .card.left .card-body {
+      font-family: 'SF Pro', sans-serif;
+      font-weight: 500;
+      font-size: 20px;
+      line-height: 25px;
+      color: #000;
+      letter-spacing: -0.8px;
+    }
+    
+    .chatbot-prompt .card.right .card-body {
+      font-family: 'SF Pro', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 25px;
+      color: #8c1d40;
+      text-align: right;
+      letter-spacing: -0.8px;
+    }
+    
+    /* User question box - shown when user asks */
+    .user-question-box {
+      position: absolute;
+      left: 60.76%;
+      top: 60.65%;
+      width: 33.34%;
+      height: 8.59%;
+      background: white;
+      border-radius: 30px;
+      padding: 20px;
+      display: none;
+      align-items: center;
+      justify-content: center;
+      z-index: 2;
+    }
+    
+    .user-question-box.show {
+      display: flex;
+    }
+    
+    .user-question-text {
+      font-family: 'SF Pro', sans-serif;
+      font-weight: 700;
+      font-size: 20px;
+      line-height: 25px;
+      color: #8c1d40;
+      text-align: center;
+      letter-spacing: -0.8px;
+    }
+    
+    /* Action buttons */
+    .action-buttons-container {
+      position: absolute;
+      left: 37.36%;
+      top: 50.88%;
+      width: 28.82%;
+      height: 3.22%;
+      display: flex;
+      gap: 10px;
+      z-index: 2;
+    }
+    
+    .action-button {
+      flex: 1;
+      min-width: 0;
+      background: #7dc8e0;
+      border-radius: 10px;
+      padding: 10px 20px;
+      border: none;
+      font-family: 'SF Pro', sans-serif;
+      font-weight: 700;
+      font-size: 16px;
+      line-height: 25px;
+      color: #060606;
+      letter-spacing: -0.64px;
+      cursor: pointer;
+      transition: opacity 0.2s;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .action-button:hover {
+      opacity: 0.9;
+    }
+    
+    /* Blue character */
+    .blue-character {
+      position: absolute;
+      left: 2.36%;
+      top: 28.32%;
+      width: 17.91%;
+      aspect-ratio: 257.91741943359375 / 259.65625;
+      z-index: 2;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .blue-character img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      max-width: 100%;
+      max-height: 100%;
+      flex-shrink: 0;
+    }
+    
+    /* Input section */
+    .input-section {
+      position: fixed;
+      bottom: 20px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 90%;
+      max-width: 1200px;
+      z-index: 2;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+    
+    .input-wrapper {
+      position: relative;
+      width: 100%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 20px;
+      flex-wrap: nowrap;
+      height: 60px;
+    }
+    
+    .chat-input-container {
+      position: relative;
+      flex: 1;
+      max-width: 800px;
+      min-width: 200px;
+      height: 60px;
+      min-height: 60px;
+      max-height: 60px;
+      background: white;
+      border-radius: 10px;
+      display: flex;
+      align-items: center;
+      padding: 0 20px;
+      flex-shrink: 1;
+      flex-grow: 1;
+      align-self: center;
+    }
+    
+    .chat-input {
+      flex: 1;
+      min-width: 0;
+      font-family: 'SF Pro Display', sans-serif;
+      font-weight: 400;
+      font-size: 20px;
+      line-height: normal;
+      color: #747474;
+      background: transparent;
+      border: none;
+      outline: none;
+      padding: 10px;
+    }
+    
+    .chat-input::placeholder {
+      color: #747474;
+    }
+    
+    .send-button {
+      background: none;
+      border: none;
+      cursor: pointer;
+      padding: 5px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      flex-grow: 0;
+      min-width: 40px;
+      width: auto;
+      height: auto;
+    }
+    
+    .send-button i {
+      color: #8c1d40;
+      font-size: 24px;
+      line-height: 1;
+      display: inline-block;
+      width: auto;
+      height: auto;
+    }
+    
+    .send-button:hover i {
+      opacity: 0.8;
+    }
+    
+    /* Microphone button */
+    .mic-button {
+      width: 60px;
+      min-width: 60px;
+      height: 60px;
+      min-height: 60px;
+      max-width: 60px;
+      max-height: 60px;
+      background: white;
+      border-radius: 50%;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      border: none;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      flex-shrink: 0;
+      flex-grow: 0;
+      font-size: 24px;
+      color: #8c1d40;
+      position: relative;
+      align-self: center;
+    }
+    
+    .mic-button img {
+      display: none;
+    }
+    
+    .mic-button .mic-icon-fa {
+      font-size: 24px;
+      color: #8c1d40;
+      line-height: 1;
+      display: inline-block;
+      width: auto;
+      height: auto;
+    }
+    
+    .mic-animation-container {
+      position: absolute;
+      display: none;
+      width: 150px;
+      height: 150px;
+      z-index: 10;
+    }
+    
+    /* Download transcript button */
+    .download-transcript-container {
+      position: absolute;
+      right: 1.81%;
+      top: 2.25%;
+      width: 6.31%;
+      min-width: 80px;
+      height: 21.87%;
+      min-height: 120px;
+      background: white;
+      border-radius: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      cursor: pointer;
+      z-index: 2;
+      transition: transform 0.2s;
+    }
+    
+    .download-transcript-container:hover {
+      transform: scale(1.05);
+    }
+    
+    .download-transcript-icon {
+      width: 50px;
+      min-width: 50px;
+      height: 50px;
+      min-height: 50px;
+      max-width: 50px;
+      max-height: 50px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      flex-shrink: 0;
+      flex-grow: 0;
+    }
+    
+    .download-transcript-icon img {
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      object-position: center;
+      max-width: 100%;
+      max-height: 100%;
+    }
+    
+    /* Decorative elements - positioned based on Figma */
+    .decorative-ellipse {
+      position: absolute;
+      width: 91px;
+      height: 85px;
+      bottom: 50px;
+      right: 50px;
+      z-index: 1;
+      opacity: 0.3;
+    }
+    
+    /* Loading animation */
+    .loading-animation {
+      display: none;
+      padding: 20px;
+      text-align: center;
+    }
+    
+    /* Responsive adjustments */
+    @media (max-width: 1400px) {
+      .chat-with-blue-title {
+        font-size: 48px;
+        line-height: 70px;
+      }
+      
+      .chatbot-prompt .card.left .card-body,
+      .chatbot-prompt .card.right .card-body,
+      .user-question-text {
+        font-size: 18px;
+        line-height: 22px;
+      }
+    }
+    
+    @media (max-width: 1200px) {
+      .chat-with-blue-title {
+        font-size: 36px;
+        line-height: 50px;
+      }
+      
+      .chatbot-prompt-container {
+        left: 20%;
+        width: 60%;
+      }
+      
+      .blue-character {
+        width: 150px;
+        aspect-ratio: 257.91741943359375 / 259.65625;
+      }
+    }
+  </style>
 </head>
-
-<script src="https://cdnjs.cloudflare.com/ajax/libs/bodymovin/5.9.6/lottie.min.js"></script>
 
 <!-- Google tag (gtag.js) -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-28W41YFR82"></script>
@@ -33,126 +466,101 @@
     dataLayer.push(arguments);
   }
   gtag("js", new Date());
-
   gtag("config", "G-28W41YFR82");
 </script>
 
-<body data-spy="scroll" data-target=".chatbot-prompt .welcome-message-scroll" data-bs-offset="147">
-
-
-
-  <!-- Main body -->
-  <main>
-    <div class="">
-      <div class="minimal-header">
-        <div class="asu-logo-box">
-          <img src="../static/images/ASU_Sunburst.png" alt="ASU Logo" class="asu-logo-img" />
-        </div>
-        <div class="top-right-icon" style="z-index: 2">
-          <img src="../static/images/downIcon.png" alt="Icon" class="icon-img" />
-          <div class="nav-items" id="nav-items">
-            <a href="#" class="nav-item"><i class="bi bi-house"></i></a>
-            <a href="#" class="nav-item nav-download"><i class="bi bi-download"></i></a>
-          </div>
-        </div>
+<body>
+  <div class="desktop-container">
+    <!-- Header section -->
+    <div class="header-white-box"></div>
+    <div class="asu-logo-header">
+      <img src="static/images/ASU_Sunburst.png" alt="ASU Logo" />
+    </div>
+    <div class="chat-with-blue-title">Chat With Blue</div>
+    
+    <!-- Download transcript button -->
+    <div class="download-transcript-container nav-download" id="download-transcript-btn">
+      <div class="download-transcript-icon">
+        <img src="https://www.figma.com/api/mcp/asset/e43e6d61-8a2e-4602-8b3a-762452641a2b" alt="Download" />
       </div>
-      <div class="row">
+    </div>
 
+    <!-- Chat message area -->
         <div class="chatbot-prompt-container">
-
           <div class="chatbot-prompt" id="chatbot-prompt" data-bs-spy="scroll" data-bs-offset="0">
-
             <div class="card left">
               <div class="card-body welcome-message">
-                <div class="row justify-content-start">
-                  <div class="col-auto d-flex flex-wrap align-items-end ">
-                    <img class="waterdrop1" />
-                  </div>
-                  <div class=" col-lg-9  col-9 welcome-message-body">
-                    <p>
-                      Hi! My name is Blue! I'm here to answer your questions
-                      about water in Arizona.
-                    </p>
-                    <p>
-                      Ask me anything you want about the story of water in our
-                      state!
-                    </p>
-                    <p>
-                      Not sure where to start? You can try asking questions
-                      about:
-                    </p>
-                    <ol>
-                      <li>
-                        Arizona's unique water landscape, rivers, lakes,
-                        groundwater, and aquifers
-                      </li>
-                      <li>Colorado River's role in Arizona's water supply</li>
-                      <li>
-                        What's on your mind about conserving water in our
-                        desert environment?
-                      </li>
-                      <li>
-                        Are there any government programs or initiatives to
-                        address drought in Arizona?
-                      </li>
-                    </ol>
-                    <p>
-                      Ask any question in the space below to start exploring
-                      Arizona's water situation with me!
+            <p>
+              For those engaging in vigorous exercise or spending<br />
+              extended time outdoors, drinks with added electrolytes<br />
+              can help replace minerals lost through sweat.<br /><br />
+              Choosing a hydration drink depends on your activity level<br />
+              and personal needs, but water is always a healthy and<br />
+              reliable choice.<br /><br />
+              I would love to tell you more! Just click the buttons below<br />
+              or ask a follow-up question.<br /><br />
                     </p>
                   </div>
                 </div>
+      </div>
+      <div class="loading-animation">
+        <div class="spinner-border text-primary" role="status">
+          <span class="visually-hidden">Loading...</span>
               </div>
             </div>
           </div>
-          <div class="text-input-container mt-3 d-flex ">
-            <div class="col-12 text-box">
-              <form autocomplete="off" onsubmit="return false" action="/chat_api" method="post" id="userBox"
-                style="display: flex; align-items: center">
-                <div class="input-group mt-3" style="position: relative; flex-grow: 1">
-                  <input autocomplete="nope" type="text" id="user_query" name="user_query"
-                    class="input-chatbot-question form-control" placeholder="Type your question here"
-                    aria-label="Type your question here" aria-describedby="basic-addon2" style="
-                          padding-right: 90px;
-                          border-radius: 10px;
-                          height: 48px;
-                        " />
-
-                  <button class="btn btn-submit" id="submit-button" type="button" style="
-                          position: absolute;
-                          right: 0;
-                          top: 50%;
-                          transform: translateY(-50%);
-                          background: none;
-                          border: none;
-                          z-index: 99;
-                        ">
-                    <i class="fa fa-send" style="color: #8c1d40; font-size: 24px"></i>
-                  </button>
-                </div>
-              </form>
+    
+    <!-- User question box (shown when user asks a question) -->
+    <div class="user-question-box" id="user-question-box">
+      <div class="user-question-text" id="user-question-text"></div>
             </div>
 
-            <!-- Icon Div -->
-            <div class="col-auto align-items-center">
-              <a href="#" class="mic-button" id="mic-button">
-                <img src="/static/images/mic-icon.png" alt="Mic" id="mic-icon" class="mic-icon">
-                <div id="mic-animation" style="display:none; width:150px; height:150px;"></div>
-              </a>
+    <!-- Action buttons -->
+    <div class="action-buttons-container">
+      <button class="action-button" id="tell-me-more-btn">Tell Me More</button>
+      <button class="action-button" id="next-steps-btn">Next Steps</button>
+      <button class="action-button" id="sources-btn">Sources</button>
             </div>
 
+    <!-- Blue character -->
+    <div class="blue-character">
+      <img src="https://www.figma.com/api/mcp/asset/6b098f0c-3bb5-4d2e-af3a-d1c06ef4900c" alt="Blue Character" />
           </div>
 
+    <!-- Input section -->
+    <div class="input-section">
+      <div class="input-wrapper">
+        <div class="chat-input-container">
+          <form autocomplete="off" onsubmit="return false" action="/chat_api" method="post" id="userBox" style="display: flex; align-items: center; width: 100%; height: 60px;">
+            <input 
+              autocomplete="nope" 
+              type="text" 
+              id="user_query" 
+              name="user_query"
+              class="chat-input" 
+              placeholder="Type your question here"
+              aria-label="Type your question here"
+            />
+            <button class="btn btn-submit send-button" id="submit-button" type="button">
+              <i class="fas fa-paper-plane"></i>
+            </button>
+          </form>
         </div>
 
+        <!-- Microphone button -->
+        <button class="mic-button" id="mic-button" type="button">
+          <i class="fas fa-microphone mic-icon-fa" id="mic-icon"></i>
+          <div id="mic-animation" class="mic-animation-container"></div>
+        </button>
+      </div>
       </div>
     </div>
-  
-  </main>
-
 
 <script>
-  const micAnimation = lottie.loadAnimation({
+    // Initialize Lottie animation for microphone
+    let micAnimation;
+    try {
+      micAnimation = lottie.loadAnimation({
     container: document.getElementById("mic-animation"),
     renderer: "svg",
     loop: true,
@@ -162,7 +570,11 @@
       preserveAspectRatio: "xMidYMid slice",
     },
   });
+    } catch (e) {
+      console.warn("Could not load mic animation:", e);
+    }
 
+    // Speech Recognition setup
   const SpeechRecognition =
     window.SpeechRecognition || window.webkitSpeechRecognition;
   const micBtn = document.getElementById("mic-button");
@@ -170,9 +582,9 @@
   const micAnim = document.getElementById("mic-animation");
   const transcriptionDiv = document.getElementById("user_query");
 
-  if (SpeechRecognition) {
+    if (SpeechRecognition && micBtn) {
     const recognition = new SpeechRecognition();
-    recognition.continuous = true; // ✅ keep listening until stopped manually
+      recognition.continuous = true;
     recognition.interimResults = false;
     recognition.lang = "en-US";
 
@@ -180,14 +592,14 @@
 
     micBtn.addEventListener("click", () => {
       if (!isListening) {
-        // ✅ Start recording
         recognition.start();
-        micIcon.style.display = "none";
+          if (micIcon) micIcon.style.display = "none";
+          if (micAnim) {
         micAnim.style.display = "block";
-        micAnimation.play();
+            if (micAnimation) micAnimation.play();
+          }
         isListening = true;
       } else {
-        // ✅ Stop recording when clicked again
         recognition.stop();
         stopMicAnimation();
       }
@@ -198,7 +610,7 @@
       for (let i = 0; i < event.results.length; i++) {
         transcript += event.results[i][0].transcript + " ";
       }
-      transcriptionDiv.value = transcript.trim();
+        if (transcriptionDiv) transcriptionDiv.value = transcript.trim();
     };
 
     recognition.onerror = function (event) {
@@ -207,23 +619,44 @@
     };
 
     recognition.onend = function () {
-      // ✅ Don’t auto-stop unless user clicked
-      if (isListening) recognition.start(); // resume continuous listening
+        if (isListening) recognition.start();
     };
 
     function stopMicAnimation() {
-      micIcon.style.display = "block";
+        if (micIcon) micIcon.style.display = "block";
+        if (micAnim) {
       micAnim.style.display = "none";
-      micAnimation.stop();
+          if (micAnimation) micAnimation.stop();
+        }
       isListening = false;
     }
   } else {
+      if (micBtn) micBtn.disabled = true;
     console.warn("Web Speech API not supported in this browser.");
-    micBtn.disabled = true;
-  }
+    }
+
+    // Hook into displayUserMessage to also show in user question box
+    // Wait for utils.js to load and then override
+    $(document).ready(function() {
+      // Override displayUserMessage if it exists
+      if (typeof displayUserMessage === 'function') {
+        const originalDisplayUserMessage = displayUserMessage;
+        window.displayUserMessage = function(userQuery) {
+          originalDisplayUserMessage(userQuery);
+          const userQuestionBox = document.getElementById("user-question-box");
+          const userQuestionText = document.getElementById("user-question-text");
+          if (userQuestionBox && userQuestionText) {
+            userQuestionText.textContent = userQuery;
+            userQuestionBox.classList.add("show");
+            // Hide after 5 seconds
+            setTimeout(function() {
+              userQuestionBox.classList.remove("show");
+            }, 5000);
+          }
+        };
+      }
+    });
 </script>
-
-
 </body>
 
 </html>

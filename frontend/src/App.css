@@ -1,0 +1,799 @@
+.desktop-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #7dc8e0;
+  overflow: hidden;
+}
+
+/* Header Unit - Contains main card, ASU sunburst, title, and download transcript */
+.header-unit {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+
+/* Chat Bubble Tail - Polygon 2 (positioned relative to user-query) */
+.user-query .polygon-2-container {
+  position: absolute;
+  bottom: -20px;
+  right: -10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+  pointer-events: none;
+  transform: rotate(263.748deg);
+}
+
+.polygon-2-wrapper {
+  position: relative;
+  flex: none;
+  ;
+  height: 56.441px;
+  transform: rotate(271.969deg) scaleY(-1);
+  width: 64.235px;
+}
+
+.polygon-2 {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.polygon-2 img {
+  position: absolute;
+  bottom: 25%;
+  left: 6.7%;
+  right: 6.7%;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Chat Bubble Tail - Polygon 1 (positioned relative to content-card-1) */
+.content-card-1 .polygon-1-container {
+  position: absolute;
+  left: -62px;
+  top: 30%;
+  transform: rotate(263.969deg);
+  display: flex;
+  align-items: center;
+  transform: rotate(96deg);
+  justify-content: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.polygon-1-wrapper {
+  flex: none;
+  transform: rotate(263.748deg);
+  width: 100px;
+  height: 100px;
+}
+
+.polygon-1 {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.polygon-1 img {
+  position: absolute;
+  bottom: 25%;
+  left: 6.7%;
+  right: 6.7%;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Main White Card */
+.main-card {
+  position: absolute;
+  top: 2.25%;
+  right: 10.28%;
+  bottom: 86.52%;
+  left: 0.97%;
+  background-color: white;
+  border-radius: 50px;
+}
+
+/* ASU Sunburst Background */
+.asu-sunburst {
+  position: absolute;
+  top: 2.54%;
+  right: 85.6%;
+  bottom: 86.82%;
+  left: 2.36%;
+}
+
+.asu-sunburst img {
+  position: absolute;
+  inset: 0;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+/* Title */
+.title {
+  position: absolute;
+  top: 4.1%;
+  right: 33.26%;
+  bottom: 88.38%;
+  left: 30.76%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-family: 'Libre Franklin', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 800;
+  line-height: 0;
+  color: #7dc8e0;
+  font-size: clamp(32px, 3.33vw, 64px);
+  letter-spacing: 0.64px;
+}
+
+.title p {
+  line-height: 100px;
+  white-space: pre-wrap;
+}
+
+/* Chat Column Container */
+.chat-column {
+  position: absolute;
+  top: 17.36%;
+  right: 0;
+  bottom: 15%; /* Adjusted to leave space above input-wrapper (starts at 87.21%) */
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 2.36% 20px 2.36%; /* Reduced bottom padding since we have more space from bottom value */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Character and Chat Bubble Row */
+.character-chat-row {
+  
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  max-width: 60%;
+}
+
+/* Content Card 1 - System Chat Bubble */
+.content-card-1 {
+  position: relative;
+  flex: 0 1 auto;
+  background-color: white;
+  border-radius: 30px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Added gap between answer text and actions row for better spacing */
+  overflow: visible;
+  width: auto;
+  height: auto;
+}
+
+/* Ensure minimum height is enforced - more specific selector */
+.character-chat-row .content-card-1 {
+  min-height: 150px !important; /* Fixed minimum height to prevent awkward polygon positioning with short responses */
+}
+
+
+/* User Query - In chat column */
+.chat-column .user-query {
+  position: relative;
+  background-color: white;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  align-self: flex-end;
+  flex: 0 1 auto;
+  max-width: 60%;
+  min-width: 200px; /* Fixed minimum width to prevent awkward polygon positioning with short messages */
+  margin-right: 2.36%;
+  width: auto;
+  min-height: 80px; /* Fixed minimum height to prevent awkward polygon positioning with short messages */
+  height: auto;
+}
+
+/* Question Text */
+.question-text {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  line-height: 25px;
+  font-style: normal;
+  color: #8c1d40;
+  font-size: 20px;
+  text-align: center;
+  letter-spacing: -0.8px;
+  width: 100%;
+  height: auto;
+  z-index: 1;
+}
+
+.question-text p {
+  line-height: 25px;
+}
+
+/* Answer Text */
+.answer-text {
+  position: relative;
+  display: block;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 500;
+  font-style: normal;
+  color: black;
+  font-size: 20px;
+  line-height: 25px;
+  letter-spacing: -0.8px;
+  overflow: visible;
+  z-index: 1;
+  margin-bottom: 5px; /* Added margin for better spacing */
+  padding-left: 4px; /* Add padding to prevent first word from being cut off due to negative letter-spacing */
+  padding-right: 4px; /* Add padding on right as well for consistency */
+}
+
+.answer-text p {
+  line-height: 25px;
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 0;
+  min-height: 50px; /* Ensure paragraph has minimum height even when empty during typewriter effect */
+  text-indent: 0; /* Ensure no text indentation */
+}
+
+/* Thumbs Buttons Container */
+.thumbs-container .thumbs-up,
+.thumbs-container .thumbs-down {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: inline-block;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.thumbs-container .thumbs-up:hover,
+.thumbs-container .thumbs-down:hover {
+  opacity: 0.8;
+}
+
+.thumbs-container .thumbs-up img,
+.thumbs-container .thumbs-down img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.thumbs-container .thumbs-down {
+  transform: rotate(180deg);
+}
+
+/* Actions Row - Contains thumbs and buttons on same line */
+.actions-row {
+  justify-content: space-evenly;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding-top: 5px; /* Added padding for better spacing */
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Thumbs buttons wrapper */
+.thumbs-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Action Buttons */
+.button-tell-me-more,
+.button-next-steps,
+.button-sources {
+  position: relative;
+  background-color: #7dc8e0;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  padding: 10px 15px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.button-tell-me-more:hover,
+.button-next-steps:hover,
+.button-sources:hover {
+  opacity: 0.9;
+}
+
+.button-tell-me-more:active,
+.button-next-steps:active,
+.button-sources:active {
+  opacity: 0.8;
+}
+
+/* Action Buttons Container */
+.buttons-container {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+/* Button Text */
+.button-text-tell-me-more,
+.button-text-next-steps,
+.button-text-sources {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  line-height: 25px;
+  font-style: normal;
+  color: #060606;
+  font-size: 16px;
+  text-align: center;
+  letter-spacing: -0.64px;
+  white-space: nowrap;
+}
+
+
+
+
+
+
+
+/* Input Wrapper - Contains input container and mic button */
+.input-wrapper {
+  position: absolute;
+  top: 87.21%;
+  right: 1.81%;
+  bottom: 5.57%;
+  left: 1.74%;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+}
+
+/* Text Input Container */
+.input-container {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: white;
+  border-radius: 16px;
+  padding: 0 20px;
+  gap: 15px;
+  min-height: 100%;
+  height: 100%;
+}
+
+/* Text Input */
+.text-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: clamp(16px, 1.04vw, 20px);
+  color: #060606;
+  line-height: normal;
+  padding: 0;
+}
+
+.text-input::placeholder {
+  color: #747474;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: clamp(16px, 1.04vw, 20px);
+}
+
+/* Paper Plane Icon Button */
+.paper-plane-icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c1d40;
+  font-size: clamp(24px, 2.08vw, 40px);
+  transition: opacity 0.2s;
+}
+
+.paper-plane-icon-button:hover {
+  opacity: 0.8;
+}
+
+.paper-plane-icon-button:active {
+  opacity: 0.6;
+}
+
+/* Mic Icon Button */
+.mic-icon-button {
+  background-color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c1d40;
+  font-size: clamp(24px, 2.08vw, 40px);
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+  width: 75.78125px;
+  height: 75.78125px;
+  min-width: 75.78125px;
+  min-height: 75.78125px;
+}
+
+.mic-icon-button:hover {
+  opacity: 0.8;
+}
+
+.mic-icon-button:active {
+  opacity: 0.6;
+}
+
+.mic-icon-button.recording {
+  background-color: #8C1D40;
+  color: white;
+  animation: recordingPulse 1.5s ease-in-out infinite;
+}
+
+.mic-icon-button.recording:hover {
+  opacity: 1;
+}
+
+.mic-icon-button.recording i {
+  color: white !important;
+  z-index: 2;
+  position: relative;
+}
+
+/* Recording Indicator */
+.recording-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1;
+}
+
+.recording-pulse {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  border-radius: 50%;
+  background-color: rgba(140, 29, 64, 0.3);
+  animation: recordingPulseRing 1.5s ease-out infinite;
+}
+
+@keyframes recordingPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(140, 29, 64, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(140, 29, 64, 0);
+  }
+}
+
+@keyframes recordingPulseRing {
+  0% {
+    transform: scale(0.8);
+    opacity: 1;
+  }
+  100% {
+    transform: scale(1.5);
+    opacity: 0;
+  }
+}
+
+/* Blue Character */
+.character-chat-row .blue-character {
+  position: relative;
+  top: 31%;
+  flex-shrink: 0;
+  width: auto;
+  height: auto;
+}
+
+.character-chat-row .blue-character img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 300px;
+  max-height: 450px;
+  object-fit: contain;
+  object-position: center;
+}
+
+
+
+
+/* Download Transcript Button */
+.download-transcript-container {
+  position: absolute;
+  top: 2.25%;
+  right: 1.81%;
+  bottom: 75.88%;
+  left: 91.88%;
+  display: contents;
+  overflow: visible;
+  z-index: 100;
+}
+
+.download-transcript-card {
+  position: absolute;
+  top: 4.2%;
+  right: 2.43%;
+  bottom: 75.88%;
+  left: 92.71%;
+  width: calc(100% - 92.71% - 2.43%);
+  background-color: white;
+  border-radius: 50px;
+  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
+  transform-origin: top center;
+  transform: translateX(-15px);
+  overflow: visible;
+  z-index: 15;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding: 10px;
+  box-sizing: border-box;
+  gap: 35px;
+}
+
+.download-transcript-card.dropdown-open {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.download-transcript-card.dropdown-closed {
+  opacity: 0;
+  transform: scaleY(0);
+  pointer-events: none;
+}
+
+.download-transcript-card.dropdown-open {
+  opacity: 1;
+  transform: scaleY(1);
+  pointer-events: auto;
+}
+
+.download-transcript-link {
+  position: absolute;
+  top: 4.2%;
+  right: 2.43%;
+  bottom: 88.96%;
+  left: 92.71%;
+  display: contents;
+  cursor: pointer;
+  text-decoration: none;
+  z-index: 20;
+}
+
+.download-transcript-ellipse {
+  position: relative;
+  width: 75px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.download-transcript-ellipse img {
+  display: block;
+  width: 75px;
+  height: 72px;
+  object-fit: contain;
+  object-position: center;
+  position: relative;
+  z-index: 21;
+}
+
+.download-transcript-hamburger {
+  position: absolute;
+  top: 4.2%;
+  right: 2.43%;
+  bottom: 88.96%;
+  left: 92.71%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c1d40;
+  font-size: clamp(24px, 1.88vw, 36px);
+  cursor: pointer;
+  background-color: white;
+  border-radius: 50%;
+  width: 75.78125px;
+  height: 75.78125px;
+  min-width: 75.78125px;
+  min-height: 75.78125px;
+  z-index: 20;
+}
+
+.download-transcript-icon {
+  position: absolute;
+  top: 5.47%;
+  right: 3.05%;
+  bottom: 90.32%;
+  left: 93.4%;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, sans-serif;
+  line-height: normal;
+  font-style: normal;
+  color: white;
+  font-size: clamp(24px, 1.88vw, 36px);
+  text-align: center;
+  white-space: pre-wrap;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-transcript-icon-container {
+  position: relative;
+  width: 75px;
+  height: 72px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.download-transcript-icon-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-transcript-icon-inner img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 75px;
+  height: 72px;
+  object-fit: contain;
+  object-position: center;
+}
+
+.download-icon {
+  position: absolute;
+  top: 28.45%;
+  right: 29.31%;
+  bottom: 29.31%;
+  left: 28.45%;
+}
+
+.download-icon img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+
+/* Loading Message - Standalone (kept for backward compatibility) */
+.loading-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  background: white;
+  border-radius: 30px;
+  margin: 10px 0;
+  align-self: flex-start;
+  max-width: 60%;
+}
+
+/* Loading Message - Inside content-card-1 */
+.loading-message-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  justify-content: center;
+  min-height: 100px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.loader {
+  border: 3px solid #f3f3f3;
+  border-top: 3px solid #7dc8e0;
+  border-radius: 50%;
+  width: 20px;
+  height: 20px;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-message span,
+.loading-message-inline span {
+  font-family: 'SF Pro', sans-serif;
+  font-size: 16px;
+  color: #7dc8e0;
+}
+
+/* Mic Animation Container */
+.mic-animation-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  height: 150px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+
+/* Responsive adjustments - images will maintain aspect ratio with object-fit: contain */
+
