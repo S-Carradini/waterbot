@@ -12,10 +12,10 @@ import mappings.custom_tags as custom_tags
 from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException
 from fastapi import Request, Form
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
-from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import WebSocket
+from fastapi.middleware.cors import CORSMiddleware  # ✅ ADDED: CORS middleware import
 
 from managers.memory_manager import MemoryManager
 from managers.dynamodb_manager import DynamoDBManager
@@ -39,6 +39,7 @@ from dotenv import load_dotenv
 import os
 import json
 import datetime
+import pathlib
 from starlette.middleware.base import BaseHTTPMiddleware
 
 ### Postgres
@@ -97,7 +98,7 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
             path="/",      # ✅ Valid for all paths
             httponly=True,
             secure=True,   # ✅ Required for HTTPS through CloudFront
-            samesite="Lax" # ✅ Changed from "Strict" to allow cross-site navigation
+            samesite="none"  # ✅ CHANGED from "Lax" to "none" for cross-origin requests
         )
         print(f"🍪 Set cookie {COOKIE_NAME} = {session_value}")
         
@@ -161,14 +162,75 @@ class MyEventHandler(TranscriptResultStreamHandler):
         })
         logging.info("Sent bot response to client.")
 
-
 # Take environment variables from .env
 load_dotenv(override=True)  
 
 # FastaAPI startup
 app = FastAPI()
+
+# ✅ ADDED: CORS Middleware - MUST be added before other middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://waterbot-2qo4tjmdo-shankerram3s-projects.vercel.app",
+        "https://*.vercel.app",  # Allow all Vercel preview deployments
+        "http://localhost:5173",  # Vite default port for local development
+        "http://localhost:3000",  # Alternative local port
+        "http://localhost:8000",  # Local backend for testing
+    ],
+    allow_credentials=True,  # ✅ CRITICAL: Sets Access-Control-Allow-Credentials: true
+    allow_methods=["GET", "POST", "OPTIONS"],  # Allow required HTTP methods
+    allow_headers=["Content-Type", "Authorization", "Accept"],  # Allow required headers
+    expose_headers=["Set-Cookie"],  # Expose Set-Cookie header to frontend
+)
+
 security = HTTPBasic()
-templates = Jinja2Templates(directory='templates')
+# Mount static files from the React frontend build
+# Get the path to the frontend dist directory
+# In Docker container: /app/frontend/dist (since WORKDIR is /app and main.py is at /app/main.py)
+# In local dev: ../frontend/dist (relative to application directory)
+
+# Try multiple possible paths
+possible_paths = [
+    pathlib.Path(__file__).parent / "frontend" / "dist",  # /app/frontend/dist in container
+    pathlib.Path(__file__).parent.parent / "frontend" / "dist",  # ../frontend/dist in local dev
+    pathlib.Path("/app") / "frontend" / "dist",  # Explicit container path
+]
+
+frontend_dist_path = None
+for path in possible_paths:
+    resolved_path = path.resolve()  # Convert to absolute path
+    assets_check = resolved_path / "assets"
+    logging.info(f"Checking path: {resolved_path}, exists: {resolved_path.exists()}, assets exists: {assets_check.exists()}")
+    if resolved_path.exists() and assets_check.exists():
+        frontend_dist_path = resolved_path
+        logging.info(f"Found frontend dist directory at: {frontend_dist_path} (absolute: {frontend_dist_path.resolve()})")
+        break
+
+# Only mount assets if the directory exists
+if frontend_dist_path:
+    assets_path = frontend_dist_path / "assets"
+    assets_path_str = str(assets_path.resolve())  # Get absolute path as string
+    
+    # Double-check the directory exists before mounting
+    if not pathlib.Path(assets_path_str).exists():
+        logging.error(f"Assets directory does not exist at {assets_path_str}. Cannot mount.")
+        frontend_dist_path = None
+    else:
+        try:
+            # Verify it's actually a directory
+            if not pathlib.Path(assets_path_str).is_dir():
+                logging.error(f"Assets path exists but is not a directory: {assets_path_str}")
+                frontend_dist_path = None
+            else:
+                app.mount("/assets", StaticFiles(directory=assets_path_str), name="assets")
+                logging.info(f"Mounted React assets from: {assets_path_str}")
+        except Exception as e:
+            logging.error(f"Failed to mount assets directory at {assets_path_str}: {e}")
+            frontend_dist_path = None
+else:
+    logging.warning(f"Frontend dist directory not found. Tried: {[str(p.resolve()) for p in possible_paths]}. React frontend will not be served.")
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Middleware management
@@ -190,11 +252,7 @@ ADAPTERS = {
 # llm_adapter=ADAPTERS["claude.haiku"]
 llm_adapter=ADAPTERS["openai-gpt4.1"]
 
-
-
 embeddings = llm_adapter.get_embeddings()
-
-
 
 # Manager classes
 memory = MemoryManager()  # Assuming you have a MemoryManager class
@@ -202,70 +260,6 @@ datastore = DynamoDBManager(messages_table=MESSAGES_TABLE)
 knowledge_base = ChromaManager(persist_directory="docs/chroma/", embedding_function=embeddings)
 knowledge_base_spanish = ChromaManager(persist_directory="docs/chroma/spanish", embedding_function=embeddings)
 s3_manager = S3Manager(bucket_name=TRANSCRIPT_BUCKET_NAME)
-
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request,):
-    # hostname = socket.gethostname()
-    # ip_address = socket.gethostbyname(hostname)
-
-    context = {
-        "request": request,
-        # "hostname": hostname,
-        # "ip_address": ip_address
-    }
-
-    return templates.TemplateResponse("splashScreen.html", context )
-
-@app.get("/waterbot", response_class=HTMLResponse)
-async def home(request: Request,):
-    # hostname = socket.gethostname()
-    # ip_address = socket.gethostbyname(hostname)
-
-    context = {
-        "request": request,
-        # "hostname": hostname,
-        # "ip_address": ip_address
-    }
-
-    return templates.TemplateResponse("index.html", context )
-# for waterBot html
-
-@app.get("/aboutwaterbot", response_class=HTMLResponse)
-async def home(request: Request,):
-    # hostname = socket.gethostname()
-    # ip_address = socket.gethostbyname(hostname)
-
-    context = {
-        "request": request,
-        # "hostname": hostname,
-        # "ip_address": ip_address
-    }
-
-    return templates.TemplateResponse("aboutWaterbot.html", context )
-
-@app.get("/Spanish_Translation_2.0.1.html", response_class=HTMLResponse)
-async def home(request: Request,):
-    # hostname = socket.gethostname()
-    # ip_address = socket.gethostbyname(hostname)
-
-    context = {
-        "request": request,
-        # "hostname": hostname,
-        # "ip_address": ip_address
-    }
-
-    return templates.TemplateResponse("spanish.html", context )
-
-@app.get("/riverbot", response_class=HTMLResponse)
-async def riverbot(request: Request,):
-    
-    context = {
-        "request": request,
-    }
-    return templates.TemplateResponse("riverbot.html", context)
-
-
-
 
 # Database connection variables
 db_host = os.getenv("DB_HOST")
@@ -281,7 +275,6 @@ DB_PARAMS = {
     "host": db_host,
     "port": "5432"
 }
-
 
 # Authentication function
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
@@ -349,8 +342,6 @@ def log_message(session_uuid, msg_id, user_query, response_content, source):
 @app.websocket("/transcribe")
 async def transcribe(websocket: WebSocket):
     await websocket.accept()
-    # print("Headers received during handshake:", websocket.request_headers)
-    # print("Response headers sent:", websocket.response_headers)
     client = TranscribeStreamingClient(region="us-east-1")
     stream = await client.start_stream_transcription(
         language_code="en-US",
@@ -362,13 +353,11 @@ async def transcribe(websocket: WebSocket):
         try:
             while True:
                 data = await websocket.receive()
-                # print("In receive audio fn:",data)
                 if data.get("text") == '{"event":"close"}':
                     print("Closing WebSocket connection")
                     await stream.input_stream.end_stream()
                     break
                 elif data.get("bytes"):
-                    # Send the audio data to the Amazon Transcribe service
                     await stream.input_stream.send_audio_event(audio_chunk=data.get("bytes"))
         except Exception as e:
             print("WebSocket disconnected unexpectedly (receive audio after while)", str(e))
@@ -387,10 +376,8 @@ async def transcribe(websocket: WebSocket):
 
 @app.post("/session-transcript")
 async def session_transcript_post(request: Request):
-    # Get the session UUID from the cookie
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
-    # ADD THIS DEBUG BLOCK
     print("=" * 60)
     print(f"📥 TRANSCRIPT REQUEST")
     print(f"Cookie value: {request.cookies.get(COOKIE_NAME)}")
@@ -398,7 +385,6 @@ async def session_transcript_post(request: Request):
     print(f"Final session_uuid: {session_uuid}")
     print(f"All sessions: {list(memory.sessions.keys())}")
 
-    # Get all session history
     session_history = await memory.get_session_history_all(session_uuid)
     print(f"This session has {len(session_history)} messages")
 
@@ -407,33 +393,22 @@ async def session_transcript_post(request: Request):
         print(f"Last message: {session_history[-1] if session_history else 'None'}")
     print("=" * 60)
 
-    # Handle missing or invalid session data gracefully
     if not session_history or not isinstance(session_history, list):
         return {"message": "No chat history found for this session."}
 
-    # Generate a unique filename for the S3 object
     filename = f"{session_uuid}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
     object_key = f"session-transcript/{filename}"
     
-    # Convert session history to plain text format
     session_text = ""
     for entry in session_history:
         if isinstance(entry, dict) and "role" in entry and "content" in entry:
             session_text += f"Role: {entry['role']}\nContent: {entry['content']}\n\n"
 
-    # Upload the session history to S3 as plain text
-    # print(session_text)  # Print for debugging (optional)
-    # print(TRANSCRIPT_BUCKET_NAME)  # Print for debugging (optional)
     await s3_manager.upload(key=object_key, body=session_text)
-
-    # Generate a presigned URL for the S3 object
     url = await s3_manager.generate_presigned(key=object_key)
 
     return {'presigned_url': url}
 
-
-
-# Route to handle ratings
 @app.post('/submit_rating_api')
 async def submit_rating_api_post(
         request: Request,
@@ -441,25 +416,25 @@ async def submit_rating_api_post(
         reaction: str = Form(None, description="Optional reaction to the message"),
         userComment: str = Form(None, description="Optional user comment")
     ):
+    try:
+        session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
+        counter_uuid=await memory.get_message_count_uuid(session_uuid)
+        message_uuid_combo=counter_uuid+"."+message_id
+        await datastore.update_rating_fields(
+            session_uuid=session_uuid,
+            message_id=message_uuid_combo,
+            reaction=reaction,
+            userComment=userComment
+        )
+        return {"status": "success"}
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating rating: {str(e)}")
 
-    session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
-    counter_uuid=await memory.get_message_count_uuid(session_uuid)
-    message_uuid_combo=counter_uuid+"."+message_id
-    await datastore.update_rating_fields(
-        session_uuid=session_uuid,
-        message_id=message_uuid_combo,
-        reaction=reaction,
-        userComment=userComment
-    )
-    
-
-# Riverbot-specific sources API
 @app.post('/riverbot_chat_sources_api')
 async def riverbot_chat_sources_post(request: Request, background_tasks:BackgroundTasks):
-    
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
@@ -471,10 +446,8 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
     }
     
     formatted_source_list=await memory.format_sources_as_html(source_list=sources)
-
     generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}Provide me sources.{custom_tags.tags["SOURCE_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
-
     bot_response=formatted_source_list
 
     await memory.add_message_to_session( 
@@ -489,7 +462,6 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
     )
     await memory.increment_message_count(session_uuid)
 
-    # We do not include sources as this message is the actual sources; no AI generation involved.
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
@@ -503,12 +475,9 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
         "msgID": await memory.get_message_count(session_uuid)
     }
 
-# User wants to see sources of previous message
 @app.post('/chat_sources_api')
 async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
-
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
@@ -520,10 +489,8 @@ async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
     }
     
     formatted_source_list=await memory.format_sources_as_html(source_list=sources)
-
     generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}Provide me sources.{custom_tags.tags["SOURCE_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
-
     bot_response=formatted_source_list
 
     await memory.add_message_to_session( 
@@ -538,7 +505,6 @@ async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
     )
     await memory.increment_message_count(session_uuid)
 
-    # We do not include sources as this message is the actual sources; no AI generation involved.
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
@@ -551,14 +517,10 @@ async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
         "resp":bot_response,
         "msgID": await memory.get_message_count(session_uuid)
     }
-    
 
-# Riverbot-specific action items API
 @app.post('/riverbot_chat_actionItems_api')
 async def riverbot_chat_action_items_api_post(request: Request, background_tasks:BackgroundTasks):
-  
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
 
@@ -573,10 +535,8 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
     language = detect_language(user_query)
     
     if language == 'es':
-        # print("Inside spanish chromaDB")
         doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})     
     else:
-        # print("Inside english chromaDB")
         doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
 
     llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
@@ -610,12 +570,9 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
         "msgID": await memory.increment_message_count(session_uuid)
     }
 
-# Route to handle next steps interactions
 @app.post('/chat_actionItems_api')
 async def chat_action_items_api_post(request: Request, background_tasks:BackgroundTasks):
-
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
 
@@ -624,17 +581,14 @@ async def chat_action_items_api_post(request: Request, background_tasks:Backgrou
         "sources":sources
     }
 
-
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
     
     language = detect_language(user_query)
     
     if language == 'es':
-        # print("Inside spanish chromaDB")
         doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})     
     else:
-        # print("Inside english chromaDB")
         doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
 
     llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
@@ -663,18 +617,14 @@ async def chat_action_items_api_post(request: Request, background_tasks:Backgrou
         source=sources
     )
 
-
     return {
         "resp":response_content,
         "msgID": await memory.increment_message_count(session_uuid)
     }
 
-# Riverbot-specific detailed API
 @app.post('/riverbot_chat_detailed_api')
 async def riverbot_chat_detailed_api_post(request: Request, background_tasks:BackgroundTasks):
-   
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
 
@@ -689,10 +639,8 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
     language = detect_language(user_query)
 
     if language == 'es':
-        # print("Inside spanish chromaDB")
         doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})
     else:
-        # print("Inside enlgish chromaDB")
         doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
 
     llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
@@ -726,11 +674,9 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
         "msgID": await memory.get_message_count(session_uuid)
     }
 
-# Route to handle next steps interactions
 @app.post('/chat_detailed_api')
 async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTasks):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
 
@@ -745,10 +691,8 @@ async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTa
     language = detect_language(user_query)
 
     if language == 'es':
-        # print("Inside spanish chromaDB")
         doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})
     else:
-        # print("Inside enlgish chromaDB")
         doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
 
     llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
@@ -769,7 +713,6 @@ async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTa
     )
     await memory.increment_message_count(session_uuid)
 
-
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
@@ -778,20 +721,16 @@ async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTa
         source=sources
     )
 
-
     return {
         "resp":response_content,
         "msgID": await memory.get_message_count(session_uuid)
     }
 
-# Route to handle chat interactions
 @app.post('/chat_api')
 async def chat_api_post(request: Request, user_query: Annotated[str, Form()], background_tasks:BackgroundTasks ):
     user_query=user_query
-
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
-    # ADD THIS DEBUG BLOCK
     print("=" * 60)
     print(f"📨 CHAT REQUEST RECEIVED")
     print(f"User query: {user_query[:50]}...")
@@ -818,7 +757,6 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         print(intent_result)
         print("ERROR", str(e))
 
-
     if( moderation_result or (prompt_injection or unrelated_topic)):
         response_content= "I am sorry, your request is inappropriate and I cannot answer it." if moderation_result else not_handled
 
@@ -849,16 +787,20 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
     language = detect_language(user_query)
     
     if language == 'es':
-        # print("Inside spanish chromaDB")
         docs = await knowledge_base_spanish.ann_search(user_query)
         doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
+        logging.info(f"🔍 RAG Search (Spanish): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
     else:
-        #  print("Inside english chromaDB")
-         docs = await knowledge_base.ann_search(user_query)
-         doc_content_str = await knowledge_base.knowledge_to_string(docs)
+        docs = await knowledge_base.ann_search(user_query)
+        doc_content_str = await knowledge_base.knowledge_to_string(docs)
+        logging.info(f"🔍 RAG Search (English): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
     
-    # Use default system prompt for index.html
-    logging.info("Using default system prompt for index.html")
+    if docs.get('sources'):
+        logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
+    else:
+        logging.warning("⚠️  No sources found in RAG search - ChromaDB may be empty")
+    
+    logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
     
     llm_body = await llm_adapter.get_llm_body( 
         chat_history=await memory.get_session_history_all(session_uuid), 
@@ -876,7 +818,6 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
     )
 
     await memory.increment_message_count(session_uuid)
-    # Log the message to postgres
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
@@ -890,12 +831,9 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         "msgID": await memory.get_message_count(session_uuid)
     }
 
-# Route to handle riverbot chat interactions
 @app.post('/riverbot_chat_api')
 async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Form()], background_tasks:BackgroundTasks ):
-    
     user_query=user_query
-
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
     await memory.create_session(session_uuid)
@@ -945,15 +883,21 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
     language = detect_language(user_query)
     
     if language == 'es':
-        # print("Inside spanish chromaDB")
         docs = await knowledge_base_spanish.ann_search(user_query)
         doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
+        logging.info(f"🔍 RAG Search (Spanish): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
     else:
-        #  print("Inside english chromaDB")
-         docs = await knowledge_base.ann_search(user_query)
-         doc_content_str = await knowledge_base.knowledge_to_string(docs)
+        docs = await knowledge_base.ann_search(user_query)
+        doc_content_str = await knowledge_base.knowledge_to_string(docs)
+        logging.info(f"🔍 RAG Search (English): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
     
-    # Use riverbot system prompt
+    if docs.get('sources'):
+        logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
+    else:
+        logging.warning("⚠️  No sources found in RAG search - ChromaDB may be empty")
+    
+    logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
+    
     logging.info("Using riverbot system prompt")
     
     llm_body = await llm_adapter.get_llm_body( 
@@ -972,7 +916,6 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
     )
 
     await memory.increment_message_count(session_uuid)
-    # Log the message to postgres
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
@@ -986,5 +929,71 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
         "msgID": await memory.get_message_count(session_uuid)
     }
 
+# Serve React frontend static files (favicons)
+@app.get("/favicon.ico")
+async def favicon():
+    if not frontend_dist_path:
+        raise HTTPException(status_code=404)
+    favicon_path = frontend_dist_path / "favicon.ico"
+    if favicon_path.exists():
+        return FileResponse(str(favicon_path))
+    raise HTTPException(status_code=404)
+
+@app.get("/favicon-196x196.png")
+async def favicon_png():
+    if not frontend_dist_path:
+        raise HTTPException(status_code=404)
+    favicon_path = frontend_dist_path / "favicon-196x196.png"
+    if favicon_path.exists():
+        return FileResponse(str(favicon_path))
+    raise HTTPException(status_code=404)
+
+# Serve React frontend - root route
+@app.get("/", response_class=HTMLResponse)
+async def root():
+    """Serve the React app's index.html for the root path"""
+    if not frontend_dist_path:
+        raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+    index_path = frontend_dist_path / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    else:
+        raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+
+# Serve React frontend - catch-all route for SPA routing
+# This must be defined AFTER all API routes
+@app.get("/{full_path:path}", response_class=HTMLResponse)
+async def serve_react_app(full_path: str, request: Request):
+    """
+    Catch-all route for React SPA routing.
+    Serves index.html for all routes that don't match API endpoints.
+    Note: The root path "/" is handled by the root() function above.
+    """
+    # Skip empty path (root is handled by root() function)
+    if not full_path or full_path == "":
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Check if this is an API route - if so, let it 404 (should have been handled by specific routes)
+    # This is a safety check in case the route wasn't defined above
+    if (full_path.startswith("chat_") or 
+        full_path.startswith("riverbot_chat_") or
+        full_path.startswith("submit_rating") or
+        full_path.startswith("session-transcript") or
+        full_path.startswith("transcribe") or
+        full_path.startswith("messages") or
+        full_path.startswith("static/") or
+        full_path.startswith("assets/")):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Serve React app's index.html for all other routes (SPA routing)
+    if not frontend_dist_path:
+        raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+    index_path = frontend_dist_path / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    else:
+        raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+
 if __name__ == "__main__":
     uvicorn.run(app, host='0.0.0.0', port=8000)
+
