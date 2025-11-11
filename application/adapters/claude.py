@@ -1,7 +1,7 @@
 from .base import ModelAdapter
 import boto3
 import json
-from langchain_community.embeddings import BedrockEmbeddings
+from langchain_aws import BedrockEmbeddings
 import datetime
 
 class BedrockClaudeAdapter(ModelAdapter):
