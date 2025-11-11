@@ -448,9 +448,21 @@ async def submit_rating_api_post(
 @app.post('/riverbot_chat_sources_api')
 async def riverbot_chat_sources_post(request: Request, background_tasks:BackgroundTasks):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
+    logging.info(f"🔍 Sources button clicked - Session: {session_uuid}")
+    
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
+    
+    logging.info(f"📖 Retrieved from memory - Original query: '{user_query}'")
+    logging.info(f"📄 Documents retrieved: {len(docs) if docs else 0}")
+    logging.info(f"🔗 Sources retrieved: {len(sources) if sources else 0}")
+    
+    if sources:
+        logging.info(f"📋 Source details:")
+        for i, source in enumerate(sources, 1):
+            logging.info(f"  {i}. '{source.get('human_readable', 'N/A')}' -> {source.get('url', 'N/A')}")
+    
     language = detect_language(user_query)
 
     memory_payload={
@@ -491,9 +503,30 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
 @app.post('/chat_sources_api')
 async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
+    
+    print("=" * 60)
+    print(f"📚 SOURCES REQUEST RECEIVED")
+    print(f"Cookie value: {request.cookies.get(COOKIE_NAME)}")
+    print(f"State value: {request.state.client_cookie_disabled_uuid}")
+    print(f"Final session_uuid: {session_uuid}")
+    print(f"Current sessions in memory: {list(memory.sessions.keys())}")
+    print("=" * 60)
+    
+    logging.info(f"🔍 Sources button clicked - Session: {session_uuid}")
+    
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
+    
+    logging.info(f"📖 Retrieved from memory - Original query: '{user_query}'")
+    logging.info(f"📄 Documents retrieved: {len(docs) if docs else 0}")
+    logging.info(f"🔗 Sources retrieved: {len(sources) if sources else 0}")
+    
+    if sources:
+        logging.info(f"📋 Source details:")
+        for i, source in enumerate(sources, 1):
+            logging.info(f"  {i}. '{source.get('human_readable', 'N/A')}' -> {source.get('url', 'N/A')}")
+    
     language = detect_language(user_query)
 
     memory_payload={
