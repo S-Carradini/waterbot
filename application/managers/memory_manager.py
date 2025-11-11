@@ -1,4 +1,5 @@
 import uuid
+import logging
 
 class MemoryManager:
     def __init__(self):
