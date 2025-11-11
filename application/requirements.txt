@@ -1,8 +1,10 @@
 chroma-hnswlib
-chromadb
+chromadb>=1.0.0
 langchain
 langchain-openai
 langchain-community
+langchain-chroma>=1.0.0
+langchain-aws>=1.0.0
 openai
 fastapi
 itsdangerous
@@ -10,3 +12,4 @@ boto3
 botocore
 amazon-transcribe
 langdetect
+pypdf
