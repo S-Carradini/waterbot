@@ -848,6 +848,10 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
     
     logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
     
+    logging.info(f"🤖 Preparing LLM request with knowledge base context")
+    logging.info(f"   Chat history length: {len(await memory.get_session_history_all(session_uuid))} messages")
+    logging.info(f"   Knowledge base tokens (approx): {len(doc_content_str) // 4}")
+    
     llm_body = await llm_adapter.get_llm_body( 
         chat_history=await memory.get_session_history_all(session_uuid), 
         kb_data=doc_content_str,
@@ -855,7 +859,9 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         max_tokens=500,
         endpoint_type="default" )
 
+    logging.info(f"🚀 Generating LLM response...")
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
+    logging.info(f"✅ LLM response generated: {len(response_content)} characters")
 
     await memory.add_message_to_session( 
         session_id=session_uuid, 
@@ -927,12 +933,15 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
     )
     
     language = detect_language(user_query)
+    logging.info(f"🌐 Detected language: {language} ({'Spanish' if language == 'es' else 'English'})")
     
     if language == 'es':
+        logging.info(f"🔍 Performing RAG search in Spanish collection")
         docs = await knowledge_base_spanish.ann_search(user_query)
         doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
         logging.info(f"🔍 RAG Search (Spanish): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
     else:
+        logging.info(f"🔍 Performing RAG search in English collection")
         docs = await knowledge_base.ann_search(user_query)
         doc_content_str = await knowledge_base.knowledge_to_string(docs)
         logging.info(f"🔍 RAG Search (English): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
@@ -944,6 +953,10 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
     
     logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
     
+    logging.info(f"🤖 Preparing LLM request with knowledge base context")
+    logging.info(f"   Chat history length: {len(await memory.get_session_history_all(session_uuid))} messages")
+    logging.info(f"   Knowledge base tokens (approx): {len(doc_content_str) // 4}")
+    
     logging.info("Using riverbot system prompt")
     
     llm_body = await llm_adapter.get_llm_body( 
@@ -953,7 +966,9 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
         max_tokens=500,
         endpoint_type="riverbot" )
 
+    logging.info(f"🚀 Generating LLM response...")
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
+    logging.info(f"✅ LLM response generated: {len(response_content)} characters")
 
     await memory.add_message_to_session( 
         session_id=session_uuid, 
