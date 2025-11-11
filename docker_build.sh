@@ -53,6 +53,39 @@ else
     echo "   Using existing vector database (no rebuild needed)"
 fi
 
+# Check if React frontend is built
+if [ ! -d "frontend/dist" ] || [ ! -d "frontend/dist/assets" ]; then
+    echo "⚠️  React frontend not found or incomplete at frontend/dist"
+    echo "   Building the frontend first..."
+    
+    if [ ! -d "frontend" ]; then
+        echo "❌ Frontend directory not found at frontend/"
+        exit 1
+    fi
+    
+    cd frontend
+    
+    # Check if node_modules exists, if not install dependencies
+    if [ ! -d "node_modules" ]; then
+        echo "📦 Installing frontend dependencies..."
+        npm install
+    fi
+    
+    echo "🔨 Building React frontend..."
+    npm run build
+    
+    if [ ! -d "dist" ] || [ ! -d "dist/assets" ]; then
+        echo "❌ Failed to build frontend. Please check the error messages above."
+        exit 1
+    fi
+    
+    cd ..
+    echo "✅ React frontend built successfully"
+else
+    echo "✅ Found pre-built React frontend at frontend/dist"
+    echo "   Using existing frontend build (no rebuild needed)"
+fi
+
 # Load environment variables from .env file if it exists (for OPENAI_API_KEY in container)
 if [ -f ".env" ]; then
     echo "📄 Loading environment variables from .env file..."
@@ -82,6 +115,7 @@ echo ""
 echo "🚀 To run the container:"
 echo "   docker run -p 8000:8000 waterbot"
 echo ""
-echo "💡 To rebuild the vector database with new documents:"
-echo "   1. Run: python application/scripts/Add_files_to_db.py"
-echo "   2. Re-run this script"
+echo "💡 To rebuild components:"
+echo "   - Vector database: python application/scripts/Add_files_to_db.py"
+echo "   - Frontend: cd frontend && npm run build"
+echo "   Then re-run this script"

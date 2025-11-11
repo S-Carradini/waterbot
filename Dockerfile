@@ -16,9 +16,10 @@ COPY /application/requirements.txt /app/
 COPY /application/requirements_full.txt /app/
 
 # Install dependencies, using no-cache to avoid cache bloating
+# Install requirements_full.txt first (base dependencies), then requirements.txt (which may override versions)
 RUN pip install --upgrade pip && \
-    pip install --no-cache-dir -r requirements.txt && \
-    pip install --no-cache-dir -r requirements_full.txt
+    pip install --no-cache-dir -r requirements_full.txt && \
+    pip install --no-cache-dir -r requirements.txt
 
 # Copy the pre-built ChromaDB vector database early for better caching
 # This avoids rebuilding the index on every Docker build
