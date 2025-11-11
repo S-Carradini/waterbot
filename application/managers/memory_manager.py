@@ -85,21 +85,39 @@ class MemoryManager:
     
 
     async def format_sources_as_html(self, source_list):
+        logging.info(f"📚 Formatting sources: Received {len(source_list)} sources from RAG")
+        
         html = "Here are some of the sources I used for my previous answer:<br>"
         has_items = False
         counter = 1
+        seen_urls = set()  # Track URLs we've already added
+        duplicate_count = 0
+        
         for source in source_list:
             human_readable = source["human_readable"]
             url = source["url"]
             if human_readable:  # Skip if human_readable is an empty string
                 if url:
-                    html += "<br>" + str(counter)  + ". " + human_readable + "<br>" + url
-                    has_items=True
-                    counter+=1
+                    # Only add if we haven't seen this URL before
+                    if url not in seen_urls:
+                        html += "<br>" + str(counter)  + ". " + human_readable + "<br>" + url
+                        has_items=True
+                        counter+=1
+                        seen_urls.add(url)
+                        logging.info(f"  ✓ Added source {counter-1}: '{human_readable}' -> {url}")
+                    else:
+                        duplicate_count += 1
+                        logging.debug(f"  ⊗ Skipped duplicate URL: '{human_readable}' -> {url}")
+
+        if duplicate_count > 0:
+            logging.info(f"🔄 Deduplication: Removed {duplicate_count} duplicate source(s) with same URL")
+        
+        logging.info(f"📋 Final result: {len(seen_urls)} unique source(s) displayed out of {len(source_list)} total")
 
         if has_items:
             return html
         else:
+            logging.warning("⚠️  No valid sources found to display")
             return "I did not use any specific sources in providing the information in the previous response."
 
 
