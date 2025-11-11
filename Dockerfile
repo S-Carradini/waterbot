@@ -2,19 +2,14 @@
 FROM python:3.11-slim as app
 
 # Install necessary packages and clean up to reduce image size
+# PyPDFLoader requires poppler-utils for PDF processing
 RUN apt-get update && apt-get install -y --no-install-recommends \
-    curl && \
-    rm -rf /var/lib/apt/lists/*
+    curl \
+    poppler-utils \
+    && rm -rf /var/lib/apt/lists/*
 
 # Set the working directory
 WORKDIR /app
-
-# Copy the large 'chroma' folder first to maximize caching
-# COPY /application/docs/chroma /app/docs/chroma
-
-# Set permissions for the chroma directory (if necessary)
-# RUN chown -R root:root /app/docs/chroma && \
-#     chmod -R 755 /app/docs/chroma
 
 # Copy only requirements files first to optimize layer caching
 COPY /application/requirements.txt /app/
@@ -25,35 +20,36 @@ RUN pip install --upgrade pip && \
     pip install --no-cache-dir -r requirements.txt && \
     pip install --no-cache-dir -r requirements_full.txt
 
+# Copy the pre-built ChromaDB vector database early for better caching
+# This avoids rebuilding the index on every Docker build
+# Make sure to run 'python scripts/Add_files_to_db.py' locally first to build the index
+COPY /application/docs/chroma /app/docs/chroma
+
+# Set permissions for the chroma directory
+RUN chmod -R 755 /app/docs/chroma || true
+
 # Copy the rest of the application code last to avoid invalidating cache during code changes
 COPY /application/ /app/
 
 # Copy the React frontend dist directory
 COPY /frontend/dist /app/frontend/dist
 
-# Build argument for OpenAI API key (required for RAG loading)
+# Build argument for OpenAI API key (optional, only needed if rebuilding index)
 ARG OPENAI_API_KEY
 ENV OPENAI_API_KEY=${OPENAI_API_KEY}
 
-# Run RAG loader to populate ChromaDB with documents during build
-# This ensures the vector store is ready when the container starts
-RUN echo "🔍 Checking RAG loader prerequisites..." && \
-    echo "OPENAI_API_KEY is $(if [ -n "$OPENAI_API_KEY" ]; then echo 'SET'; else echo 'NOT SET'; fi)" && \
-    echo "newData directory exists: $(test -d newData && echo 'YES' || echo 'NO')" && \
-    echo "PDF count: $(find newData -name '*.pdf' 2>/dev/null | wc -l)" && \
-    if [ -n "$OPENAI_API_KEY" ] && [ -d "newData" ] && [ "$(find newData -name '*.pdf' 2>/dev/null | wc -l)" -gt 0 ]; then \
-        echo "🚀 Loading documents into ChromaDB..." && \
-        python scripts/Add_files_to_db.py 2>&1 | tee /tmp/rag_loader.log && \
-        echo "✅ RAG loading complete. Check /tmp/rag_loader.log for details." && \
-        echo "📊 ChromaDB status:" && \
-        ls -la docs/chroma/ 2>/dev/null || echo "ChromaDB directory not found"; \
-    else \
-        echo "⚠️  Skipping RAG loading:" && \
-        [ -z "$OPENAI_API_KEY" ] && echo "  - OPENAI_API_KEY not set" || true && \
-        [ ! -d "newData" ] && echo "  - newData directory not found" || true && \
-        [ "$(find newData -name '*.pdf' 2>/dev/null | wc -l)" -eq 0 ] && echo "  - No PDFs found in newData/" || true && \
-        echo "  Run 'python scripts/Add_files_to_db.py' manually after container starts"; \
-    fi
+# Skip RAG indexing during build - use pre-built vector database instead
+# To rebuild the index, uncomment the section below or run manually:
+# RUN if [ -n "$OPENAI_API_KEY" ] && [ -d "newData" ] && [ "$(find newData -name '*.pdf' 2>/dev/null | wc -l)" -gt 0 ]; then \
+#         echo "🚀 Rebuilding ChromaDB index..." && \
+#         python scripts/Add_files_to_db.py; \
+#     else \
+#         echo "✅ Using pre-built ChromaDB from COPY command above"; \
+#     fi
+
+RUN echo "✅ Using pre-built ChromaDB vector database" && \
+    echo "📊 ChromaDB status:" && \
+    ls -la docs/chroma/ 2>/dev/null | head -5 || echo "⚠️  ChromaDB directory not found - you may need to rebuild the index"
 
 # Expose the application's port
 EXPOSE 8000
