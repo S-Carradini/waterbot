@@ -85,7 +85,12 @@ class MemoryManager:
     
 
     async def format_sources_as_html(self, source_list):
-        logging.info(f"📚 Formatting sources: Received {len(source_list)} sources from RAG")
+        logging.info(f"📚 Formatting sources: Received {len(source_list) if source_list else 0} sources from RAG")
+        
+        # Handle None or empty source list
+        if not source_list:
+            logging.warning("⚠️  No sources provided (empty or None)")
+            return "I did not use any specific sources in providing the information in the previous response."
         
         html = "Here are some of the sources I used for my previous answer:<br>"
         has_items = False
@@ -94,8 +99,12 @@ class MemoryManager:
         duplicate_count = 0
         
         for source in source_list:
-            human_readable = source["human_readable"]
-            url = source["url"]
+            # Skip if source is not a dict or missing required fields
+            if not isinstance(source, dict):
+                continue
+                
+            human_readable = source.get("human_readable", "")
+            url = source.get("url", "")
             if human_readable:  # Skip if human_readable is an empty string
                 if url:
                     # Only add if we haven't seen this URL before

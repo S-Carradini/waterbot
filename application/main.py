@@ -66,6 +66,60 @@ def detect_language(text):
         logging.error(f"Language detection failed: {str(e)}")
         return None
 
+def needs_rag_search(user_query):
+    """
+    Determine if a user query needs RAG search or is just a simple greeting.
+    Returns True if RAG search should be performed, False otherwise.
+    """
+    if not user_query:
+        return False
+    
+    # Normalize the query: lowercase, strip whitespace
+    query_lower = user_query.lower().strip()
+    
+    # Remove punctuation for matching
+    import string
+    query_clean = query_lower.translate(str.maketrans('', '', string.punctuation))
+    
+    # Simple greetings that don't need RAG
+    simple_greetings = [
+        'hey', 'hello', 'hi', 'hi there', 'hey there', 'hello there',
+        'good morning', 'good afternoon', 'good evening', 'good night',
+        'greetings', 'howdy', 'whats up', "what's up", 'sup',
+        'thanks', 'thank you', 'thank', 'thx', 'ty',
+        'bye', 'goodbye', 'see you', 'see ya',
+        'ok', 'okay', 'okay thanks', 'ok thanks',
+        'yes', 'no', 'yep', 'nope', 'yeah', 'nah',
+        'cool', 'nice', 'great', 'awesome', 'good',
+        'sure', 'alright', 'all right'
+    ]
+    
+    # Check if query is just a simple greeting (exact match or very short)
+    if query_clean in simple_greetings:
+        logging.info(f"🔍 Query '{user_query}' detected as simple greeting - skipping RAG search")
+        return False
+    
+    # Check if query is very short (1-2 words) and matches greeting patterns
+    words = query_clean.split()
+    if len(words) <= 2:
+        # Check if all words are greetings
+        if all(word in simple_greetings for word in words):
+            logging.info(f"🔍 Query '{user_query}' detected as simple greeting (short) - skipping RAG search")
+            return False
+    
+    # Check if query starts with greeting but has more content
+    first_word = words[0] if words else ""
+    if first_word in ['hey', 'hello', 'hi'] and len(words) > 2:
+        # If it's "hey [name]" or "hello [name]" followed by a question, it might need RAG
+        # But if it's just "hey hello" or similar, skip RAG
+        if len(words) == 2 and words[1] in simple_greetings:
+            logging.info(f"🔍 Query '{user_query}' detected as simple greeting combination - skipping RAG search")
+            return False
+    
+    # Query needs RAG search
+    logging.info(f"🔍 Query '{user_query}' needs RAG search")
+    return True
+
 # Set the cookie name to match the one configured in the CDK
 COOKIE_NAME = "USER_SESSION"  # Changed from WATERBOT
 
@@ -830,23 +884,30 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         source_list=[]
     )
     
-    language = detect_language(user_query)
+    # Check if query needs RAG search (skip for simple greetings)
+    docs = {"documents": [], "sources": []}
+    doc_content_str = ""
     
-    if language == 'es':
-        docs = await knowledge_base_spanish.ann_search(user_query)
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
-        logging.info(f"🔍 RAG Search (Spanish): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
+    if needs_rag_search(user_query):
+        language = detect_language(user_query)
+        
+        if language == 'es':
+            docs = await knowledge_base_spanish.ann_search(user_query)
+            doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
+            logging.info(f"🔍 RAG Search (Spanish): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
+        else:
+            docs = await knowledge_base.ann_search(user_query)
+            doc_content_str = await knowledge_base.knowledge_to_string(docs)
+            logging.info(f"🔍 RAG Search (English): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
+        
+        if docs.get('sources'):
+            logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
+        else:
+            logging.warning("⚠️  No sources found in RAG search - ChromaDB may be empty")
+        
+        logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
     else:
-        docs = await knowledge_base.ann_search(user_query)
-        doc_content_str = await knowledge_base.knowledge_to_string(docs)
-        logging.info(f"🔍 RAG Search (English): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
-    
-    if docs.get('sources'):
-        logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
-    else:
-        logging.warning("⚠️  No sources found in RAG search - ChromaDB may be empty")
-    
-    logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
+        logging.info(f"⏭️  Skipping RAG search for simple greeting/query - no sources will be returned")
     
     logging.info(f"🤖 Preparing LLM request with knowledge base context")
     logging.info(f"   Chat history length: {len(await memory.get_session_history_all(session_uuid))} messages")
@@ -932,26 +993,33 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
         source_list=[]
     )
     
-    language = detect_language(user_query)
-    logging.info(f"🌐 Detected language: {language} ({'Spanish' if language == 'es' else 'English'})")
+    # Check if query needs RAG search (skip for simple greetings)
+    docs = {"documents": [], "sources": []}
+    doc_content_str = ""
     
-    if language == 'es':
-        logging.info(f"🔍 Performing RAG search in Spanish collection")
-        docs = await knowledge_base_spanish.ann_search(user_query)
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
-        logging.info(f"🔍 RAG Search (Spanish): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
+    if needs_rag_search(user_query):
+        language = detect_language(user_query)
+        logging.info(f"🌐 Detected language: {language} ({'Spanish' if language == 'es' else 'English'})")
+        
+        if language == 'es':
+            logging.info(f"🔍 Performing RAG search in Spanish collection")
+            docs = await knowledge_base_spanish.ann_search(user_query)
+            doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
+            logging.info(f"🔍 RAG Search (Spanish): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
+        else:
+            logging.info(f"🔍 Performing RAG search in English collection")
+            docs = await knowledge_base.ann_search(user_query)
+            doc_content_str = await knowledge_base.knowledge_to_string(docs)
+            logging.info(f"🔍 RAG Search (English): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
+        
+        if docs.get('sources'):
+            logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
+        else:
+            logging.warning("⚠️  No sources found in RAG search - ChromaDB may be empty")
+        
+        logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
     else:
-        logging.info(f"🔍 Performing RAG search in English collection")
-        docs = await knowledge_base.ann_search(user_query)
-        doc_content_str = await knowledge_base.knowledge_to_string(docs)
-        logging.info(f"🔍 RAG Search (English): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
-    
-    if docs.get('sources'):
-        logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
-    else:
-        logging.warning("⚠️  No sources found in RAG search - ChromaDB may be empty")
-    
-    logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
+        logging.info(f"⏭️  Skipping RAG search for simple greeting/query - no sources will be returned")
     
     logging.info(f"🤖 Preparing LLM request with knowledge base context")
     logging.info(f"   Chat history length: {len(await memory.get_session_history_all(session_uuid))} messages")
