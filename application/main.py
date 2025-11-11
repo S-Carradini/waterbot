@@ -78,9 +78,18 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         # Get existing cookie or generate a new UUID for this request
         session_value = request.cookies.get(COOKIE_NAME)
         
+        # Log all cookies received for debugging
+        all_cookies = dict(request.cookies)
+        if all_cookies:
+            print(f"🍪 Received cookies: {all_cookies}")
+        else:
+            print(f"⚠️  No cookies received in request")
+        
         if not session_value:
             session_value = str(uuid.uuid4())
             print(f"🆕 NEW USER - Generated UUID: {session_value}")
+            print(f"   Request path: {request.url.path}")
+            print(f"   Request origin: {request.headers.get('origin', 'N/A')}")
         else:
             print(f"🔄 RETURNING USER - Cookie UUID: {session_value}")
         
@@ -90,6 +99,10 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         
         response = await call_next(request)
         
+        # Determine if we should use secure cookies (HTTPS) or not (HTTP/local)
+        # Check if request is over HTTPS or if we're in production
+        is_secure = request.url.scheme == 'https' or os.getenv('ENVIRONMENT') == 'production'
+        
         # Set the application cookie in the response headers
         response.set_cookie(
             key=COOKIE_NAME,
@@ -97,10 +110,10 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
             max_age=7200,  # 2 hours
             path="/",      # ✅ Valid for all paths
             httponly=True,
-            secure=True,   # ✅ Required for HTTPS through CloudFront
-            samesite="none"  # ✅ CHANGED from "Lax" to "none" for cross-origin requests
+            secure=is_secure,   # Only secure over HTTPS or in production
+            samesite="none" if is_secure else "lax"  # "none" requires secure=True, use "lax" for HTTP
         )
-        print(f"🍪 Set cookie {COOKIE_NAME} = {session_value}")
+        print(f"🍪 Set cookie {COOKIE_NAME} = {session_value} in response (secure={is_secure}, samesite={'none' if is_secure else 'lax'})")
         
         return response
 
