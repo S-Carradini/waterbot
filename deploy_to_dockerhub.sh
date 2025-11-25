@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "🚀 Building Docker image with newData folder for Docker Hub..."
+echo "🚀 Building Docker image and pushing to Docker Hub..."
 
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
@@ -21,20 +21,53 @@ else
     echo "⚠️  No .env file found. Using environment variables from shell."
 fi
 
+# Check if ChromaDB directory exists
+if [ ! -d "application/docs/chroma" ]; then
+    echo "⚠️  ChromaDB directory not found at application/docs/chroma"
+    echo "   Building the vector database first..."
+    
+    if [ -z "$OPENAI_API_KEY" ]; then
+        echo "❌ OPENAI_API_KEY not set. Cannot build ChromaDB index."
+        echo "   Set it in .env file or with: export OPENAI_API_KEY='your-key'"
+        exit 1
+    fi
+    
+    echo "🔨 Building ChromaDB index..."
+    # Use virtual environment Python if it exists, otherwise use system Python
+    if [ -f ".venv/bin/python" ]; then
+        PYTHON_CMD=".venv/bin/python"
+    elif [ -f "application/.venv/bin/python" ]; then
+        PYTHON_CMD="application/.venv/bin/python"
+    else
+        PYTHON_CMD="python3"
+    fi
+    
+    $PYTHON_CMD application/scripts/Add_files_to_db.py
+    
+    if [ ! -d "application/docs/chroma" ]; then
+        echo "❌ Failed to build ChromaDB. Please check the error messages above."
+        exit 1
+    fi
+    
+    echo "✅ ChromaDB index built successfully"
+else
+    echo "✅ Found pre-built ChromaDB at application/docs/chroma"
+    echo "   Using existing vector database (no rebuild needed)"
+fi
+
+echo "✅ Frontend will be built inside Docker (OS-agnostic)"
+
 # Get Docker Hub username
 if [ -z "$DOCKER_HUB_USERNAME" ]; then
     echo "📝 Enter your Docker Hub username:"
     read DOCKER_HUB_USERNAME
 fi
 
-# Get OpenAI API key from environment or prompt
-if [ -z "$OPENAI_API_KEY" ]; then
-    echo "⚠️  OPENAI_API_KEY not set. RAG loading will be skipped during build."
-    echo "   Set it in .env file or with: export OPENAI_API_KEY='your-key'"
-    BUILD_ARGS=""
-else
+# Build arguments (optional - only if OPENAI_API_KEY is set)
+BUILD_ARGS=""
+if [ -n "$OPENAI_API_KEY" ]; then
     BUILD_ARGS="--build-arg OPENAI_API_KEY=$OPENAI_API_KEY"
-    echo "✅ Using OPENAI_API_KEY from environment"
+    echo "✅ OPENAI_API_KEY will be available in container"
 fi
 
 # Image name and tag
@@ -42,8 +75,10 @@ IMAGE_NAME="${DOCKER_HUB_USERNAME}/waterbot-backend"
 TAG="${1:-latest}"
 
 # Build the image for linux/amd64 platform (required for most cloud platforms)
-echo "🔨 Building image for linux/amd64 platform..."
-docker build --platform linux/amd64 --no-cache $BUILD_ARGS -t "${IMAGE_NAME}:${TAG}" .
+echo "🔨 Building Docker image for linux/amd64 platform..."
+echo "   Using pre-built ChromaDB from application/docs/chroma"
+echo "   Building frontend inside Docker (OS-agnostic)"
+docker build --platform linux/amd64 $BUILD_ARGS -t "${IMAGE_NAME}:${TAG}" .
 
 # Login to Docker Hub
 echo "📦 Logging into Docker Hub..."
@@ -75,6 +110,7 @@ if command -v az &> /dev/null && az account show &> /dev/null 2>&1; then
     fi
 fi
 
+echo ""
 echo "✅ Build and push complete!"
 echo ""
 echo "📝 Image available at:"
@@ -85,8 +121,7 @@ fi
 echo ""
 echo "💡 To use this image:"
 echo "   docker pull ${IMAGE_NAME}:${TAG}"
+echo "   docker run -p 8000:8000 ${IMAGE_NAME}:${TAG}"
 echo ""
-echo "📝 The RAG vector store has been built into the image during the Docker build process."
-echo "   If RAG loading was skipped, you can still run it manually:"
-echo "   docker run -it ${IMAGE_NAME}:${TAG} python scripts/Add_files_to_db.py"
+echo "📝 The pre-built ChromaDB vector store is included, and the frontend was built inside Docker."
 
