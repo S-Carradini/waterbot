@@ -1,6 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 
-export default function InputWrapper({ onSendMessage, isLoading }) {
+export default function InputWrapper({ onSendMessage, isLoading, language = 'en', onLanguageChange }) {
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
@@ -250,6 +250,26 @@ export default function InputWrapper({ onSendMessage, isLoading }) {
           ></div>
         </button>
       </div>
+      {/* Language Toggle */}
+      {onLanguageChange && (
+        <div className="language-toggle">
+          <button
+            type="button"
+            className={language === 'en' ? 'active' : ''}
+            onClick={() => onLanguageChange('en')}
+          >
+            EN
+          </button>
+          <span className="separator">|</span>
+          <button
+            type="button"
+            className={language === 'es' ? 'active' : ''}
+            onClick={() => onLanguageChange('es')}
+          >
+            ES
+          </button>
+        </div>
+      )}
     </div>
   );
 }

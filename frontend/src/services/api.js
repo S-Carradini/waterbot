@@ -40,48 +40,87 @@ export async function sendChatMessage(userQuery) {
  * Get more detailed response
  */
 export async function getDetailedResponse() {
-  const response = await fetch(`${API_BASE_URL}/chat_detailed_api`, {
-    method: 'POST',
-    credentials: 'include',
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/chat_detailed_api`, {
+      method: 'POST',
+      credentials: 'include',
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to get detailed response');
+    if (!response.ok) {
+      let errorMessage = `Failed to get detailed response: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.text();
+        console.error('Backend error response:', errorData);
+        errorMessage += ` - ${errorData}`;
+      } catch (e) {
+        // Ignore if we can't parse error
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error in getDetailedResponse:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
 /**
  * Get action items/next steps
  */
 export async function getActionItems() {
-  const response = await fetch(`${API_BASE_URL}/chat_actionItems_api`, {
-    method: 'POST',
-    credentials: 'include',
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/chat_actionItems_api`, {
+      method: 'POST',
+      credentials: 'include',
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to get action items');
+    if (!response.ok) {
+      let errorMessage = `Failed to get action items: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.text();
+        console.error('Backend error response:', errorData);
+        errorMessage += ` - ${errorData}`;
+      } catch (e) {
+        // Ignore if we can't parse error
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error in getActionItems:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
 /**
  * Get sources
  */
 export async function getSources() {
-  const response = await fetch(`${API_BASE_URL}/chat_sources_api`, {
-    method: 'POST',
-    credentials: 'include',
-  });
+  try {
+    const response = await fetch(`${API_BASE_URL}/chat_sources_api`, {
+      method: 'POST',
+      credentials: 'include',
+    });
 
-  if (!response.ok) {
-    throw new Error('Failed to get sources');
+    if (!response.ok) {
+      let errorMessage = `Failed to get sources: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.text();
+        console.error('Backend error response:', errorData);
+        errorMessage += ` - ${errorData}`;
+      } catch (e) {
+        // Ignore if we can't parse error
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error in getSources:', error);
+    throw error;
   }
-
-  return response.json();
 }
 
 /**

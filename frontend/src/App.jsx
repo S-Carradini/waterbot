@@ -30,6 +30,7 @@ export default function App() {
     { type: 'bot', content: DEFAULT_ANSWER_TEXT, messageId: null, showActions: true }
   ]);
   const [isLoading, setIsLoading] = useState(false);
+  const [language, setLanguage] = useState('en');
   const chatColumnRef = useRef(null);
 
   // Auto-scroll to bottom when messages change
@@ -224,7 +225,12 @@ export default function App() {
         })}
       </div>
 
-      <InputWrapper onSendMessage={handleSendMessage} isLoading={isLoading} />
+      <InputWrapper 
+        onSendMessage={handleSendMessage} 
+        isLoading={isLoading}
+        language={language}
+        onLanguageChange={setLanguage}
+      />
     </div>
   );
 }

@@ -22,8 +22,6 @@ class ChromaManager():
         except Exception as e:
             logging.error(f"❌ Failed to initialize ChromaDB: {str(e)}")
             raise
-        
-        super().__init__(*args,**kwargs)
     
     def parse_source(self,source):
         pattern = r'[\\/]+([^\\/]+\.pdf)$' #used windows OS to upload to chromaDB so used \,eg:newData\\NCA5_Ch28_Southwest_esp.pdf

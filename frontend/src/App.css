@@ -141,6 +141,12 @@
   color: #7dc8e0;
   font-size: clamp(32px, 3.33vw, 64px);
   letter-spacing: 0.64px;
+  text-shadow: 
+    -2px -2px 0 white,
+    2px -2px 0 white,
+    -2px 2px 0 white,
+    2px 2px 0 white,
+    -1px -1px 2px rgba(0, 0, 0, 0.1);
 }
 
 .title p {
@@ -224,10 +230,10 @@
   align-items: center;
   font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 700;
-  line-height: 25px;
+  line-height: 28px;
   font-style: normal;
-  color: #8c1d40;
-  font-size: 20px;
+  color: #000000;
+  font-size: 22px;
   text-align: center;
   letter-spacing: -0.8px;
   width: 100%;
@@ -236,7 +242,7 @@
 }
 
 .question-text p {
-  line-height: 25px;
+  line-height: 28px;
 }
 
 /* Answer Text */
@@ -244,11 +250,11 @@
   position: relative;
   display: block;
   font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-weight: 500;
+  font-weight: 400;
   font-style: normal;
   color: black;
-  font-size: 20px;
-  line-height: 25px;
+  font-size: 22px;
+  line-height: 28px;
   letter-spacing: -0.8px;
   overflow: visible;
   z-index: 1;
@@ -258,7 +264,7 @@
 }
 
 .answer-text p {
-  line-height: 25px;
+  line-height: 28px;
   white-space: pre-wrap;
   margin: 0;
   padding: 0;
@@ -383,7 +389,7 @@
 
 
 
-/* Input Wrapper - Contains input container and mic button */
+/* Input Wrapper - Contains input container, mic button, and language toggle */
 .input-wrapper {
   position: absolute;
   top: 87.21%;
@@ -393,6 +399,51 @@
   display: flex;
   align-items: center;
   gap: 15px;
+}
+
+/* Language Toggle */
+.language-toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background-color: white;
+  border-radius: 20px;
+  padding: 0 16px;
+  flex-shrink: 0;
+  min-height: 100%;
+  height: 100%;
+}
+
+.language-toggle button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: 16px;
+  font-weight: 600;
+  color: #747474;
+  padding: 4px 8px;
+  transition: color 0.2s;
+  border-radius: 8px;
+}
+
+.language-toggle button:hover {
+  color: #8c1d40;
+}
+
+.language-toggle button.active {
+  color: #8c1d40;
+  background-color: #f0f0f0;
+}
+
+.language-toggle .separator {
+  color: #b0b0b0;
+  font-weight: 400;
+  font-size: 20px;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  opacity: 0.7;
 }
 
 /* Text Input Container */
@@ -566,136 +617,66 @@
 /* Download Transcript Button */
 .download-transcript-container {
   position: absolute;
-  top: 2.25%;
-  right: 1.81%;
-  bottom: 75.88%;
-  left: 91.88%;
-  display: contents;
+  top: 4.2%;
+  right: calc(10.28% - 243px);
+  bottom: 88.96%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 25px;
   overflow: visible;
   z-index: 100;
 }
 
-.download-transcript-card {
-  position: absolute;
-  top: 4.2%;
-  right: 2.43%;
-  bottom: 75.88%;
-  left: 92.71%;
-  width: calc(100% - 92.71% - 2.43%);
-  background-color: white;
-  border-radius: 50px;
-  transition: opacity 0.3s ease-in-out, transform 0.3s ease-in-out;
-  transform-origin: top center;
-  transform: translateX(-15px);
-  overflow: visible;
-  z-index: 15;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-  padding: 10px;
-  box-sizing: border-box;
-  gap: 35px;
-}
-
-.download-transcript-card.dropdown-open {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: flex-start;
-}
-
-.download-transcript-card.dropdown-closed {
-  opacity: 0;
-  transform: scaleY(0);
-  pointer-events: none;
-}
-
-.download-transcript-card.dropdown-open {
-  opacity: 1;
-  transform: scaleY(1);
-  pointer-events: auto;
-}
-
-.download-transcript-link {
-  position: absolute;
-  top: 4.2%;
-  right: 2.43%;
-  bottom: 88.96%;
-  left: 92.71%;
-  display: contents;
-  cursor: pointer;
-  text-decoration: none;
-  z-index: 20;
-}
-
 .download-transcript-ellipse {
   position: relative;
-  width: 75px;
-  height: 72px;
+  width: 94px;
+  height: 94px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.download-transcript-ellipse:hover {
+  opacity: 0.8;
 }
 
 .download-transcript-ellipse img {
   display: block;
-  width: 75px;
-  height: 72px;
+  width: 94px;
+  height: 94px;
   object-fit: contain;
   object-position: center;
   position: relative;
   z-index: 21;
 }
 
-.download-transcript-hamburger {
-  position: absolute;
-  top: 4.2%;
-  right: 2.43%;
-  bottom: 88.96%;
-  left: 92.71%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  color: #8c1d40;
-  font-size: clamp(24px, 1.88vw, 36px);
-  cursor: pointer;
-  background-color: white;
-  border-radius: 50%;
-  width: 75.78125px;
-  height: 75.78125px;
-  min-width: 75.78125px;
-  min-height: 75.78125px;
-  z-index: 20;
-}
-
-.download-transcript-icon {
-  position: absolute;
-  top: 5.47%;
-  right: 3.05%;
-  bottom: 90.32%;
-  left: 93.4%;
-  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, sans-serif;
-  line-height: normal;
-  font-style: normal;
-  color: white;
-  font-size: clamp(24px, 1.88vw, 36px);
-  text-align: center;
-  white-space: pre-wrap;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+/* Hide old hamburger button elements if they exist */
+.download-transcript-link,
+.download-transcript-hamburger,
+.download-transcript-card {
+  display: none !important;
+  visibility: hidden !important;
 }
 
 .download-transcript-icon-container {
   position: relative;
-  width: 75px;
-  height: 72px;
+  width: 94px;
+  height: 94px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.download-transcript-icon-container:hover {
+  opacity: 0.8;
 }
 
 .download-transcript-icon-inner {
@@ -712,28 +693,11 @@
   position: absolute;
   inset: 0;
   display: block;
-  width: 75px;
-  height: 72px;
+  width: 94px;
+  height: 94px;
   object-fit: contain;
   object-position: center;
 }
-
-.download-icon {
-  position: absolute;
-  top: 28.45%;
-  right: 29.31%;
-  bottom: 29.31%;
-  left: 28.45%;
-}
-
-.download-icon img {
-  display: block;
-  width: 100%;
-  height: 100%;
-  object-fit: contain;
-  object-position: center;
-}
-
 
 /* Loading Message - Standalone (kept for backward compatibility) */
 .loading-message {
@@ -761,11 +725,11 @@
 }
 
 .loader {
-  border: 3px solid #f3f3f3;
-  border-top: 3px solid #7dc8e0;
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #4a8ca8;
   border-radius: 50%;
-  width: 20px;
-  height: 20px;
+  width: 50px;
+  height: 50px;
   animation: spin 1s linear infinite;
   flex-shrink: 0;
 }
@@ -778,8 +742,8 @@
 .loading-message span,
 .loading-message-inline span {
   font-family: 'SF Pro', sans-serif;
-  font-size: 16px;
-  color: #7dc8e0;
+  font-size: 22px;
+  color: #003d5c;
 }
 
 /* Mic Animation Container */

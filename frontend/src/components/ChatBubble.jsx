@@ -105,7 +105,7 @@ export default function ChatBubble({ answerText, messageId, showActions = true, 
         {showActions && !isTyping && (
           <div className="actions-row">
             {/* Thumbs Up and Down Buttons */}
-            {messageId && (
+            {messageId != null && (
               <div className="thumbs-container">
                 <div 
                   className={`thumbs-up ${selectedReaction === 1 ? 'selected' : ''}`}
