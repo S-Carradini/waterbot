@@ -1,0 +1,173 @@
+name: Deploy to AWS ECS
+
+on:
+  push:
+    branches:
+      - main
+      - render-deploy
+      - feature-test
+    paths:
+      - 'application/**'
+      - 'frontend/**'
+      - 'Dockerfile'
+      - '.github/workflows/deploy-aws.yml'
+  workflow_dispatch:
+    inputs:
+      environment:
+        description: 'Environment to deploy to'
+        required: true
+        default: 'dev'
+        type: choice
+        options:
+          - test
+          - dev
+          - staging
+          - prod
+
+env:
+  AWS_REGION: us-west-2
+  ECR_REPOSITORY: waterbot-ecr
+
+jobs:
+  build-and-deploy:
+    name: Build and Deploy to AWS
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Determine environment from branch
+        id: env
+        run: |
+          if [ "${{ github.ref_name }}" = "feature-test" ]; then
+            echo "environment=test" >> $GITHUB_OUTPUT
+          elif [ "${{ github.ref_name }}" = "main" ] || [ "${{ github.ref_name }}" = "render-deploy" ]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+          else
+            echo "environment=${{ github.event.inputs.environment || 'dev' }}" >> $GITHUB_OUTPUT
+          fi
+          echo "Deploying to environment: $(cat $GITHUB_OUTPUT | grep environment | cut -d'=' -f2)"
+
+      - name: Set environment variables
+        id: set-env
+        run: |
+          ENV="${{ steps.env.outputs.environment }}"
+          echo "ecr_stack=cdk-ecr-stack-${ENV}" >> $GITHUB_OUTPUT
+          echo "app_stack=cdk-app-stack-${ENV}" >> $GITHUB_OUTPUT
+          echo "ecs_cluster=cdk-app-stack-${ENV}-WaterbotFargateCluster" >> $GITHUB_OUTPUT
+          echo "ecs_service=cdk-app-stack-${ENV}-FargateService" >> $GITHUB_OUTPUT
+          echo "ecs_task_def=cdk-app-stack-${ENV}-WaterbotTaskDefinition" >> $GITHUB_OUTPUT
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
+          aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Login to Amazon ECR
+        id: login-ecr
+        uses: aws-actions/amazon-ecr-login@v2
+
+      - name: Get ECR repository URI
+        id: ecr-repo
+        run: |
+          ENV="${{ steps.env.outputs.environment }}"
+          ECR_STACK="${{ steps.set-env.outputs.ecr_stack }}"
+          
+          # Try to get repository from CloudFormation stack first
+          ECR_REPO=$(aws cloudformation describe-stacks \
+            --stack-name ${ECR_STACK} \
+            --query 'Stacks[0].Outputs[?OutputKey==`RepositoryName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          
+          # If not found, try to find by listing repositories with environment suffix
+          if [ -z "$ECR_REPO" ] || [ "$ECR_REPO" = "None" ]; then
+            ECR_REPO=$(aws ecr describe-repositories \
+              --query "repositories[?contains(repositoryName, 'waterbot') && contains(repositoryName, '${ENV}')].repositoryName" \
+              --output text | head -1)
+          fi
+          
+          # If still not found, try any waterbot repository
+          if [ -z "$ECR_REPO" ] || [ "$ECR_REPO" = "None" ]; then
+            ECR_REPO=$(aws ecr describe-repositories \
+              --query "repositories[?contains(repositoryName, 'waterbot')].repositoryName" \
+              --output text | head -1)
+          fi
+          
+          # If still not found, use default
+          if [ -z "$ECR_REPO" ] || [ "$ECR_REPO" = "None" ]; then
+            ECR_REPO="${ECR_STACK}-waterbot"
+          fi
+          
+          AWS_ACCOUNT_ID=$(aws sts get-caller-identity --query Account --output text)
+          ECR_URI="${AWS_ACCOUNT_ID}.dkr.ecr.${{ env.AWS_REGION }}.amazonaws.com/${ECR_REPO}"
+          echo "repository_uri=$ECR_URI" >> $GITHUB_OUTPUT
+          echo "ECR Repository: $ECR_REPO"
+          echo "ECR Repository URI: $ECR_URI"
+
+      - name: Build Docker image
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+        run: |
+          docker build \
+            --platform linux/amd64 \
+            --build-arg OPENAI_API_KEY="${{ secrets.OPENAI_API_KEY }}" \
+            -t ${{ steps.ecr-repo.outputs.repository_uri }}:latest \
+            -t ${{ steps.ecr-repo.outputs.repository_uri }}:${{ github.sha }} \
+            .
+
+      - name: Push Docker image to ECR
+        run: |
+          docker push ${{ steps.ecr-repo.outputs.repository_uri }}:latest
+          docker push ${{ steps.ecr-repo.outputs.repository_uri }}:${{ github.sha }}
+
+      - name: Fill in the new image ID in the Amazon ECS task definition
+        id: task-def
+        uses: aws-actions/amazon-ecs-render-task-definition@v1
+        with:
+          task-definition: ${{ steps.set-env.outputs.ecs_task_def }}
+          container-name: WaterbotAppContainer
+          image: ${{ steps.ecr-repo.outputs.repository_uri }}:${{ github.sha }}
+
+      - name: Deploy Amazon ECS task definition
+        uses: aws-actions/amazon-ecs-deploy-task-definition@v1
+        with:
+          task-definition: ${{ steps.task-def.outputs.task-definition }}
+          service: ${{ steps.set-env.outputs.ecs_service }}
+          cluster: ${{ steps.set-env.outputs.ecs_cluster }}
+          wait-for-service-stability: true
+
+      - name: Get CloudFront distribution URL
+        id: cloudfront
+        run: |
+          APP_STACK="${{ steps.set-env.outputs.app_stack }}"
+          DIST_ID=$(aws cloudformation describe-stacks \
+            --stack-name ${APP_STACK} \
+            --query 'Stacks[0].Outputs[?OutputKey==`CloudFrontDistributionDomainName`].OutputValue' \
+            --output text 2>/dev/null || echo "")
+          if [ -z "$DIST_ID" ]; then
+            echo "⚠️  CloudFront distribution not found in stack outputs"
+            echo "distribution_url=" >> $GITHUB_OUTPUT
+          else
+            echo "distribution_url=https://$DIST_ID" >> $GITHUB_OUTPUT
+            echo "✅ CloudFront URL: https://$DIST_ID"
+          fi
+
+      - name: Deployment Summary
+        run: |
+          ENV="${{ steps.env.outputs.environment }}"
+          echo "## 🚀 Deployment Complete" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Environment:** \`${ENV}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**Image:** \`${{ steps.ecr-repo.outputs.repository_uri }}:${{ github.sha }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**ECS Service:** \`${{ steps.set-env.outputs.ecs_service }}\`" >> $GITHUB_STEP_SUMMARY
+          echo "**ECS Cluster:** \`${{ steps.set-env.outputs.ecs_cluster }}\`" >> $GITHUB_STEP_SUMMARY
+          if [ -n "${{ steps.cloudfront.outputs.distribution_url }}" ]; then
+            echo "**CloudFront URL:** ${{ steps.cloudfront.outputs.distribution_url }}" >> $GITHUB_STEP_SUMMARY
+          fi
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Commit:** ${{ github.sha }}" >> $GITHUB_STEP_SUMMARY
+          echo "**Branch:** ${{ github.ref_name }}" >> $GITHUB_STEP_SUMMARY
+
