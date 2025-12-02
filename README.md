@@ -482,3 +482,151 @@ For deployment instructions, see the original README sections on:
 - Deploying to AWS
 - CDK prerequisites
 - Environment-specific deployments
+
+---
+
+## Deployment: Quick Start (AWS)
+
+The fastest path to deploy:
+
+1) Set environment variables
+
+```bash
+export OPENAI_API_KEY="sk-..."
+export SECRET_HEADER_KEY="your-secret-header"
+export BASIC_AUTH_SECRET=$(echo -n "username:password" | base64)
+export AWS_ACCESS_KEY_ID="AKIA..."
+export AWS_SECRET_ACCESS_KEY="..."
+export AWS_REGION="us-west-2"
+```
+
+2) Deploy infrastructure (first time)
+
+```bash
+./scripts/setup_aws_infrastructure.sh dev
+```
+
+3) Deploy application
+
+```bash
+./scripts/deploy_to_aws.sh dev latest
+```
+
+CI/CD via GitHub Actions:
+- Push to `feature-test` ➜ deploys to test
+- Push to `main` ➜ deploys to dev
+
+---
+
+## AWS Deployment Guide (Consolidated)
+
+Prerequisites:
+- AWS CLI, Docker, Node.js + npm, Python 3.11+
+
+Required environment:
+
+```bash
+export OPENAI_API_KEY="your-openai-api-key"
+export SECRET_HEADER_KEY="your-secret-header-value"
+export BASIC_AUTH_SECRET="base64-encoded-username:password"
+export AWS_ACCESS_KEY_ID="your-aws-access-key"
+export AWS_SECRET_ACCESS_KEY="your-aws-secret-key"
+export AWS_REGION="us-west-2"
+```
+
+Infrastructure setup (CDK):
+
+```bash
+chmod +x scripts/setup_aws_infrastructure.sh
+./scripts/setup_aws_infrastructure.sh dev
+```
+
+Manual deployment:
+
+```bash
+chmod +x scripts/deploy_to_aws.sh
+./scripts/deploy_to_aws.sh dev latest
+```
+
+Monitoring:
+
+```bash
+aws logs tail /ecs/waterbot-dev --follow --region us-west-2
+```
+
+Troubleshooting highlights:
+- Ensure `application/newData/` has PDFs if building ChromaDB in Docker
+- Verify GitHub secrets set (see below)
+- Check ECS events and CloudWatch logs on failures
+
+---
+
+## Test Environment (feature-test branch)
+
+- `feature-test` ➜ automatically deploys to a dedicated test environment via GitHub Actions
+
+First‑time setup:
+
+```bash
+export OPENAI_API_KEY="your-openai-api-key"
+export SECRET_HEADER_KEY="your-secret-header"
+export BASIC_AUTH_SECRET=$(echo -n "username:password" | base64)
+./scripts/setup_aws_infrastructure.sh test
+```
+
+Manual deploy to test:
+
+```bash
+./scripts/deploy_to_aws.sh test latest
+```
+
+Check CloudFront URL from the `cdk-app-stack-test` stack outputs.
+
+---
+
+## Render Deployment (Backend)
+
+Option 1: Deploy image from Docker Hub. Ensure environment variables:
+- OPENAI_API_KEY
+- MESSAGES_TABLE
+- TRANSCRIPT_BUCKET_NAME
+- DB_HOST / DB_USER / DB_PASSWORD / DB_NAME (if used)
+
+Health check path: `/`
+
+Option 2: Use `render.yaml` (Blueprint) to build from GitHub.
+
+---
+
+## Frontend on Vercel (Optional)
+
+Set Vercel env var:
+- `VITE_API_BASE_URL` = your backend URL
+
+Backend must allow CORS for your Vercel domain.
+
+Optional rewrites in `vercel.json` if proxying (`/api/*` → backend).
+
+---
+
+## GitHub Actions Secrets (How to set)
+
+Add repository secrets:
+- `AWS_ACCESS_KEY_ID`
+- `AWS_SECRET_ACCESS_KEY`
+- `OPENAI_API_KEY`
+
+GitHub → Settings → Secrets and variables → Actions → New repository secret.
+
+More secure alternative: use OIDC with an IAM role (no long‑lived keys).
+
+---
+
+## Frontend Dev: CSS Cache Troubleshooting
+
+If CSS changes are not reflecting:
+1. Remove Vite cache: `rm -rf frontend/node_modules/.vite`
+2. Restart dev server: `npm run dev`
+3. Clear browser cache / use DevTools “Disable cache”
+4. Ensure you’re on `http://localhost:5173` (Vite dev server)
+5. Force reload with `?v=123`
