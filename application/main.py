@@ -66,6 +66,20 @@ def detect_language(text):
         logging.error(f"Language detection failed: {str(e)}")
         return None
 
+def resolve_language(preferred_language: str | None, detected_language: str | None) -> str:
+    normalized_preference = (preferred_language or "").lower()
+    if normalized_preference in ("en", "es"):
+        return normalized_preference
+    if detected_language == 'es':
+        return 'es'
+    return 'en'
+
+def determine_prompt_language(chat_language: str, preferred_language: str | None) -> str:
+    normalized_preference = (preferred_language or "").lower()
+    if normalized_preference in ("en", "es"):
+        return normalized_preference
+    return chat_language
+
 # Set the cookie name to match the one configured in the CDK
 COOKIE_NAME = "USER_SESSION"  # Changed from WATERBOT
 
@@ -446,7 +460,8 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
     }
     
     formatted_source_list=await memory.format_sources_as_html(source_list=sources)
-    generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}Provide me sources.{custom_tags.tags["SOURCE_REQUEST"][1]}'
+    instruction_text = "Proporcióname las fuentes." if language == 'es' else "Provide me sources."
+    generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}{instruction_text}{custom_tags.tags["SOURCE_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
     bot_response=formatted_source_list
 
@@ -476,12 +491,46 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
     }
 
 @app.post('/chat_sources_api')
-async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
+async def chat_sources_post(
+    request: Request,
+    background_tasks:BackgroundTasks,
+    language_preference: Annotated[str | None, Form()] = None
+):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
-    language = detect_language(user_query)
+    detected_language = detect_language(user_query)
+    language = resolve_language(language_preference, detected_language)
+    response_language = determine_prompt_language(language, language_preference)
+    logging.info(
+        "[LANG][chat_api] preference=%s detected=%s kb_language=%s prompt_language=%s",
+        language_preference,
+        detected_language,
+        language,
+        response_language
+    )
+    logging.info(
+        "[LANG][chat_detailed_api] preference=%s detected=%s kb_language=%s prompt_language=%s",
+        language_preference,
+        detected_language,
+        language,
+        response_language
+    )
+    logging.info(
+        "[LANG][chat_actionItems_api] preference=%s detected=%s kb_language=%s prompt_language=%s",
+        language_preference,
+        detected_language,
+        language,
+        response_language
+    )
+    logging.info(
+        "[LANG][chat_sources_api] preference=%s detected=%s kb_language=%s prompt_language=%s",
+        language_preference,
+        detected_language,
+        language,
+        response_language
+    )
 
     memory_payload={
         "documents":docs,
@@ -489,7 +538,8 @@ async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
     }
     
     formatted_source_list=await memory.format_sources_as_html(source_list=sources)
-    generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}Provide me sources.{custom_tags.tags["SOURCE_REQUEST"][1]}'
+    instruction_text = "Proporcióname las fuentes." if language == 'es' else "Provide me sources."
+    generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}{instruction_text}{custom_tags.tags["SOURCE_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
     bot_response=formatted_source_list
 
@@ -571,7 +621,11 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
     }
 
 @app.post('/chat_actionItems_api')
-async def chat_action_items_api_post(request: Request, background_tasks:BackgroundTasks):
+async def chat_action_items_api_post(
+    request: Request,
+    background_tasks:BackgroundTasks,
+    language_preference: Annotated[str | None, Form()] = None
+):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
@@ -584,17 +638,26 @@ async def chat_action_items_api_post(request: Request, background_tasks:Backgrou
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
     
-    language = detect_language(user_query)
+    detected_language = detect_language(user_query)
+    language = resolve_language(language_preference, detected_language)
     
+    response_language = determine_prompt_language(language, language_preference)
+
     if language == 'es':
         doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})     
     else:
         doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
 
-    llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
+    llm_body=await llm_adapter.get_llm_nextsteps_body(
+        kb_data=doc_content_str,
+        user_query=user_query,
+        bot_response=bot_response,
+        language=response_language
+    )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
-    generated_user_query = f'{custom_tags.tags["NEXTSTEPS_REQUEST"][0]}Provide me the action items{custom_tags.tags["NEXTSTEPS_REQUEST"][1]}'
+    instruction_text = "Proporcióname los pasos a seguir" if response_language == 'es' else "Provide me the action items"
+    generated_user_query = f'{custom_tags.tags["NEXTSTEPS_REQUEST"][0]}{instruction_text}{custom_tags.tags["NEXTSTEPS_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
 
     await memory.add_message_to_session( 
@@ -675,7 +738,11 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
     }
 
 @app.post('/chat_detailed_api')
-async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTasks):
+async def chat_detailed_api_post(
+    request: Request,
+    background_tasks:BackgroundTasks,
+    language_preference: Annotated[str | None, Form()] = None
+):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
@@ -688,17 +755,26 @@ async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTa
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
     
-    language = detect_language(user_query)
+    detected_language = detect_language(user_query)
+    language = resolve_language(language_preference, detected_language)
+
+    response_language = determine_prompt_language(language, language_preference)
 
     if language == 'es':
         doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})
     else:
         doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
 
-    llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
+    llm_body=await llm_adapter.get_llm_detailed_body(
+        kb_data=doc_content_str,
+        user_query=user_query,
+        bot_response=bot_response,
+        language=response_language
+    )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
-    generated_user_query = f'{custom_tags.tags["MOREDETAIL_REQUEST"][0]}Provide me a more detailed response.{custom_tags.tags["MOREDETAIL_REQUEST"][1]}'
+    detail_instruction = "Dame una respuesta más detallada." if response_language == 'es' else "Provide me a more detailed response."
+    generated_user_query = f'{custom_tags.tags["MOREDETAIL_REQUEST"][0]}{detail_instruction}{custom_tags.tags["MOREDETAIL_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
 
     await memory.add_message_to_session( 
@@ -727,7 +803,12 @@ async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTa
     }
 
 @app.post('/chat_api')
-async def chat_api_post(request: Request, user_query: Annotated[str, Form()], background_tasks:BackgroundTasks ):
+async def chat_api_post(
+    request: Request,
+    user_query: Annotated[str, Form()],
+    background_tasks: BackgroundTasks,
+    language_preference: Annotated[str | None, Form()] = None
+):
     user_query=user_query
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
@@ -784,7 +865,9 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         source_list=[]
     )
     
-    language = detect_language(user_query)
+    detected_language = detect_language(user_query)
+    language = resolve_language(language_preference, detected_language)
+    response_language = determine_prompt_language(language, language_preference)
     
     if language == 'es':
         docs = await knowledge_base_spanish.ann_search(user_query)
@@ -807,7 +890,7 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         kb_data=doc_content_str,
         temperature=.5,
         max_tokens=500,
-        endpoint_type="default" )
+        endpoint_type="spanish" if response_language == 'es' else "default" )
 
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 

@@ -64,6 +64,10 @@ if [ ! -d "frontend/dist" ] || [ ! -d "frontend/dist/assets" ]; then
     fi
     
     cd frontend
+
+    # Load nvm
+    # export NVM_DIR="$HOME/.nvm"
+    # source "$NVM_DIR/nvm.sh"
     
     # Check if node_modules exists, if not install dependencies
     if [ ! -d "node_modules" ]; then

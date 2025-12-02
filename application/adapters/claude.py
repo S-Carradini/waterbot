@@ -25,8 +25,8 @@ class BedrockClaudeAdapter(ModelAdapter):
             }
         )  
 
-    async def get_llm_nextsteps_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5 ):
-        system_prompt=await self.get_action_item_prompt(kb_data)
+    async def get_llm_nextsteps_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language='en' ):
+        system_prompt=await self.get_action_item_prompt(kb_data, language=language)
         
         inject_user_query="<NEXTSTEPS_REQUEST>Provide me the action items<NEXTSTEPS_REQUEST>"
         messages=await self.build_message_chain_for_action(user_query=user_query,bot_response=bot_response,inject_user_query=inject_user_query)
@@ -35,8 +35,8 @@ class BedrockClaudeAdapter(ModelAdapter):
 
         return bedrock_payload
     
-    async def get_llm_detailed_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5 ):
-        system_prompt=await self.get_chat_detailed_prompt(kb_data)
+    async def get_llm_detailed_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language='en' ):
+        system_prompt=await self.get_chat_detailed_prompt(kb_data, language=language)
 
         inject_user_query="<MOREDETAIL_REQUEST>Provide me a more detailed response</MOREDETAIL_REQUEST>"
         messages=await self.build_message_chain_for_action(user_query=user_query,bot_response=bot_response,inject_user_query=inject_user_query)

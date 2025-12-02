@@ -5,7 +5,29 @@ import imgThumbsUp from '../assets/thumbs-up.png';
 import imgThumbsDown from '../assets/thumbs-down.png';
 import { useTypewriter } from '../hooks/useTypewriter';
 
-export default function ChatBubble({ answerText, messageId, showActions = true, onActionButton, onRating, isLoading = false }) {
+const BUTTON_TEXT = {
+  en: {
+    'tell-me-more': 'Tell Me More',
+    'next-steps': 'Next Steps',
+    sources: 'Sources',
+  },
+  es: {
+    'tell-me-more': 'Cuéntame más',
+    'next-steps': 'Próximos pasos',
+    sources: 'Fuentes',
+  },
+};
+
+export default function ChatBubble({
+  answerText,
+  messageId,
+  showActions = true,
+  onActionButton,
+  onRating,
+  isLoading = false,
+  disableTypewriter = false,
+  language = 'en',
+}) {
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [selectedReaction, setSelectedReaction] = useState(null);
   const [shouldStartTyping, setShouldStartTyping] = useState(false);
@@ -26,19 +48,21 @@ export default function ChatBubble({ answerText, messageId, showActions = true, 
   const cleanTextContent = String(textContent || '').replace(/undefined/g, '');
   
   // Use typewriter effect for string content
+  const isTypewriterEnabled = typeof answerText === 'string' && !disableTypewriter;
+
   const { displayedText, isTyping } = useTypewriter(
-    typeof answerText === 'string' ? cleanTextContent : '', 
+    isTypewriterEnabled ? cleanTextContent : '', 
     20, 
-    shouldStartTyping
+    shouldStartTyping && isTypewriterEnabled
   );
 
   // Start typing when component mounts or answerText changes
   useEffect(() => {
-    if (cleanTextContent) {
+    if (cleanTextContent && isTypewriterEnabled) {
       setShouldStartTyping(false); // Reset first
       setTimeout(() => setShouldStartTyping(true), 50); // Then start after a brief delay
     }
-  }, [cleanTextContent]);
+  }, [cleanTextContent, isTypewriterEnabled]);
 
   const handleThumbsUp = () => {
     if (messageId && !ratingSubmitted) {
@@ -66,7 +90,7 @@ export default function ChatBubble({ answerText, messageId, showActions = true, 
   const createMarkup = () => {
     if (typeof answerText === 'string') {
       // Clean up the displayed text - remove any undefined strings
-      let cleanText = displayedText || '&nbsp;';
+      let cleanText = isTypewriterEnabled ? (displayedText || '&nbsp;') : (cleanTextContent || '&nbsp;');
       // Remove any "undefined" strings that might have been concatenated
       cleanText = cleanText.replace(/undefined/g, '');
       // Use non-breaking space to prevent collapse when empty
@@ -74,6 +98,8 @@ export default function ChatBubble({ answerText, messageId, showActions = true, 
     }
     return null;
   };
+
+  const buttonLabels = BUTTON_TEXT[language] || BUTTON_TEXT.en;
 
   return (
     <div className="character-chat-row">
@@ -88,7 +114,7 @@ export default function ChatBubble({ answerText, messageId, showActions = true, 
         {isLoading && (!cleanTextContent || cleanTextContent.trim() === '') ? (
           <div className="loading-message-inline">
             <div className="loader"></div>
-            <span>Generating response...</span>
+            <span>{language === 'es' ? 'Generando respuesta...' : 'Generating response...'}</span>
           </div>
         ) : (
           /* Answer Text */
@@ -102,7 +128,7 @@ export default function ChatBubble({ answerText, messageId, showActions = true, 
         )}
 
         {/* Thumbs and Action Buttons Row - Only show after typing is complete */}
-        {showActions && !isTyping && (
+        {showActions && messageId != null && (!isTypewriterEnabled || !isTyping) && (
           <div className="actions-row">
             {/* Thumbs Up and Down Buttons */}
             {messageId != null && (
@@ -130,19 +156,19 @@ export default function ChatBubble({ answerText, messageId, showActions = true, 
                 className="button-tell-me-more"
                 onClick={() => handleActionClick('tell-me-more')}
               >
-                <span className="button-text-tell-me-more">Tell Me More</span>
+                <span className="button-text-tell-me-more">{buttonLabels['tell-me-more']}</span>
               </button>
               <button 
                 className="button-next-steps"
                 onClick={() => handleActionClick('next-steps')}
               >
-                <span className="button-text-next-steps">Next Steps</span>
+                <span className="button-text-next-steps">{buttonLabels['next-steps']}</span>
               </button>
               <button 
                 className="button-sources"
                 onClick={() => handleActionClick('sources')}
               >
-                <span className="button-text-sources">Sources</span>
+                <span className="button-text-sources">{buttonLabels['sources']}</span>
               </button>
             </div>
           </div>

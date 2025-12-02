@@ -5,9 +5,10 @@ const API_BASE_URL = ''; // Use relative URLs for same-origin requests
 /**
  * Send a chat message to the backend
  */
-export async function sendChatMessage(userQuery) {
+export async function sendChatMessage(userQuery, language = 'en') {
   const formData = new FormData();
   formData.append('user_query', userQuery);
+  formData.append('language_preference', language);
 
   try {
     const response = await fetch(`${API_BASE_URL}/chat_api`, {
@@ -39,10 +40,13 @@ export async function sendChatMessage(userQuery) {
 /**
  * Get more detailed response
  */
-export async function getDetailedResponse() {
+export async function getDetailedResponse(language = 'en') {
+  const formData = new FormData();
+  formData.append('language_preference', language);
   try {
     const response = await fetch(`${API_BASE_URL}/chat_detailed_api`, {
       method: 'POST',
+      body: formData,
       credentials: 'include',
     });
 
@@ -68,10 +72,13 @@ export async function getDetailedResponse() {
 /**
  * Get action items/next steps
  */
-export async function getActionItems() {
+export async function getActionItems(language = 'en') {
+  const formData = new FormData();
+  formData.append('language_preference', language);
   try {
     const response = await fetch(`${API_BASE_URL}/chat_actionItems_api`, {
       method: 'POST',
+      body: formData,
       credentials: 'include',
     });
 
@@ -97,10 +104,13 @@ export async function getActionItems() {
 /**
  * Get sources
  */
-export async function getSources() {
+export async function getSources(language = 'en') {
+  const formData = new FormData();
+  formData.append('language_preference', language);
   try {
     const response = await fetch(`${API_BASE_URL}/chat_sources_api`, {
       method: 'POST',
+      body: formData,
       credentials: 'include',
     });
 
