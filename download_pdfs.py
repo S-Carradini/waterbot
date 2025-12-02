@@ -27,6 +27,9 @@ REFERERS = {
     "wateruseitwisely.com": "https://wateruseitwisely.com/",
     "www.calwater.com": "https://www.calwater.com/",
     "azdeq.gov": "https://azdeq.gov/",
+    "waterbank.az.gov": "https://waterbank.az.gov/",
+    "www.avondaleaz.gov": "https://www.avondaleaz.gov/",
+    "avondaleaz.gov": "https://www.avondaleaz.gov/",
     "globalfutures.asu.edu": "https://globalfutures.asu.edu/",
     "verderiver.org": "https://verderiver.org/",
     "azeconcenter.org": "https://azeconcenter.org/",
@@ -56,13 +59,45 @@ def referer_for(url: str) -> str | None:
     return None
 
 
-def get_with_headers(url: str) -> requests.Response:
+def prewarm_cookies(url: str) -> None:
+    """Fetch site root to set cookies for some domains that gate PDFs."""
+    try:
+        parsed = urlparse(url)
+        root = f"{parsed.scheme}://{parsed.netloc}/"
+        headers = {}
+        ref = referer_for(url)
+        if ref:
+            headers["Referer"] = ref
+        session.get(root, timeout=30, headers=headers)
+    except Exception:
+        pass
+
+
+def get_with_headers(url: str, *, retry_403: bool = True) -> requests.Response:
     headers = {}
     ref = referer_for(url)
     if ref:
         headers["Referer"] = ref
-    resp = session.get(url, stream=True, timeout=45, headers=headers)
-    resp.raise_for_status()
+    try:
+        resp = session.get(url, stream=True, timeout=45, headers=headers)
+        resp.raise_for_status()
+    except requests.HTTPError as e:
+        # Retry once on 403 with alternate headers and after cookie prewarm
+        if retry_403 and getattr(e.response, "status_code", None) == 403:
+            prewarm_cookies(url)
+            alt_headers = {
+                **headers,
+                "User-Agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) "
+                              "AppleWebKit/537.36 (KHTML, like Gecko) "
+                              "Chrome/120.0.0.0 Safari/537.36",
+                "Accept": "*/*",
+                "Upgrade-Insecure-Requests": "1",
+            }
+            time.sleep(1)
+            resp = session.get(url, stream=True, timeout=45, headers=alt_headers)
+            resp.raise_for_status()
+        else:
+            raise
     return resp
 
 
@@ -77,6 +112,21 @@ def find_pdf_in_html(base_url: str, html_bytes: bytes) -> str | None:
         href = match.group(1).strip()
         return normalize_url(urljoin(base_url, href))
     return None
+
+
+def looks_like_pdf(url: str, resp: requests.Response) -> bool:
+    """Decide if the response should be treated as a PDF even if content-type lies."""
+    ctype = (resp.headers.get("content-type") or "").lower()
+    if "pdf" in ctype:
+        return True
+    # Content-Disposition filename
+    cd = resp.headers.get("content-disposition", "")
+    if re.search(r'filename\s*=\s*"?[^"]+\.pdf"?', cd, flags=re.IGNORECASE):
+        return True
+    # URL ends with .pdf
+    if url.lower().split("?")[0].endswith(".pdf"):
+        return True
+    return False
 
 
 success, skipped = 0, []
@@ -96,10 +146,12 @@ for original_name, meta in tqdm(knowledge_sources.items(), desc="Downloading", u
     try:
         # Initial request with session + optional referer
         resp = get_with_headers(url)
-        content_type = resp.headers.get("content-type", "").lower()
+        content_type = (resp.headers.get("content-type") or "").lower()
 
         # If HTML, try to discover a direct PDF link within the page
         if "pdf" not in content_type and "html" in content_type:
+            # prewarm cookies on the page itself to allow embedded pdf links
+            prewarm_cookies(url)
             pdf_url = find_pdf_in_html(url, resp.content)
             if pdf_url:
                 try:
@@ -107,10 +159,10 @@ for original_name, meta in tqdm(knowledge_sources.items(), desc="Downloading", u
                 except Exception:
                     pass
                 resp = get_with_headers(pdf_url)
-                content_type = resp.headers.get("content-type", "").lower()
+                content_type = (resp.headers.get("content-type") or "").lower()
                 url = pdf_url  # for referer/debug if needed
 
-        if "pdf" not in content_type:
+        if not looks_like_pdf(url, resp):
             skipped.append((original_name, f"non-PDF content-type ({content_type or 'unknown'})"))
             try:
                 resp.close()
