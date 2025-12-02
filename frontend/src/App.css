@@ -657,7 +657,7 @@
 .download-transcript-ellipse img {
   display: block;
   width: 94px;
-  height: 94px;
+  height: 88px;
   object-fit: contain;
   object-position: center;
   position: relative;
