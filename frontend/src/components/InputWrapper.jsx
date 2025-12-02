@@ -1,10 +1,13 @@
 import React, { useState, useRef, useEffect } from 'react';
 
+const speechLangCode = (lang) => (lang === 'es' ? 'es-ES' : 'en-US');
+
 export default function InputWrapper({ onSendMessage, isLoading, language = 'en', onLanguageChange }) {
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
   const micAnimationRef = useRef(null);
+  const languageRef = useRef(language);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -15,7 +18,7 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
       const recognition = new SpeechRecognition();
       recognition.continuous = true;
       recognition.interimResults = true; // Enable interim results for better UX
-      recognition.lang = 'en-US';
+      recognition.lang = speechLangCode(languageRef.current);
       
       // Set max alternatives for better accuracy
       if (recognition.maxAlternatives !== undefined) {
@@ -121,6 +124,13 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
     };
   }, []);
 
+  useEffect(() => {
+    languageRef.current = language;
+    if (recognitionRef.current) {
+      recognitionRef.current.lang = speechLangCode(language);
+    }
+  }, [language]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (inputValue.trim() && !isLoading) {
@@ -205,7 +215,7 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
           <input
             type="text"
             className="text-input"
-            placeholder="Type your question here"
+            placeholder={language === 'es' ? 'Escribe tu pregunta aquí' : 'Type your question here'}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}

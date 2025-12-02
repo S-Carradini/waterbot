@@ -61,8 +61,25 @@ Adhere to the rules strictly. Non-compliance will result in termination.
         
         return system_prompt
 
-    async def get_action_item_prompt(self,kb_data):
-        system_prompt = """
+    async def get_action_item_prompt(self,kb_data, language='en'):
+        if language == 'es':
+            system_prompt = """
+        Proporciona tres acciones que la persona pueda implementar con relación a la pregunta anterior y explica cada paso.
+
+        <formatting>
+            <instructions>
+                1. Usa una lista numerada y mantén un tono cercano.
+                2. Incluye subpasos para cada acción y enlístalos con guiones.
+                3. Envuelve cada número y su texto en etiquetas <b> y </b>.
+                4. Agrega dos etiquetas <br> antes de cada número.
+                5. Agrega un <br> antes de cada subpaso.
+                6. Mantén el total por debajo de 512 caracteres.
+            </instructions>
+        </formatting>
+
+        Utiliza la siguiente información para responder en un tono amistoso {kb_data}"""
+        else:
+            system_prompt = """
         Provide three action items that the user can implement in relation to the previous question, 
         explaining each step by step. 
         
@@ -97,8 +114,20 @@ Adhere to the rules strictly. Non-compliance will result in termination.
         
         return system_prompt
 
-    async def get_chat_detailed_prompt(self,kb_data):
-        system_prompt = """
+    async def get_chat_detailed_prompt(self,kb_data, language='en'):
+        if language == 'es':
+            system_prompt = """
+        Respira profundo y ofrece una respuesta más detallada a la pregunta anterior, proporcionando más explicación y razonamiento, usando estadísticas,
+        ejemplos y nombres propios cuando sea posible.
+        
+        <instructions>
+            1. El texto completo debe tener menos de 512 caracteres.
+            2. Responde en español neutral accesible para residentes de Arizona.
+        </instructions>     
+        
+        Utiliza la siguiente información para responder en un tono amistoso {kb_data}"""
+        else:
+            system_prompt = """
         Take a breath and provide a more detailed answer to the previous question providing more explanation and reasoning, using statistics, 
         examples, and proper nouns. 
         

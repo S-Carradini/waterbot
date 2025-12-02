@@ -64,7 +64,7 @@ if [ -z "$DOCKER_HUB_USERNAME" ]; then
 fi
 
 # Build arguments (optional - only if OPENAI_API_KEY is set)
-BUILD_ARGS=""
+    BUILD_ARGS=""
 if [ -n "$OPENAI_API_KEY" ]; then
     BUILD_ARGS="--build-arg OPENAI_API_KEY=$OPENAI_API_KEY"
     echo "✅ OPENAI_API_KEY will be available in container"
