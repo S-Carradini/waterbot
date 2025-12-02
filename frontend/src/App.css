@@ -624,7 +624,7 @@
 /* Download Transcript Button */
 .download-transcript-container {
   position: absolute;
-  top: 4.2%;
+  top: 3.1%;
   right: calc(10.28% - 243px);
   bottom: 88.96%;
   display: flex;
