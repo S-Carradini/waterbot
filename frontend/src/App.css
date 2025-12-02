@@ -6,11 +6,18 @@
   overflow: hidden;
 }
 
+/* Ensure download transcript container is not clipped by desktop-container */
+.desktop-container .download-transcript-container {
+  overflow: visible !important;
+  clip-path: none !important;
+}
+
 /* Header Unit - Contains main card, ASU sunburst, title, and download transcript */
 .header-unit {
   position: relative;
   width: 100%;
   height: 100%;
+  overflow: visible;
 }
 
 
@@ -627,6 +634,8 @@
   gap: 25px;
   overflow: visible;
   z-index: 100;
+  min-width: 243px; /* Ensure container is wide enough for both icons + gap */
+  min-height: 94px; /* Ensure container is tall enough for icons */
 }
 
 .download-transcript-ellipse {
@@ -667,12 +676,15 @@
   position: relative;
   width: 94px;
   height: 94px;
+  min-width: 94px;
+  min-height: 94px;
   display: flex;
   align-items: center;
   justify-content: center;
   flex-shrink: 0;
   cursor: pointer;
   transition: opacity 0.2s;
+  overflow: visible;
 }
 
 .download-transcript-icon-container:hover {
@@ -683,6 +695,8 @@
   position: relative;
   width: 100%;
   height: 100%;
+  min-width: 94px;
+  min-height: 94px;
   overflow: visible;
   display: flex;
   align-items: center;
@@ -695,8 +709,11 @@
   display: block;
   width: 94px;
   height: 94px;
+  min-width: 94px;
+  min-height: 94px;
   object-fit: contain;
   object-position: center;
+  flex-shrink: 0;
 }
 
 /* Loading Message - Standalone (kept for backward compatibility) */
