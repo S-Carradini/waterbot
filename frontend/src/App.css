@@ -15,7 +15,7 @@
 /* Header Unit - Contains main card, ASU sunburst, title, and download transcript */
 .header-unit {
   position: relative;
-  width: 100%;
+  width: 95%;
   height: 100%;
   overflow: visible;
 }
