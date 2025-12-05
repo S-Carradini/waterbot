@@ -7,27 +7,16 @@ import { sendChatMessage, getDetailedResponse, getActionItems, getSources, submi
 import imgPolygon2 from './assets/polygon-2.png';
 
 const DEFAULT_ANSWER_TEXT = {
-  en: `For those engaging in vigorous exercise or spending <br />
-extended time outdoors, drinks with added electrolytes <br />
-can help replace minerals lost through sweat.
-<br /><br />
-Choosing a hydration drink depends on your activity level <br />
-and personal needs, but water is always a healthy and <br />
-reliable choice.
-<br /><br />
-I would love to tell you more! Just click the buttons below <br />
-or ask a follow-up question.`,
-  es: `Para quienes realizan ejercicio intenso o pasan <br />
-mucho tiempo al aire libre, las bebidas con electrolitos <br />
-ayudan a reponer los minerales perdidos con el sudor.
-<br /><br />
-Elegir una bebida hidratante depende de tu nivel de <br />
-actividad y tus necesidades personales, pero el agua <br />
-siempre es una opción saludable y confiable.
-<br /><br />
-¡Me encantaría contarte más! Solo haz clic en los botones <br />
-de abajo o haz una pregunta de seguimiento.
-<br /><br />`,
+  en: `For those engaging in vigorous exercise or spending extended time outdoors, drinks with added electrolytes can help replace minerals lost through sweat.
+
+Choosing a hydration drink depends on your activity level and personal needs, but water is always a healthy and reliable choice.
+
+I would love to tell you more! Just click the buttons below or ask a follow-up question.`,
+  es: `Para quienes realizan ejercicio intenso o pasan mucho tiempo al aire libre, las bebidas con electrolitos ayudan a reponer los minerales perdidos con el sudor.
+
+Elegir una bebida hidratante depende de tu nivel de actividad y tus necesidades personales, pero el agua siempre es una opción saludable y confiable.
+
+¡Me encantaría contarte más! Solo haz clic en los botones de abajo o haz una pregunta de seguimiento.`,
 };
 
 const ACTION_BUTTON_LABELS = {

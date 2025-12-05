@@ -237,10 +237,10 @@
   align-items: center;
   font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 700;
-  line-height: 28px;
+  line-height: 16px;
   font-style: normal;
   color: #000000;
-  font-size: 22px;
+  font-size: 31px;
   text-align: center;
   letter-spacing: -0.8px;
   width: 100%;
@@ -249,7 +249,9 @@
 }
 
 .question-text p {
-  line-height: 28px;
+  line-height: 35px; /* Increased to prevent overlap with 31px font-size, keeping it tight */
+  margin: 0;
+  margin-bottom: 0; /* Remove extra margin since line-height handles spacing */
 }
 
 /* Answer Text */
@@ -260,8 +262,8 @@
   font-weight: 400;
   font-style: normal;
   color: black;
-  font-size: 22px;
-  line-height: 28px;
+  font-size: 31px;
+  line-height: 32px; /* Slightly above font-size to prevent overlap, but tighter than 35px */
   letter-spacing: -0.8px;
   overflow: visible;
   z-index: 1;
@@ -271,21 +273,17 @@
 }
 
 .answer-text p {
-  line-height: 23px;
+  line-height: 32px; /* Slightly above font-size to prevent overlap, but tighter than 35px */
   white-space: pre-wrap;
   margin: 0;
+  margin-bottom: 12px; /* Spacing between paragraphs */
   padding: 0;
   min-height: 50px; /* Ensure paragraph has minimum height even when empty during typewriter effect */
   text-indent: 0; /* Ensure no text indentation */
 }
 
-/* Reduce spacing from <br> tags in answer text */
-.answer-text p br {
-  line-height: 0.5;
-  display: block;
-  margin: 0;
-  padding: 0;
-  height: 0.5em;
+.answer-text p:last-child {
+  margin-bottom: 0; /* No margin after last paragraph */
 }
 
 /* Thumbs Buttons Container */
@@ -417,49 +415,85 @@
   gap: 15px;
 }
 
-/* Language Toggle */
-.language-toggle {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background-color: white;
-  border-radius: 20px;
-  padding: 0 16px;
-  flex-shrink: 0;
-  min-height: 100%;
-  height: 100%;
-}
-
-.language-toggle button {
-  background: none;
-  border: none;
+/* Language Toggle Switch - Figma Design */
+.language-toggle-switch {
+  position: relative;
+  display: block;
   cursor: pointer;
-  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-  font-size: 16px;
-  font-weight: 600;
-  color: #747474;
-  padding: 4px 8px;
-  transition: color 0.2s;
-  border-radius: 8px;
+  width: 150px;
+  height: 75.78125px;
+  flex-shrink: 0;
+  border: none;
+  background: transparent;
+  padding: 0;
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  border-radius: 43px;
+  overflow: hidden;
 }
 
-.language-toggle button:hover {
-  color: #8c1d40;
+.language-toggle-background {
+  position: absolute;
+  inset: 0;
+  background-color: white;
+  border-radius: 43px;
+  height: 75.78125px;
 }
 
-.language-toggle button.active {
-  color: #8c1d40;
-  background-color: #f0f0f0;
+.language-toggle-slider {
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  width: 60%;
+  background-color: #8c1d40;
+  border-radius: 43px;
+  transition: left 0.3s ease, right 0.3s ease;
+  z-index: 1;
 }
 
-.language-toggle .separator {
-  color: #b0b0b0;
-  font-weight: 400;
-  font-size: 20px;
-  line-height: 1;
-  display: flex;
-  align-items: center;
-  opacity: 0.7;
+.language-toggle-slider.left {
+  left: 0;
+  right: 40%;
+}
+
+.language-toggle-slider.right {
+  right: 0;
+  left: 40%;
+}
+
+.language-toggle-text {
+  position: absolute;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.615;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: pre-wrap;
+  z-index: 2;
+  transition: color 0.3s ease;
+  pointer-events: none;
+}
+
+.language-toggle-en {
+  top: 31.37%;
+  bottom: 31.37%;
+  left: 5%;
+  right: 56.11%;
+}
+
+.language-toggle-es {
+  top: 31.37%;
+  bottom: 31.37%;
+  left: 55%;
+  right: 3.89%;
+}
+
+.language-toggle-text.active {
+  color: white;
+}
+
+.language-toggle-text:not(.active) {
+  color: black;
 }
 
 /* Text Input Container */

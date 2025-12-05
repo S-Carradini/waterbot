@@ -262,23 +262,20 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
       </div>
       {/* Language Toggle */}
       {onLanguageChange && (
-        <div className="language-toggle">
-          <button
-            type="button"
-            className={language === 'en' ? 'active' : ''}
-            onClick={() => onLanguageChange('en')}
-          >
+        <button 
+          type="button"
+          className="language-toggle-switch"
+          onClick={() => onLanguageChange(language === 'en' ? 'es' : 'en')}
+        >
+          <div className="language-toggle-background"></div>
+          <div className={`language-toggle-slider ${language === 'en' ? 'left' : 'right'}`}></div>
+          <span className={`language-toggle-text language-toggle-en ${language === 'en' ? 'active' : ''}`}>
             EN
-          </button>
-          <span className="separator">|</span>
-          <button
-            type="button"
-            className={language === 'es' ? 'active' : ''}
-            onClick={() => onLanguageChange('es')}
-          >
+          </span>
+          <span className={`language-toggle-text language-toggle-es ${language === 'es' ? 'active' : ''}`}>
             ES
-          </button>
-        </div>
+          </span>
+        </button>
       )}
     </div>
   );
