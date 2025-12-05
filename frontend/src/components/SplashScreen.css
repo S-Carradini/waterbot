@@ -20,9 +20,11 @@
   left: 0;
   width: 100%;
   height: 100%;
-  object-fit: fill; /* ensures full video is visible without cropping */
+  object-fit: cover; /* maintains aspect ratio while covering entire area */
   z-index: 1;
   background-color: black;
+  min-width: 100%;
+  min-height: 100%;
 }
 
 .minimal-header {
