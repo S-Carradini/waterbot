@@ -116,19 +116,10 @@
   font-size: 24px;
   color: #254c63;
   letter-spacing: -0.96px;
-  white-space: pre-wrap;
+  white-space: normal;
   margin: 0;
   padding: 0;
   width: 100%;
-}
-
-.home-chat-text-content br {
-  display: block;
-  margin: 0;
-  padding: 0;
-  line-height: 0;
-  height: calc(8px * var(--scale-factor));
-  content: "";
 }
 
 /* Hello text - exact Figma: x=801, y=338.7, w=218.6, h=83.6 */

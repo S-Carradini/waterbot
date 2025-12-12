@@ -31,14 +31,8 @@ export default function Home() {
         </div>
         <div className="home-chat-text-main">
           <p className="home-chat-text-content">
-            Ask me anything you want about the story of water in our state!
-            <br aria-hidden="true" />
-            <br aria-hidden="true" />
-            Not sure where to start?
-            <br aria-hidden="true" />
-            <br aria-hidden="true" />
+            Ask me anything you want about the story of water in our state! Not sure where to start?
           </p>
-          <p>&nbsp;</p>
         </div>
         <div className="home-chat-text-hello">
           <p>Hello! I'm Blue!</p>

@@ -52,6 +52,7 @@ export default function App() {
   const [language, setLanguage] = useState('en');
   const [messages, setMessages] = useState([buildDefaultMessage('en')]);
   const [isLoading, setIsLoading] = useState(false);
+  const [isTyping, setIsTyping] = useState(false); // Track typewriter typing state
   const chatColumnRef = useRef(null);
 
   // Auto-scroll to bottom when messages change
@@ -68,6 +69,21 @@ export default function App() {
       });
     }
   }, [messages, isLoading]);
+
+  // Scroll function that can be called from child components
+  const scrollToBottom = () => {
+    if (chatColumnRef.current) {
+      // Use setTimeout to ensure DOM updates are complete
+      setTimeout(() => {
+        if (chatColumnRef.current) {
+          chatColumnRef.current.scrollTo({
+            top: chatColumnRef.current.scrollHeight,
+            behavior: 'smooth'
+          });
+        }
+      }, 50);
+    }
+  };
 
   const handleSendMessage = async (userQuery) => {
     if (!userQuery.trim()) return;
@@ -222,6 +238,8 @@ export default function App() {
                 isLoading={isLoading && index === messages.length - 1 && message.type === 'bot' && (!message.content || (typeof message.content === 'string' && message.content.trim() === ''))}
                 disableTypewriter={message.disableTypewriter}
                 language={language}
+                onContentUpdate={scrollToBottom}
+                onTypingChange={index === messages.length - 1 ? setIsTyping : undefined}
               />
             );
           } else if (message.type === 'user') {
@@ -246,7 +264,7 @@ export default function App() {
 
       <InputWrapper 
         onSendMessage={handleSendMessage} 
-        isLoading={isLoading}
+        isLoading={isLoading || isTyping}
         language={language}
         onLanguageChange={handleLanguageChange}
       />

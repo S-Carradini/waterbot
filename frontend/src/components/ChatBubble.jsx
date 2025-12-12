@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import imgBlueCharacter from '../assets/blue-character.png';
 import imgPolygon1 from '../assets/polygon-1.png';
 import imgThumbsUp from '../assets/thumbs-up.png';
@@ -27,6 +27,8 @@ export default function ChatBubble({
   isLoading = false,
   disableTypewriter = false,
   language = 'en',
+  onContentUpdate,
+  onTypingChange,
 }) {
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [selectedReaction, setSelectedReaction] = useState(null);
@@ -63,6 +65,66 @@ export default function ChatBubble({
       setTimeout(() => setShouldStartTyping(true), 50); // Then start after a brief delay
     }
   }, [cleanTextContent, isTypewriterEnabled]);
+
+  // Scroll to bottom when displayedText updates during typewriter effect
+  // Use a ref to throttle scroll calls (only scroll every 5 characters or so)
+  const scrollTimeoutRef = useRef(null);
+  const lastScrollLengthRef = useRef(0);
+  
+  useEffect(() => {
+    if (displayedText && isTypewriterEnabled && onContentUpdate) {
+      const currentLength = displayedText.length;
+      const lengthDiff = currentLength - lastScrollLengthRef.current;
+      
+      // Scroll more frequently for better UX, but throttle to avoid performance issues
+      if (lengthDiff >= 3 || currentLength % 10 === 0) {
+        // Clear existing timeout
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+        
+        // Scroll after a small delay to ensure DOM is updated
+        scrollTimeoutRef.current = setTimeout(() => {
+          onContentUpdate();
+          lastScrollLengthRef.current = currentLength;
+        }, 50);
+      }
+      
+      return () => {
+        if (scrollTimeoutRef.current) {
+          clearTimeout(scrollTimeoutRef.current);
+        }
+      };
+    }
+  }, [displayedText, isTypewriterEnabled, onContentUpdate]);
+
+  // Also scroll when answerText changes (for non-typewriter content)
+  useEffect(() => {
+    if (cleanTextContent && !isTypewriterEnabled && onContentUpdate) {
+      const timeoutId = setTimeout(() => {
+        onContentUpdate();
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [cleanTextContent, isTypewriterEnabled, onContentUpdate]);
+
+  // Scroll when typing completes
+  useEffect(() => {
+    if (!isTyping && isTypewriterEnabled && displayedText && onContentUpdate) {
+      // Final scroll when typing is complete
+      const timeoutId = setTimeout(() => {
+        onContentUpdate();
+      }, 100);
+      return () => clearTimeout(timeoutId);
+    }
+  }, [isTyping, isTypewriterEnabled, displayedText, onContentUpdate]);
+
+  // Notify parent when typing state changes
+  useEffect(() => {
+    if (onTypingChange) {
+      onTypingChange(isTyping && isTypewriterEnabled);
+    }
+  }, [isTyping, isTypewriterEnabled, onTypingChange]);
 
   const handleThumbsUp = () => {
     if (messageId && !ratingSubmitted) {

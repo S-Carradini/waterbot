@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import RecordingModal from './RecordingModal';
 
 const speechLangCode = (lang) => (lang === 'es' ? 'es-ES' : 'en-US');
+const SILENCE_TIMEOUT = 2000; // Stop recording after 2 seconds of silence (adjust as needed)
 
 export default function InputWrapper({ onSendMessage, isLoading, language = 'en', onLanguageChange }) {
   const [inputValue, setInputValue] = useState('');
@@ -9,6 +10,8 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
   const recognitionRef = useRef(null);
   const micAnimationRef = useRef(null);
   const languageRef = useRef(language);
+  const finalTranscriptRef = useRef(''); // Store accumulated final transcripts
+  const silenceTimeoutRef = useRef(null); // Timeout for auto-stop on silence
 
   // Initialize speech recognition
   useEffect(() => {
@@ -29,17 +32,69 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
       let isCurrentlyListening = false;
 
       recognition.onresult = (event) => {
-        let transcript = '';
+        let interimTranscript = '';
+        let hasNewSpeech = false;
+        
+        // Process all results since last event
         for (let i = event.resultIndex; i < event.results.length; i++) {
           const result = event.results[i];
           if (result.isFinal) {
-            transcript += result[0].transcript + ' ';
+            // Add final results to accumulated transcript
+            finalTranscriptRef.current += result[0].transcript + ' ';
+            hasNewSpeech = true;
           } else {
             // Show interim results in real-time
-            transcript += result[0].transcript;
+            interimTranscript += result[0].transcript;
+            hasNewSpeech = true;
           }
         }
-        setInputValue(transcript.trim());
+        
+        // Combine accumulated final text with current interim text
+        const fullTranscript = finalTranscriptRef.current + interimTranscript;
+        setInputValue(fullTranscript.trim());
+
+        // Reset silence timeout when speech is detected
+        if (hasNewSpeech && isCurrentlyListening) {
+          // Clear existing timeout
+          if (silenceTimeoutRef.current) {
+            clearTimeout(silenceTimeoutRef.current);
+          }
+          
+          // Set new timeout to auto-stop after silence
+          silenceTimeoutRef.current = setTimeout(() => {
+            console.log('Auto-stopping recording due to silence');
+            if (isCurrentlyListening && recognitionRef.current) {
+              try {
+                recognitionRef.current.stop();
+                if (recognitionRef.current.setIsCurrentlyListening) {
+                  recognitionRef.current.setIsCurrentlyListening(false);
+                }
+                setIsListening(false);
+                
+                // Hide Lottie animation if available
+                if (micAnimationRef.current?.animation) {
+                  micAnimationRef.current.style.display = 'none';
+                  micAnimationRef.current.animation.stop();
+                }
+
+                // Auto-submit the transcribed text if there's any
+                // Use a small delay to ensure state is updated
+                setTimeout(() => {
+                  const currentTranscript = finalTranscriptRef.current.trim();
+                  if (currentTranscript) {
+                    console.log('Auto-submitting transcribed text:', currentTranscript);
+                    onSendMessage(currentTranscript);
+                    setInputValue('');
+                    finalTranscriptRef.current = '';
+                  }
+                }, 100);
+              } catch (e) {
+                console.error('Error auto-stopping recognition:', e);
+                setIsListening(false);
+              }
+            }
+          }, SILENCE_TIMEOUT);
+        }
       };
 
       recognition.onerror = (event) => {
@@ -119,6 +174,10 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
     }
 
     return () => {
+      // Cleanup: clear timeout and stop recognition
+      if (silenceTimeoutRef.current) {
+        clearTimeout(silenceTimeoutRef.current);
+      }
       if (recognitionRef.current) {
         recognitionRef.current.stop();
       }
@@ -148,27 +207,34 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
   };
 
   const toggleListening = () => {
-    if (!recognitionRef.current) {
-      // Check browser and provide helpful message
-      const isFirefox = navigator.userAgent.toLowerCase().indexOf('firefox') > -1;
-      const message = isFirefox 
-        ? 'Speech recognition is not supported in Firefox. Please use Chrome, Edge, Safari, or Brave.'
-        : 'Speech recognition is not supported in this browser. Please use a modern browser like Chrome, Edge, Safari, or Brave.';
-      alert(message);
-      console.warn('Web Speech API not supported in this browser.');
-      return;
-    }
-
+    console.log('Mic button clicked, isListening:', isListening, 'recognitionRef.current:', recognitionRef.current);
     if (isListening) {
       stopListening();
     } else {
+      // Show modal even if speech recognition isn't available
+      // The modal will display the animation
+      if (!recognitionRef.current) {
+        // Still show the modal for visual feedback
+        console.log('Speech recognition not available, showing modal anyway');
+        setIsListening(true);
+        return;
+      }
       startListening();
     }
   };
 
   const startListening = () => {
+    // Clear any existing silence timeout
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+
     if (recognitionRef.current) {
       try {
+        // Reset transcript when starting new recording
+        setInputValue('');
+        finalTranscriptRef.current = ''; // Reset accumulated transcript
         recognitionRef.current.start();
         if (recognitionRef.current.setIsCurrentlyListening) {
           recognitionRef.current.setIsCurrentlyListening(true);
@@ -188,6 +254,12 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
   };
 
   const stopListening = () => {
+    // Clear silence timeout
+    if (silenceTimeoutRef.current) {
+      clearTimeout(silenceTimeoutRef.current);
+      silenceTimeoutRef.current = null;
+    }
+
     if (recognitionRef.current) {
       try {
         recognitionRef.current.stop();
@@ -201,9 +273,32 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
           micAnimationRef.current.style.display = 'none';
           micAnimationRef.current.animation.stop();
         }
+
+        // Auto-submit the transcribed text if there's any
+        if (inputValue.trim() && !isLoading) {
+          console.log('Auto-submitting transcribed text:', inputValue);
+          onSendMessage(inputValue.trim());
+          setInputValue('');
+          finalTranscriptRef.current = ''; // Reset accumulated transcript
+        }
       } catch (e) {
         console.error('Error stopping recognition:', e);
         setIsListening(false);
+        
+        // Still try to submit if there's text
+        if (inputValue.trim() && !isLoading) {
+          onSendMessage(inputValue.trim());
+          setInputValue('');
+          finalTranscriptRef.current = '';
+        }
+      }
+    } else {
+      // If recognition wasn't available but modal was shown, still submit if there's text
+      setIsListening(false);
+      if (inputValue.trim() && !isLoading) {
+        onSendMessage(inputValue.trim());
+        setInputValue('');
+        finalTranscriptRef.current = '';
       }
     }
   };
@@ -233,12 +328,18 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
         </form>
       </div>
       {/* Mic Icon Button */}
-      <div style={{ position: 'relative', overflow: 'visible', zIndex: 1 }}>
+      <div style={{ position: 'relative', overflow: 'visible', zIndex: 10 }}>
         <button 
           type="button" 
           className={`mic-icon-button ${isListening ? 'recording' : ''}`}
-          onClick={toggleListening}
-          disabled={!recognitionRef.current}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Button click event fired');
+            toggleListening();
+          }}
+          disabled={isLoading}
+          style={{ position: 'relative', zIndex: 10 }}
         >
           <i 
             className="fas fa-microphone" 
@@ -246,20 +347,22 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
               display: 'block',
               color: isListening ? 'white' : '#8c1d40',
               position: 'relative',
-              zIndex: 2
+              zIndex: 11,
+              pointerEvents: 'none'
             }}
           ></i>
         </button>
         <div 
           ref={micAnimationRef}
           className="mic-animation-container"
-          style={{ display: isListening ? 'block' : 'none' }}
+          style={{ display: isListening ? 'block' : 'none', pointerEvents: 'none' }}
         ></div>
       </div>
       {/* Recording Modal */}
       <RecordingModal 
         isVisible={isListening} 
         onClose={stopListening}
+        transcript={inputValue}
       />
       {/* Language Toggle */}
       {onLanguageChange && (
@@ -267,6 +370,7 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
           type="button"
           className="language-toggle-switch"
           onClick={() => onLanguageChange(language === 'en' ? 'es' : 'en')}
+          disabled={isLoading}
         >
           <div className="language-toggle-background"></div>
           <div className={`language-toggle-slider ${language === 'en' ? 'left' : 'right'}`}></div>
