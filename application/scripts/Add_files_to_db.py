@@ -15,6 +15,16 @@ def add_document_with_metadata(db, text_splitter, file_path, splits):
     file_name = os.path.basename(file_path)
 
     try:
+        # Check if file exists and is not empty
+        if not os.path.exists(file_path):
+            print(f"⚠️  Skipping {file_path}: File does not exist", file=sys.stderr)
+            return
+        
+        file_size = os.path.getsize(file_path)
+        if file_size == 0:
+            print(f"⚠️  Skipping {file_path}: File is empty (0 bytes)", file=sys.stderr)
+            return
+        
         if bool(re.match(r".*\.txt$", file_path, re.IGNORECASE)):
             loader = TextLoader(file_path, encoding='utf-8')
         elif bool(re.match(r".*\.pdf$", file_path, re.IGNORECASE)):
@@ -23,9 +33,19 @@ def add_document_with_metadata(db, text_splitter, file_path, splits):
             return
 
         data = loader.load()
-        print(f"data length: {len(data)}")
+        
+        # Check if loader returned empty data
+        if not data or len(data) == 0:
+            print(f"⚠️  Skipping {file_path}: No content extracted (file may be corrupted or empty)", file=sys.stderr)
+            return
+        
+        print(f"📄 Processing {file_name} ({len(data)} pages/chunks)")
 
         for doc in data:
+            # Skip documents with no page content
+            if not doc.page_content or len(doc.page_content.strip()) == 0:
+                continue
+                
             print(f"Adding : {file_path}")
             doc.metadata['id'] = str(uuid.uuid4())  # Adding unique ID
             doc.metadata['source'] = file_path  # adding path name
@@ -39,8 +59,9 @@ def add_document_with_metadata(db, text_splitter, file_path, splits):
                 chunk.metadata = doc.metadata.copy()  # Ensure each chunk gets a copy of the metadata
                 splits.append(chunk)
     except Exception as e:
-        print(f"❌ Error processing {file_path}: {str(e)}", file=sys.stderr)
-        raise
+        print(f"⚠️  Skipping {file_path}: Error - {str(e)}", file=sys.stderr)
+        # Don't raise - continue processing other files
+        return
 
 
 def main():
@@ -114,15 +135,29 @@ def main():
 
 def process_batch(batch, db, text_splitter):
     splits = []
-    for file_path in batch:
-        add_document_with_metadata(db, text_splitter, file_path, splits)
+    successful_files = 0
+    skipped_files = 0
     
-    # Add documents to the database
-    try:
-        db.add_documents(documents=splits)
-        print(f"Successfully added {len(splits)} documents from the batch to ChromaDB.")
-    except Exception as e:
-        print(f"Failed to add documents to ChromaDB: {e}")
+    for file_path in batch:
+        initial_count = len(splits)
+        add_document_with_metadata(db, text_splitter, file_path, splits)
+        # Check if any documents were added
+        if len(splits) > initial_count:
+            successful_files += 1
+        else:
+            skipped_files += 1
+    
+    # Add documents to the database (only if we have any)
+    if splits:
+        try:
+            db.add_documents(documents=splits)
+            print(f"✅ Successfully added {len(splits)} document chunks from {successful_files} files to ChromaDB.")
+            if skipped_files > 0:
+                print(f"⚠️  Skipped {skipped_files} files in this batch (empty/corrupted)")
+        except Exception as e:
+            print(f"❌ Failed to add documents to ChromaDB: {e}", file=sys.stderr)
+    else:
+        print(f"⚠️  No documents to add from this batch ({skipped_files} files skipped)")
 
 if __name__ == "__main__":
     main()
