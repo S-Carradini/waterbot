@@ -1,0 +1,341 @@
+.home-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #7dc8e0;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+/* Inner container maintains 1440x1024 aspect ratio */
+.home-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  max-width: 1440px;
+  max-height: 1024px;
+  aspect-ratio: 1440 / 1024;
+  margin: auto;
+  /* CSS variable for scale factor - scale based on actual container size */
+  --scale-factor: 1;
+  font-size: calc(1px * var(--scale-factor));
+}
+
+/* Scale to fit viewport while maintaining aspect ratio */
+@media (min-aspect-ratio: 1440/1024) {
+  /* Viewport is wider than design - fit to height */
+  .home-inner {
+    width: calc(100vh * 1440 / 1024);
+    height: 100vh;
+    max-width: 100vw;
+    /* Scale factor based on height - no reduction below 1 */
+    --scale-factor: max(1, min(1.2, calc(100vh / 1024)));
+  }
+}
+
+@media (max-aspect-ratio: 1440/1024) {
+  /* Viewport is taller than design - fit to width */
+  .home-inner {
+    width: 100vw;
+    height: calc(100vw * 1024 / 1440);
+    max-height: 100vh;
+    /* Scale factor based on width - no reduction below 1 */
+    --scale-factor: max(1, min(1.2, calc(100vw / 1440)));
+  }
+}
+
+/* For screens at or larger than design size, use 1:1 scale */
+@media (min-width: 1440px) and (min-height: 1024px) {
+  .home-inner {
+    --scale-factor: 1;
+  }
+}
+
+/* For screens below 1690px, maintain full size (no reduction) */
+@media (max-width: 1690px) {
+  .home-inner {
+    --scale-factor: 1;
+  }
+}
+
+/* Vector decoration - exact Figma: x=323, y=758, w=379, h=81 */
+.home-vector {
+  position: absolute;
+  left: 22.43%; /* 323/1440 = 22.43% */
+  top: 74.02%; /* 758/1024 = 74.02% */
+  width: 26.32%; /* 379/1440 = 26.32% */
+  height: 7.91%; /* 81/1024 = 7.91% */
+}
+
+.home-vector img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Chat bubble container - exact Figma positions: x=576, y=254, w=626, h=434 */
+.home-chat-bubble-container {
+  position: absolute;
+  left: 40%; /* 576/1440 = 40% */
+  top: 24.8%; /* 254/1024 = 24.8% */
+  width: 43.47%; /* 626/1440 = 43.47% */
+  height: 42.38%; /* 434/1024 = 42.38% */
+}
+
+.home-union {
+  position: absolute;
+  inset: 0;
+}
+
+.home-union img {
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* Main text - exact Figma: x=806, y=384.7, w=339.9, h=188.8 */
+.home-chat-text-main {
+  position: absolute;
+  left: 36.8%; /* (806-576)/626 = 36.8% relative to container */
+  top: 30.1%; /* (384.7-254)/434 = 30.1% relative to container */
+  width: 54.3%; /* 339.9/626 = 54.3% */
+  height: 43.5%; /* 188.8/434 = 43.5% */
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  transform: rotate(348.843deg) skewX(356.295deg);
+  transform-origin: top left;
+}
+
+.home-chat-text-content {
+  font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+  font-weight: 700;
+  line-height: 29.919px;
+  font-size: 24px;
+  color: #254c63;
+  letter-spacing: -0.96px;
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+.home-chat-text-content br {
+  display: block;
+  margin: 0;
+  padding: 0;
+  line-height: 0;
+  height: calc(8px * var(--scale-factor));
+  content: "";
+}
+
+/* Hello text - exact Figma: x=801, y=338.7, w=218.6, h=83.6 */
+.home-chat-text-hello {
+  position: absolute;
+  left: 35.9%; /* (801-576)/626 = 35.9% relative to container */
+  top: 19.5%; /* (338.7-254)/434 = 19.5% relative to container */
+  width: 34.9%; /* 218.6/626 = 34.9% */
+  height: 19.3%; /* 83.6/434 = 19.3% */
+  display: flex;
+  align-items: flex-start;
+  justify-content: flex-start;
+  transform: rotate(348.843deg) skewX(356.295deg);
+  transform-origin: top left;
+}
+
+.home-chat-text-hello p {
+  font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+  font-weight: 700;
+  line-height: 29.919px;
+  font-size: 25.431px;
+  color: #254c63;
+  letter-spacing: -1.0172px;
+  white-space: pre-wrap;
+  margin: 0;
+  padding: 0;
+  width: 100%;
+}
+
+/* Blue character - exact Figma: x=246, y=310, w=456, h=495 */
+.home-blue-character {
+  position: absolute;
+  left: 17.08%; /* 246/1440 = 17.08% */
+  top: 30.27%; /* 310/1024 = 30.27% */
+  width: 31.67%; /* 456/1440 = 31.67% */
+  height: 48.34%; /* 495/1024 = 48.34% */
+}
+
+.home-blue-character img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+/* White header bar */
+.home-header-bar {
+  position: absolute;
+  top: 2.25%;
+  right: 1.18%;
+  bottom: 86.52%;
+  left: 0.97%;
+  background-color: white;
+  border-radius: 50px;
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+}
+
+/* ASU Logo */
+.home-asu-logo {
+  position: absolute;
+  top: 2.54%;
+  right: 85.6%;
+  bottom: 86.82%;
+  left: 2.36%;
+}
+
+.home-asu-logo img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  object-position: center;
+  pointer-events: none;
+}
+
+/* Title */
+.home-title {
+  position: absolute;
+  top: 3.81%;
+  right: 34.24%;
+  bottom: 88.67%;
+  left: 29.79%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-family: 'Libre Franklin', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 800;
+  line-height: 0;
+  color: #7dc8e0;
+  font-size: 62px;
+  letter-spacing: 0.62px;
+  overflow: hidden;
+  box-sizing: border-box;
+}
+
+.home-title p {
+  line-height: 77px;
+  white-space: nowrap;
+  margin: 0;
+  padding: 0 2px; /* Small padding to prevent edge clipping */
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 100%;
+  box-sizing: border-box;
+  display: block;
+}
+
+/* Responsive font size to prevent overflow - scale based on container width */
+@media (max-width: 1440px) {
+  .home-title {
+    font-size: clamp(28px, 3.5vw, 62px); /* More aggressive scaling to prevent overflow */
+    letter-spacing: clamp(0.28px, 0.035vw, 0.62px);
+  }
+  
+  .home-title p {
+    line-height: clamp(35px, 4.4vw, 77px); /* Scale line-height proportionally */
+  }
+}
+
+/* Additional breakpoint for very small screens */
+@media (max-width: 1000px) {
+  .home-title {
+    font-size: clamp(24px, 3vw, 50px);
+    letter-spacing: clamp(0.24px, 0.03vw, 0.5px);
+  }
+  
+  .home-title p {
+    line-height: clamp(30px, 3.75vw, 62px);
+  }
+}
+
+/* Chat with Blue button - exact Figma: x=522, y=879, w=379, h=100, aspect ratio 144/38 */
+.home-chat-button {
+  position: absolute;
+  left: 36.25%; /* 522/1440 = 36.25% */
+  top: 85.84%; /* 879/1024 = 85.84% */
+  width: 26.32%; /* 379/1440 = 26.32% */
+  aspect-ratio: 144 / 38; /* Figma aspect ratio */
+  background: rgba(255, 255, 255, 0.8);
+  border: 2px solid #253543;
+  border-radius: 60px;
+  cursor: pointer;
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 10px 20px;
+  transition: background 0.3s ease;
+  overflow: hidden;
+}
+
+.home-chat-button:hover {
+  background: rgba(255, 255, 255, 1);
+}
+
+.home-chat-button p {
+  font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+  font-weight: 700;
+  line-height: 39px;
+  font-size: 36px;
+  color: #254c63;
+  margin: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* Info icon */
+.home-info-icon {
+  position: absolute;
+  top: 4.49%;
+  right: 3.13%;
+  bottom: 88.67%;
+  left: 92.01%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.home-info-icon img {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.home-info-icon-text {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 900;
+  font-size: 36px;
+  line-height: normal;
+  text-align: center;
+  color: white;
+  margin: 0;
+  padding: 0;
+  z-index: 2;
+  pointer-events: none;
+  font-style: normal;
+  letter-spacing: 0;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+

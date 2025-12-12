@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import RecordingModal from './RecordingModal';
 
 const speechLangCode = (lang) => (lang === 'es' ? 'es-ES' : 'en-US');
 
@@ -232,7 +233,7 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
         </form>
       </div>
       {/* Mic Icon Button */}
-      <div style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', overflow: 'visible', zIndex: 1 }}>
         <button 
           type="button" 
           className={`mic-icon-button ${isListening ? 'recording' : ''}`}
@@ -248,18 +249,18 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
               zIndex: 2
             }}
           ></i>
-          {isListening && (
-            <div className="recording-indicator">
-              <div className="recording-pulse"></div>
-            </div>
-          )}
-          <div 
-            ref={micAnimationRef}
-            className="mic-animation-container"
-            style={{ display: isListening ? 'block' : 'none' }}
-          ></div>
         </button>
+        <div 
+          ref={micAnimationRef}
+          className="mic-animation-container"
+          style={{ display: isListening ? 'block' : 'none' }}
+        ></div>
       </div>
+      {/* Recording Modal */}
+      <RecordingModal 
+        isVisible={isListening} 
+        onClose={stopListening}
+      />
       {/* Language Toggle */}
       {onLanguageChange && (
         <button 

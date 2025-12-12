@@ -413,6 +413,7 @@
   display: flex;
   align-items: center;
   gap: 15px;
+  overflow: visible;
 }
 
 /* Language Toggle Switch - Figma Design */
@@ -570,6 +571,9 @@
   height: 75.78125px;
   min-width: 75.78125px;
   min-height: 75.78125px;
+  position: relative;
+  z-index: 2;
+  overflow: visible;
 }
 
 .mic-icon-button:hover {
@@ -602,22 +606,41 @@
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  width: 100%;
-  height: 100%;
+  width: 75.78125px;
+  height: 75.78125px;
   display: flex;
   align-items: center;
   justify-content: center;
   pointer-events: none;
   z-index: 1;
+  overflow: visible;
 }
 
-.recording-pulse {
+.recording-pulse-ring {
   position: absolute;
-  width: 100%;
-  height: 100%;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 75.78125px;
+  height: 75.78125px;
   border-radius: 50%;
-  background-color: rgba(140, 29, 64, 0.3);
-  animation: recordingPulseRing 1.5s ease-out infinite;
+  border: 2px solid rgba(140, 29, 64, 0.6);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.recording-pulse-ring.ring-1 {
+  animation: recordingPulseRing1 2s ease-out infinite;
+}
+
+.recording-pulse-ring.ring-2 {
+  animation: recordingPulseRing2 2s ease-out infinite;
+  animation-delay: 0.4s;
+}
+
+.recording-pulse-ring.ring-3 {
+  animation: recordingPulseRing3 2s ease-out infinite;
+  animation-delay: 0.8s;
 }
 
 @keyframes recordingPulse {
@@ -631,14 +654,42 @@
   }
 }
 
-@keyframes recordingPulseRing {
+@keyframes recordingPulseRing1 {
   0% {
-    transform: scale(0.8);
-    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+    border-width: 2px;
   }
   100% {
-    transform: scale(1.5);
+    transform: translate(-50%, -50%) scale(2.5);
     opacity: 0;
+    border-width: 1px;
+  }
+}
+
+@keyframes recordingPulseRing2 {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+    border-width: 2px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+@keyframes recordingPulseRing3 {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.4;
+    border-width: 2px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.9);
+    opacity: 0;
+    border-width: 1px;
   }
 }
 
