@@ -352,11 +352,11 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
             }}
           ></i>
         </button>
-        <div 
-          ref={micAnimationRef}
-          className="mic-animation-container"
+          <div 
+            ref={micAnimationRef}
+            className="mic-animation-container"
           style={{ display: isListening ? 'block' : 'none', pointerEvents: 'none' }}
-        ></div>
+          ></div>
       </div>
       {/* Recording Modal */}
       <RecordingModal 

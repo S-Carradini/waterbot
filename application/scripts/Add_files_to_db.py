@@ -149,12 +149,12 @@ def process_batch(batch, db, text_splitter):
     
     # Add documents to the database (only if we have any)
     if splits:
-        try:
-            db.add_documents(documents=splits)
+    try:
+        db.add_documents(documents=splits)
             print(f"✅ Successfully added {len(splits)} document chunks from {successful_files} files to ChromaDB.")
             if skipped_files > 0:
                 print(f"⚠️  Skipped {skipped_files} files in this batch (empty/corrupted)")
-        except Exception as e:
+    except Exception as e:
             print(f"❌ Failed to add documents to ChromaDB: {e}", file=sys.stderr)
     else:
         print(f"⚠️  No documents to add from this batch ({skipped_files} files skipped)")

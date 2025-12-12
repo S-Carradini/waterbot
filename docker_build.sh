@@ -22,7 +22,7 @@ if ! docker info > /dev/null 2>&1; then
         echo "   (Then log out and back in)"
     elif [[ "$OSTYPE" == "darwin"* ]]; then
         echo "   On macOS, start Docker Desktop or Colima:"
-        echo "   For Colima: colima start"
+    echo "   For Colima: colima start"
         echo "   For Docker Desktop: Open Docker Desktop application"
     else
         echo "   Please ensure Docker is installed and running."
@@ -136,25 +136,25 @@ if [ ! -d "application/docs/chroma" ]; then
         fi
     else
         # Not running with sudo - normal detection
-        if [ -f ".venv/bin/python" ]; then
-            PYTHON_CMD=".venv/bin/python"
+    if [ -f ".venv/bin/python" ]; then
+        PYTHON_CMD=".venv/bin/python"
         elif [ -f "venv/bin/python" ]; then
             PYTHON_CMD="venv/bin/python"
         elif [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
             PYTHON_CMD="$SCRIPT_DIR/.venv/bin/python"
         elif [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
             PYTHON_CMD="$SCRIPT_DIR/venv/bin/python"
-        else
-            PYTHON_CMD="python3"
+    else
+        PYTHON_CMD="python3"
             echo "⚠️  No virtual environment found, using system Python"
-        fi
+    fi
         
         echo "🐍 Using Python: $PYTHON_CMD"
         
         # Change to script directory to ensure relative paths work
         cd "$SCRIPT_DIR"
-        
-        $PYTHON_CMD application/scripts/Add_files_to_db.py
+    
+    $PYTHON_CMD application/scripts/Add_files_to_db.py
     fi
     
     if [ ! -d "application/docs/chroma" ]; then
