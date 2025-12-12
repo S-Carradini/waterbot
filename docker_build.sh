@@ -5,9 +5,41 @@ echo "🚀 Building Docker image locally..."
 
 # Check if Docker is running
 if ! docker info > /dev/null 2>&1; then
-    echo "❌ Docker is not running. Please start Docker Desktop or Colima."
-    echo "   For Colima: colima start"
+    echo "❌ Docker is not running."
+    
+    # Detect OS and provide appropriate instructions
+    if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+        echo "   On Linux, start Docker daemon with:"
+        echo "   sudo systemctl start docker"
+        echo ""
+        echo "   Or if Docker is not installed:"
+        echo "   sudo apt-get update && sudo apt-get install -y docker.io"
+        echo "   sudo systemctl enable docker"
+        echo "   sudo systemctl start docker"
+        echo ""
+        echo "   Note: You may need to add your user to the docker group:"
+        echo "   sudo usermod -aG docker $USER"
+        echo "   (Then log out and back in)"
+    elif [[ "$OSTYPE" == "darwin"* ]]; then
+        echo "   On macOS, start Docker Desktop or Colima:"
+        echo "   For Colima: colima start"
+        echo "   For Docker Desktop: Open Docker Desktop application"
+    else
+        echo "   Please ensure Docker is installed and running."
+    fi
     exit 1
+fi
+
+# Check if user has permission to run Docker (Linux-specific)
+if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+    if ! docker ps > /dev/null 2>&1; then
+        echo "⚠️  Docker is running but you may not have permission."
+        echo "   Try: sudo docker ps"
+        echo "   Or add your user to the docker group:"
+        echo "   sudo usermod -aG docker $USER"
+        echo "   (Then log out and back in)"
+        exit 1
+    fi
 fi
 
 # Check if ChromaDB directory exists
