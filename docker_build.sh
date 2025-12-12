@@ -80,32 +80,59 @@ if [ ! -d "application/docs/chroma" ]; then
     if [ -n "$SUDO_USER" ]; then
         ORIGINAL_USER="$SUDO_USER"
         ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
-        echo "⚠️  Running with sudo - will try to use original user's virtual environment"
+        echo "⚠️  Running with sudo - will run Python as original user to preserve venv"
         
-        # Try to preserve original user's PATH by checking common venv locations
-        # First, try to find venv in the current working directory (preserved by sudo -E)
-        if [ -f "$PWD/.venv/bin/python" ]; then
+        # Change to script directory
+        cd "$SCRIPT_DIR"
+        
+        # Try to detect venv - check multiple locations
+        PYTHON_CMD=""
+        
+        # First, check VIRTUAL_ENV variable (set when venv is activated)
+        if [ -n "$VIRTUAL_ENV" ] && [ -f "$VIRTUAL_ENV/bin/python" ]; then
+            PYTHON_CMD="$VIRTUAL_ENV/bin/python"
+            echo "✅ Found activated venv: $VIRTUAL_ENV"
+        # Check current working directory (PWD is preserved by sudo)
+        elif [ -f "$PWD/.venv/bin/python" ]; then
             PYTHON_CMD="$PWD/.venv/bin/python"
+            echo "✅ Found venv at $PWD/.venv"
         elif [ -f "$PWD/venv/bin/python" ]; then
             PYTHON_CMD="$PWD/venv/bin/python"
-        # Try script directory
+            echo "✅ Found venv at $PWD/venv"
+        # Check script directory
         elif [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
             PYTHON_CMD="$SCRIPT_DIR/.venv/bin/python"
+            echo "✅ Found venv at $SCRIPT_DIR/.venv"
         elif [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
             PYTHON_CMD="$SCRIPT_DIR/venv/bin/python"
-        # Try original user's home directory (common location from error message)
+            echo "✅ Found venv at $SCRIPT_DIR/venv"
+        # Check original user's home directory (from error message path)
         elif [ -f "$ORIGINAL_HOME/applications/waterbot/waterbot/.venv/bin/python" ]; then
             PYTHON_CMD="$ORIGINAL_HOME/applications/waterbot/waterbot/.venv/bin/python"
+            echo "✅ Found venv at $ORIGINAL_HOME/applications/waterbot/waterbot/.venv"
         elif [ -f "$ORIGINAL_HOME/applications/waterbot/waterbot/venv/bin/python" ]; then
             PYTHON_CMD="$ORIGINAL_HOME/applications/waterbot/waterbot/venv/bin/python"
+            echo "✅ Found venv at $ORIGINAL_HOME/applications/waterbot/waterbot/venv"
+        fi
+        
+        if [ -n "$PYTHON_CMD" ]; then
+            # Use the found venv Python, running as original user
+            echo "🐍 Using Python: $PYTHON_CMD"
+            sudo -u "$ORIGINAL_USER" "$PYTHON_CMD" application/scripts/Add_files_to_db.py
         else
-            PYTHON_CMD="python3"
-            echo "⚠️  Virtual environment not found. When using sudo, you may need to:"
-            echo "   1. Run without sudo (after adding user to docker group):"
-            echo "      sudo usermod -aG docker $ORIGINAL_USER"
-            echo "      # Then logout/login and run: ./docker_build.sh"
-            echo "   2. Or install dependencies in system Python:"
-            echo "      sudo pip3 install python-dotenv langchain-community langchain-chroma langchain-text-splitters langchain-openai"
+            # Fallback: try with original user's PATH (may include venv)
+            echo "⚠️  Venv not found in common locations, trying with original user's environment..."
+            sudo -u "$ORIGINAL_USER" -E env "PATH=$PATH" python3 application/scripts/Add_files_to_db.py || {
+                echo ""
+                echo "❌ Could not find virtual environment or run Python script."
+                echo "   Options:"
+                echo "   1. Run without sudo (recommended):"
+                echo "      sudo usermod -aG docker $ORIGINAL_USER"
+                echo "      # Then logout/login and run: ./docker_build.sh"
+                echo "   2. Or install dependencies in system Python:"
+                echo "      sudo pip3 install python-dotenv langchain-community langchain-chroma langchain-text-splitters langchain-openai"
+                exit 1
+            }
         fi
     else
         # Not running with sudo - normal detection
@@ -121,14 +148,14 @@ if [ ! -d "application/docs/chroma" ]; then
             PYTHON_CMD="python3"
             echo "⚠️  No virtual environment found, using system Python"
         fi
+        
+        echo "🐍 Using Python: $PYTHON_CMD"
+        
+        # Change to script directory to ensure relative paths work
+        cd "$SCRIPT_DIR"
+        
+        $PYTHON_CMD application/scripts/Add_files_to_db.py
     fi
-    
-    echo "🐍 Using Python: $PYTHON_CMD"
-    
-    # Change to script directory to ensure relative paths work
-    cd "$SCRIPT_DIR"
-    
-    $PYTHON_CMD application/scripts/Add_files_to_db.py
     
     if [ ! -d "application/docs/chroma" ]; then
         echo "❌ Failed to build ChromaDB. Please check the error messages above."
