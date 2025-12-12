@@ -36,14 +36,6 @@ export default function Home() {
         <div className="home-union" data-name="Union" data-node-id="1:9">
           <img alt="" src={imgUnion} />
         </div>
-        <div className="home-chat-text-main">
-          <p className="home-chat-text-content">
-            Ask me anything you want about the story of water in our state! Not sure where to start?
-          </p>
-        </div>
-        <div className="home-chat-text-hello">
-          <p>Hello! I'm Blue!</p>
-        </div>
       </div>
 
       {/* Blue character */}
