@@ -173,3 +173,7 @@ application/newData/
 docs/chroma/chroma.sqlite3
 application/ADWR Blogs/
 application/AMWUA_Blog_Posts/.env
+
+# Playwright test artifacts
+frontend/playwright-report/
+frontend/test-results/
