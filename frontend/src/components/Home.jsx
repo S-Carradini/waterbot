@@ -2,11 +2,18 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
-const imgAsuSunBurst = "https://www.figma.com/api/mcp/asset/737ecde3-562a-4d5e-b278-42a4b4136c3b";
-const imgVector = "https://www.figma.com/api/mcp/asset/ec688a0f-e832-4d9b-a81a-a44dd074f6ab";
-const imgUnion = "https://www.figma.com/api/mcp/asset/5c895428-f3b1-40b3-b532-27a6bfef4502";
-const imgOriginalBlue = "https://www.figma.com/api/mcp/asset/98ac2073-514b-43a3-84ae-d49d5cbf6b86";
-const imgGroup11142 = "https://www.figma.com/api/mcp/asset/dc0127b7-f4c5-41d4-975a-de6a9f180211";
+// Local image paths - images should be exported from Figma and placed in /public/images/
+// Figma asset IDs for reference:
+// - ASU Sunburst: 737ecde3-562a-4d5e-b278-42a4b4136c3b
+// - Vector decoration: ec688a0f-e832-4d9b-a81a-a44dd074f6ab
+// - Union chat bubble: 5c895428-f3b1-40b3-b532-27a6bfef4502
+// - Original Blue character: 98ac2073-514b-43a3-84ae-d49d5cbf6b86
+// - Info icon: dc0127b7-f4c5-41d4-975a-de6a9f180211
+const imgAsuSunBurst = "/images/asu-sunburst.png";
+const imgVector = "/images/vector-decoration.png";
+const imgUnion = "/images/union-chat-bubble.png";
+const imgOriginalBlue = "/images/original-blue.png";
+const imgGroup11142 = "/images/info-icon.png";
 
 export default function Home() {
   const navigate = useNavigate();
