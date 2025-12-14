@@ -239,6 +239,14 @@ if frontend_dist_path:
             else:
                 app.mount("/assets", StaticFiles(directory=assets_path_str), name="assets")
                 logging.info(f"Mounted React assets from: {assets_path_str}")
+                # Also mount public images copied by Vite from frontend/public/images → frontend/dist/images
+                images_path = frontend_dist_path / "images"
+                if images_path.exists() and images_path.is_dir():
+                    try:
+                        app.mount("/images", StaticFiles(directory=str(images_path.resolve())), name="images")
+                        logging.info(f"Mounted public images from: {images_path.resolve()}")
+                    except Exception as e:
+                        logging.error(f"Failed to mount images directory at {images_path.resolve()}: {e}")
         except Exception as e:
             logging.error(f"Failed to mount assets directory at {assets_path_str}: {e}")
             frontend_dist_path = None
