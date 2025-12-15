@@ -56,22 +56,22 @@ export default function Home() {
         <p>Chat With Blue</p>
       </div>
 
-      {/* Chat with Blue button */}
-      <button
-        className="home-chat-button"
-        onClick={handleChatWithBlue}
-        data-name="Interact with Blue"
-        data-node-id="1:48"
-      >
-        <p>Chat with Blue</p>
-      </button>
-
       {/* Info icon */}
       <div className="home-info-icon" data-node-id="6:276">
         <img alt="" src={imgGroup11142} />
         <p className="home-info-icon-text" data-node-id="6:280">i</p>
       </div>
       </div>
+      
+      {/* Chat with Blue button - outside home-inner for fixed positioning */}
+      <button
+        className="home-chat-button"
+        onClick={handleChatWithBlue}
+        data-name="Interact with Blue"
+        data-node-id="1:48"
+      >
+        CHAT WITH BLUE
+      </button>
     </div>
   );
 }
