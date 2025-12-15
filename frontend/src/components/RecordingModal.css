@@ -22,3 +22,33 @@
   height: 90vh;
   max-height: 800px;
 }
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES FOR RECORDING MODAL
+   ============================================ */
+
+/* Tablet and below (768px and smaller) */
+@media (max-width: 768px) {
+  .recording-modal-container {
+    width: 95vw;
+    height: 85vh;
+    max-height: 600px;
+  }
+}
+
+/* Small mobile devices (480px and smaller) */
+@media (max-width: 480px) {
+  .recording-modal-container {
+    width: 100vw;
+    height: 80vh;
+    max-height: 500px;
+  }
+}
+
+/* Very small devices (360px and smaller) */
+@media (max-width: 360px) {
+  .recording-modal-container {
+    height: 75vh;
+    max-height: 450px;
+  }
+}

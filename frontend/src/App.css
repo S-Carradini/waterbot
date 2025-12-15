@@ -12,6 +12,26 @@
   clip-path: none !important;
 }
 
+/* Ensure input wrapper is never clipped on mobile */
+@media (max-width: 768px) {
+  .desktop-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Allow input wrapper to be visible */
+    position: relative;
+  }
+  
+  /* Ensure no parent clips the input */
+  .desktop-container > * {
+    position: relative;
+  }
+  
+  /* Ensure input wrapper can escape container bounds */
+  .input-wrapper {
+    position: fixed !important;
+  }
+}
+
 /* Header Unit - Contains main card, ASU sunburst, title, and download transcript */
 .header-unit {
   position: relative;
@@ -417,6 +437,9 @@
   overflow: visible;
   z-index: 1001; /* Above modal backdrop (z-index: 999) */
   isolation: isolate; /* Create new stacking context to prevent backdrop blur from affecting children */
+  /* Ensure minimum height matches language toggle */
+  min-height: 70px;
+  box-sizing: border-box;
 }
 
 /* Position mic button container to header area */
@@ -540,8 +563,10 @@
   border-radius: 16px;
   padding: 0 20px;
   gap: 15px;
-  min-height: 100%;
-  height: 100%;
+  height: 70px; /* Match language toggle height exactly */
+  min-height: 70px; /* Match language toggle min-height */
+  max-height: 70px; /* Match language toggle max-height */
+  box-sizing: border-box; /* Include padding in height calculation */
   z-index: 1002; /* Above input-wrapper z-index */
   isolation: isolate; /* Create new stacking context */
   backdrop-filter: none; /* Ensure no blur on input */
@@ -1084,4 +1109,559 @@
 
 
 /* Responsive adjustments - images will maintain aspect ratio with object-fit: contain */
+
+/* ============================================
+   DESKTOP CONSISTENT HEIGHTS
+   ============================================ */
+
+/* Ensure input-container and language-toggle maintain same height on desktop */
+@media (min-width: 769px) {
+  .input-container {
+    height: 70px !important;
+    min-height: 70px !important;
+    max-height: 70px !important;
+  }
+
+  .language-toggle-switch {
+    height: 70px !important;
+    min-height: 70px !important;
+    max-height: 70px !important;
+  }
+
+  .language-toggle-background {
+    height: 70px !important;
+    min-height: 70px !important;
+    max-height: 70px !important;
+  }
+
+  /* Ensure input-wrapper has minimum height to accommodate children */
+  .input-wrapper {
+    min-height: 70px !important;
+  }
+}
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Base mobile styles (applies to all mobile devices) */
+@media (max-width: 1024px) {
+  .desktop-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Ensure container doesn't push input off screen */
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+
+  /* Prevent body from scrolling when input is focused (helps with keyboard) */
+  body {
+    position: relative;
+    overflow-x: hidden;
+  }
+}
+
+/* Tablet and below (768px and smaller) */
+@media (max-width: 768px) {
+  /* Desktop Container */
+  .desktop-container {
+    min-height: 100vh;
+    height: auto;
+    overflow-y: auto;
+  }
+
+  /* Header Unit */
+  .header-unit {
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  /* Header Buttons Container - Stack vertically on mobile */
+  .header-buttons-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+  }
+
+  /* Header Dropdown Menu - Adjust for mobile */
+  .header-dropdown-menu {
+    padding: 12px;
+    gap: 8px;
+    border-radius: 30px;
+  }
+
+  .header-dropdown-item {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+  }
+
+  .header-dropdown-item img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .header-dropdown-download img {
+    width: 50px;
+    height: 50px;
+  }
+
+  .header-dropdown-item i {
+    width: 36px;
+    height: 36px;
+    font-size: 26px;
+  }
+
+  .loading-spinner {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+  }
+
+  /* Input Wrapper - Adjust positioning for mobile */
+  .input-wrapper {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 10px !important;
+    gap: 10px !important;
+    background-color: #7dc8e0 !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1) !important;
+    z-index: 10000 !important; /* Very high z-index to ensure it's always on top */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    /* Safe area for mobile notches */
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px)) !important;
+    /* Ensure it stays visible even when keyboard appears */
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
+  }
+
+  /* Input Container */
+  .input-container {
+    min-height: 50px !important;
+    height: auto !important;
+    padding: 0 15px !important;
+    border-radius: 25px !important;
+    flex: 1 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Text Input */
+  .text-input {
+    font-size: 16px;
+  }
+
+  .text-input::placeholder {
+    font-size: 16px;
+  }
+
+  /* Language Toggle - Smaller on mobile */
+  .language-toggle-switch {
+    width: 120px;
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    border-radius: 28px;
+  }
+
+  .language-toggle-background {
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    border-radius: 28px;
+  }
+
+  .language-toggle-text {
+    font-size: 12px;
+  }
+
+  .language-toggle-slider {
+    width: 55%;
+  }
+
+  .language-toggle-slider.left {
+    right: 45%;
+  }
+
+  .language-toggle-slider.right {
+    left: 45%;
+  }
+
+  /* Mic Icon Button - Smaller on mobile */
+  .input-wrapper .mic-icon-button {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+  }
+
+  .header-buttons-container .mic-icon-button {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+  }
+
+  .paper-plane-icon-button {
+    font-size: 28px;
+  }
+
+  /* Chat Column - Adjust for mobile */
+  .chat-column {
+    padding: 10px !important;
+    padding-bottom: 120px !important; /* Extra space for input wrapper */
+    margin-bottom: 0 !important;
+  }
+
+  /* User Query - Full width on mobile */
+  .chat-column .user-query {
+    right: auto;
+    max-width: 85%;
+    min-width: auto;
+    margin-right: 0;
+    margin-left: auto;
+    padding: 15px;
+    border-radius: 20px;
+    min-height: 60px;
+  }
+
+  /* Question Text - Smaller on mobile */
+  .question-text {
+    font-size: 18px;
+    line-height: 22px;
+    letter-spacing: -0.4px;
+  }
+
+  .question-text p {
+    line-height: 22px;
+  }
+
+  /* Content Card - Adjust for mobile */
+  .content-card-1 {
+    max-width: 85%;
+    padding: 15px;
+    border-radius: 20px;
+    min-height: 100px;
+  }
+
+  /* Answer Text - Smaller on mobile */
+  .answer-text {
+    font-size: 18px;
+    line-height: 22px;
+    letter-spacing: -0.4px;
+  }
+
+  .answer-text p {
+    line-height: 22px;
+    margin-bottom: 10px;
+  }
+
+  /* Actions Row - Stack on mobile if needed */
+  .actions-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Thumbs Container */
+  .thumbs-container .thumbs-up,
+  .thumbs-container .thumbs-down {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Action Buttons - Smaller text on mobile */
+  .button-tell-me-more,
+  .button-next-steps,
+  .button-sources {
+    padding: 8px 12px;
+    min-height: 36px;
+    border-radius: 8px;
+  }
+
+  .button-text-tell-me-more,
+  .button-text-next-steps,
+  .button-text-sources {
+    font-size: 14px;
+    line-height: 20px;
+    letter-spacing: -0.4px;
+  }
+
+  /* Blue Character - Smaller on mobile */
+  .character-chat-row .blue-character img {
+    max-width: 200px;
+    max-height: 300px;
+  }
+
+  /* Loading Message */
+  .loading-message {
+    max-width: 85%;
+    padding: 15px;
+    border-radius: 20px;
+  }
+
+  .loading-message span {
+    font-size: 18px;
+  }
+
+  .loader {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+  }
+
+  /* Polygon tails - Hide or scale down on mobile */
+  .user-query .polygon-2-container {
+    display: none; /* Hide chat tails on mobile for cleaner look */
+  }
+
+  .content-card-1 .polygon-1-container {
+    display: none; /* Hide chat tails on mobile for cleaner look */
+  }
+}
+
+/* Small mobile devices (480px and smaller) */
+@media (max-width: 480px) {
+  /* Header Buttons Container - Even smaller */
+  .header-buttons-container {
+    top: 5px;
+    right: 5px;
+    gap: 8px;
+  }
+
+  /* Header Dropdown */
+  .header-dropdown-menu {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .header-dropdown-item {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .header-dropdown-item img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .header-dropdown-download img {
+    width: 42px;
+    height: 42px;
+  }
+
+  .header-dropdown-item i {
+    width: 32px;
+    height: 32px;
+    font-size: 22px;
+  }
+
+  /* Input Wrapper - Tighter spacing */
+  .input-wrapper {
+    padding: 8px !important;
+    gap: 8px !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px)) !important;
+  }
+
+  /* Input Container */
+  .input-container {
+    min-height: 48px !important;
+    height: auto !important;
+    padding: 0 12px !important;
+    border-radius: 24px !important;
+  }
+
+  /* Language Toggle - Even smaller */
+  .language-toggle-switch {
+    width: 100px;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+  }
+
+  .language-toggle-background {
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+  }
+
+  .language-toggle-text {
+    font-size: 11px;
+  }
+
+  /* Mic and Send buttons */
+  .input-wrapper .mic-icon-button {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .paper-plane-icon-button {
+    font-size: 24px;
+  }
+
+  /* Chat messages - Even more compact */
+  .chat-column .user-query {
+    max-width: 90%;
+    padding: 12px;
+    border-radius: 18px;
+    min-height: 50px;
+  }
+
+  .content-card-1 {
+    max-width: 90%;
+    padding: 12px;
+    border-radius: 18px;
+    min-height: 80px;
+  }
+
+  /* Text sizes - Smaller */
+  .question-text {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .question-text p {
+    line-height: 20px;
+  }
+
+  .answer-text {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .answer-text p {
+    line-height: 20px;
+    margin-bottom: 8px;
+  }
+
+  /* Buttons - More compact */
+  .button-tell-me-more,
+  .button-next-steps,
+  .button-sources {
+    padding: 6px 10px;
+    min-height: 32px;
+  }
+
+  .button-text-tell-me-more,
+  .button-text-next-steps,
+  .button-text-sources {
+    font-size: 12px;
+    line-height: 18px;
+  }
+
+  .thumbs-container .thumbs-up,
+  .thumbs-container .thumbs-down {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Blue Character - Even smaller */
+  .character-chat-row .blue-character img {
+    max-width: 150px;
+    max-height: 225px;
+  }
+
+  /* Loading */
+  .loading-message {
+    padding: 12px;
+  }
+
+  .loading-message span {
+    font-size: 16px;
+  }
+
+  .loader {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Very small devices (360px and smaller) */
+@media (max-width: 360px) {
+  .input-wrapper {
+    padding: 6px !important;
+    gap: 6px !important;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 6px)) !important;
+  }
+
+  .input-container {
+    min-height: 44px !important;
+    height: auto !important;
+    padding: 0 10px !important;
+  }
+
+  .language-toggle-switch {
+    width: 90px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+  }
+
+  .language-toggle-background {
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+  }
+
+  .input-wrapper .mic-icon-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .question-text,
+  .answer-text {
+    font-size: 14px;
+    line-height: 18px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .input-wrapper {
+    padding: 8px !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px)) !important;
+  }
+
+  .chat-column {
+    padding-bottom: 100px !important;
+  }
+
+  .header-buttons-container {
+    top: 5px;
+    right: 5px;
+  }
+}
+
+/* Touch-friendly targets (minimum 44x44px for accessibility) */
+@media (max-width: 768px) {
+  button,
+  .header-dropdown-item,
+  .mic-icon-button,
+  .paper-plane-icon-button,
+  .thumbs-up,
+  .thumbs-down,
+  .button-tell-me-more,
+  .button-next-steps,
+  .button-sources {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
 

@@ -1,5 +1,7 @@
 from pathlib import Path
+import argparse
 import re
+import sys
 import time
 from urllib.parse import urlparse, urlunparse, urljoin
 
@@ -129,64 +131,171 @@ def looks_like_pdf(url: str, resp: requests.Response) -> bool:
     return False
 
 
-success, skipped = 0, []
+def main():
+    parser = argparse.ArgumentParser(
+        description="Download PDFs from knowledge_sources.py",
+        formatter_class=argparse.RawDescriptionHelpFormatter,
+        epilog="""
+Examples:
+  python download_pdfs.py                    # Download only missing PDFs
+  python download_pdfs.py --force            # Re-download all PDFs
+  python download_pdfs.py --verbose           # Show detailed progress
+  python download_pdfs.py --force --verbose   # Re-download with verbose output
+        """
+    )
+    parser.add_argument(
+        "--force", "-f",
+        action="store_true",
+        help="Force re-download of existing files"
+    )
+    parser.add_argument(
+        "--verbose", "-v",
+        action="store_true",
+        help="Show verbose output for each file"
+    )
+    parser.add_argument(
+        "--output-dir", "-o",
+        type=str,
+        default="application/newData",
+        help="Output directory for downloaded PDFs (default: application/newData)"
+    )
+    parser.add_argument(
+        "--save-skipped",
+        type=str,
+        metavar="FILE",
+        help="Save skipped entries to a file (CSV format)"
+    )
+    
+    args = parser.parse_args()
+    
+    # Update target directory if specified
+    global TARGET_DIR
+    TARGET_DIR = Path(args.output_dir)
+    TARGET_DIR.mkdir(parents=True, exist_ok=True)
+    
+    success = 0
+    skipped = []
+    already_exists = 0
+    
+    total = len(knowledge_sources)
+    print(f"Found {total} entries in knowledge_sources.py")
+    print(f"Target directory: {TARGET_DIR.absolute()}")
+    if args.force:
+        print("⚠️  Force mode enabled - will re-download existing files")
+    print()
+    
+    for original_name, meta in tqdm(knowledge_sources.items(), desc="Downloading", unit="file"):
+        url = meta.get("url", "").strip()
+        if not url:
+            skipped.append((original_name, "missing URL"))
+            if args.verbose:
+                tqdm.write(f"⚠️  Skipped {original_name}: missing URL")
+            continue
 
-for original_name, meta in tqdm(knowledge_sources.items(), desc="Downloading", unit="file"):
-    url = meta.get("url", "").strip()
-    if not url:
-        skipped.append((original_name, "missing URL"))
-        continue
+        url = normalize_url(url)
+        outfile = TARGET_DIR / normalize_filename(original_name)
 
-    url = normalize_url(url)
-    outfile = TARGET_DIR / normalize_filename(original_name)
+        if outfile.exists() and not args.force:
+            already_exists += 1
+            if args.verbose:
+                tqdm.write(f"✓  Already exists: {original_name}")
+            continue
 
-    if outfile.exists():
-        continue
+        if args.verbose:
+            tqdm.write(f"📥 Downloading: {original_name}")
 
-    try:
-        # Initial request with session + optional referer
-        resp = get_with_headers(url)
-        content_type = (resp.headers.get("content-type") or "").lower()
+        try:
+            # Initial request with session + optional referer
+            resp = get_with_headers(url)
+            content_type = (resp.headers.get("content-type") or "").lower()
 
-        # If HTML, try to discover a direct PDF link within the page
-        if "pdf" not in content_type and "html" in content_type:
-            # prewarm cookies on the page itself to allow embedded pdf links
-            prewarm_cookies(url)
-            pdf_url = find_pdf_in_html(url, resp.content)
-            if pdf_url:
+            # If HTML, try to discover a direct PDF link within the page
+            if "pdf" not in content_type and "html" in content_type:
+                if args.verbose:
+                    tqdm.write(f"  → Found HTML page, searching for PDF link...")
+                # prewarm cookies on the page itself to allow embedded pdf links
+                prewarm_cookies(url)
+                pdf_url = find_pdf_in_html(url, resp.content)
+                if pdf_url:
+                    if args.verbose:
+                        tqdm.write(f"  → Found PDF link: {pdf_url}")
+                    try:
+                        resp.close()
+                    except Exception:
+                        pass
+                    resp = get_with_headers(pdf_url)
+                    content_type = (resp.headers.get("content-type") or "").lower()
+                    url = pdf_url  # for referer/debug if needed
+                else:
+                    if args.verbose:
+                        tqdm.write(f"  ⚠️  No PDF link found in HTML")
+
+            if not looks_like_pdf(url, resp):
+                reason = f"non-PDF content-type ({content_type or 'unknown'})"
+                skipped.append((original_name, reason))
+                if args.verbose:
+                    tqdm.write(f"  ❌ Skipped: {reason}")
                 try:
                     resp.close()
                 except Exception:
                     pass
-                resp = get_with_headers(pdf_url)
-                content_type = (resp.headers.get("content-type") or "").lower()
-                url = pdf_url  # for referer/debug if needed
+                continue
 
-        if not looks_like_pdf(url, resp):
-            skipped.append((original_name, f"non-PDF content-type ({content_type or 'unknown'})"))
+            with open(outfile, "wb") as f:
+                for chunk in resp.iter_content(chunk_size=8192):
+                    if chunk:
+                        f.write(chunk)
+            success += 1
+            if args.verbose:
+                file_size = outfile.stat().st_size
+                tqdm.write(f"  ✓  Downloaded: {original_name} ({file_size:,} bytes)")
             try:
                 resp.close()
             except Exception:
                 pass
-            continue
+        except Exception as exc:
+            reason = str(exc)
+            skipped.append((original_name, reason))
+            if args.verbose:
+                tqdm.write(f"  ❌ Error: {reason}")
+            time.sleep(1)
 
-        with open(outfile, "wb") as f:
-            for chunk in resp.iter_content(chunk_size=8192):
-                if chunk:
-                    f.write(chunk)
-        success += 1
-        try:
-            resp.close()
-        except Exception:
-            pass
-    except Exception as exc:
-        skipped.append((original_name, str(exc)))
-        time.sleep(1)
+    # Print summary
+    print(f"\n{'='*60}")
+    print(f"Download Summary")
+    print(f"{'='*60}")
+    print(f"Total entries:     {total}")
+    print(f"Downloaded:        {success}")
+    print(f"Already existed:   {already_exists}")
+    print(f"Skipped:           {len(skipped)}")
+    print(f"Target directory:  {TARGET_DIR.absolute()}")
+    print(f"{'='*60}")
+    
+    if skipped:
+        print(f"\nSkipped entries ({len(skipped)}):")
+        for name, reason in skipped[:20]:
+            print(f"  - {name}: {reason}")
+        if len(skipped) > 20:
+            print(f"  (+ {len(skipped) - 20} more)")
+        
+        # Save skipped entries to file if requested
+        if args.save_skipped:
+            skipped_file = Path(args.save_skipped)
+            with open(skipped_file, "w") as f:
+                f.write("filename,reason\n")
+                for name, reason in skipped:
+                    # Escape commas and quotes in CSV
+                    reason_escaped = reason.replace('"', '""')
+                    f.write(f'"{name}","{reason_escaped}"\n')
+            print(f"\nSkipped entries saved to: {skipped_file.absolute()}")
+    
+    # Exit with error code if there were failures
+    if skipped and not args.force:
+        print(f"\n⚠️  Some files were skipped. Use --force to retry or --verbose for details.")
+        return 1
+    
+    return 0
 
-print(f"\nDownloaded {success} file(s) to {TARGET_DIR}")
-if skipped:
-    print("Skipped entries:")
-    for name, reason in skipped[:20]:
-        print(f"  - {name}: {reason}")
-    if len(skipped) > 20:
-        print(f"  (+ {len(skipped) - 20} more)")
+
+if __name__ == "__main__":
+    sys.exit(main())

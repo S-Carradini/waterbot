@@ -360,3 +360,223 @@
   -moz-osx-font-smoothing: grayscale;
 }
 
+/* ============================================
+   MOBILE RESPONSIVE STYLES FOR HOME PAGE
+   ============================================ */
+
+/* Tablet and below (768px and smaller) */
+@media (max-width: 768px) {
+  .home-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  .home-inner {
+    max-width: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+    height: auto;
+    min-height: 100vh;
+    padding: 10px;
+  }
+
+  /* Header Bar - Adjust for mobile */
+  .home-header-bar {
+    position: relative;
+    width: 100%;
+    height: auto;
+    min-height: 60px;
+    border-radius: 20px;
+    margin-bottom: 10px;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+  }
+
+  /* ASU Logo - Smaller on mobile */
+  .home-asu-logo {
+    position: relative;
+    width: 80px;
+    height: 50px;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    margin: 5px 10px;
+  }
+
+  /* Title - Already has responsive styles, but ensure it works */
+  .home-title {
+    position: relative;
+    width: 100%;
+    height: auto;
+    top: auto;
+    right: auto;
+    bottom: auto;
+    left: auto;
+    padding: 10px;
+    margin: 5px 0;
+  }
+
+  /* Info Icon - Adjust position */
+  .home-info-icon {
+    position: absolute;
+    top: 10px;
+    right: 10px;
+    width: 50px;
+    height: 50px;
+    bottom: auto;
+    left: auto;
+  }
+
+  .home-info-icon-text {
+    font-size: 24px;
+  }
+
+  /* Blue Character - Adjust for mobile */
+  .home-blue-character {
+    position: relative;
+    width: 60%;
+    max-width: 300px;
+    height: auto;
+    margin: 20px auto;
+    top: auto;
+    left: auto;
+    right: auto;
+    aspect-ratio: 456 / 495;
+  }
+
+  /* Chat Bubble - Adjust for mobile */
+  .home-chat-bubble-container {
+    position: relative;
+    width: 90%;
+    max-width: 400px;
+    height: auto;
+    margin: 20px auto;
+    top: auto;
+    left: auto;
+    transform: none;
+    aspect-ratio: 720 / 491;
+  }
+
+  /* Chat Text - Adjust for mobile */
+  .home-chat-text-main {
+    position: absolute;
+    left: 10%;
+    top: 10%;
+    transform: none;
+    width: 80%;
+  }
+
+  .home-chat-text-content {
+    font-size: 18px;
+    line-height: 24px;
+    letter-spacing: -1px;
+  }
+
+  /* Vector Decoration - Hide or scale on mobile */
+  .home-vector {
+    display: none; /* Hide on mobile for cleaner look */
+  }
+
+  /* Chat Button - Already responsive, but ensure it's visible */
+  .home-chat-button {
+    position: fixed !important;
+    bottom: 20px !important;
+    z-index: 9999 !important;
+  }
+}
+
+/* Small mobile devices (480px and smaller) */
+@media (max-width: 480px) {
+  .home-inner {
+    padding: 5px;
+  }
+
+  .home-header-bar {
+    min-height: 50px;
+    border-radius: 15px;
+    margin-bottom: 8px;
+  }
+
+  .home-asu-logo {
+    width: 60px;
+    height: 40px;
+    margin: 3px 8px;
+  }
+
+  .home-title {
+    padding: 8px;
+    margin: 3px 0;
+  }
+
+  .home-info-icon {
+    width: 40px;
+    height: 40px;
+    top: 8px;
+    right: 8px;
+  }
+
+  .home-info-icon-text {
+    font-size: 20px;
+  }
+
+  .home-blue-character {
+    width: 70%;
+    max-width: 250px;
+    margin: 15px auto;
+  }
+
+  .home-chat-bubble-container {
+    width: 95%;
+    max-width: 350px;
+    margin: 15px auto;
+  }
+
+  .home-chat-text-content {
+    font-size: 16px;
+    line-height: 22px;
+    letter-spacing: -0.8px;
+  }
+
+  .home-chat-button {
+    bottom: 15px !important;
+  }
+}
+
+/* Very small devices (360px and smaller) */
+@media (max-width: 360px) {
+  .home-blue-character {
+    width: 80%;
+    max-width: 200px;
+  }
+
+  .home-chat-bubble-container {
+    width: 98%;
+    max-width: 300px;
+  }
+
+  .home-chat-text-content {
+    font-size: 14px;
+    line-height: 20px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .home-inner {
+    min-height: auto;
+    padding: 5px;
+  }
+
+  .home-blue-character {
+    max-width: 200px;
+  }
+
+  .home-chat-bubble-container {
+    max-width: 300px;
+  }
+}
+
