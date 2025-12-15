@@ -53,7 +53,9 @@ export default function App() {
   const [messages, setMessages] = useState([buildDefaultMessage('en')]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false); // Track typewriter typing state
+  const [isListening, setIsListening] = useState(false); // Track mic recording state
   const chatColumnRef = useRef(null);
+  const inputWrapperRef = useRef(null);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -219,9 +221,16 @@ export default function App() {
     });
   };
 
+  const handleMicClick = () => {
+    // Trigger mic button click in InputWrapper
+    if (inputWrapperRef.current) {
+      inputWrapperRef.current.click();
+    }
+  };
+
   return (
     <div className="desktop-container">
-      <Header />
+      <Header onMicClick={handleMicClick} isListening={isListening} />
 
       {/* Chat Column Container */}
       <div className="chat-column" ref={chatColumnRef}>
@@ -263,10 +272,12 @@ export default function App() {
       </div>
 
       <InputWrapper 
+        ref={inputWrapperRef}
         onSendMessage={handleSendMessage} 
         isLoading={isLoading || isTyping}
         language={language}
         onLanguageChange={handleLanguageChange}
+        onListeningChange={setIsListening}
       />
     </div>
   );

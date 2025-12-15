@@ -1,8 +1,8 @@
 import React from 'react';
 import imgAsuSunBurst from '../assets/asu-sunburst.png';
-import DownloadTranscript from './DownloadTranscript';
+import HeaderDropdown from './HeaderDropdown';
 
-export default function Header() {
+export default function Header({ onMicClick, isListening }) {
   return (
     <header className="header-unit">
       {/* Main White Card */}
@@ -18,8 +18,10 @@ export default function Header() {
         <p>Chat With Blue</p>
       </div>
 
-      {/* Download Transcript Button */}
-      <DownloadTranscript />
+      {/* Header Dropdown Menu - Home, Download, Mic */}
+      <div className="header-buttons-container">
+        <HeaderDropdown onMicClick={onMicClick} isListening={isListening} />
+      </div>
     </header>
   );
 }

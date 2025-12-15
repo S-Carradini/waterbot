@@ -78,11 +78,11 @@
 /* Chat bubble container - adjusted position and rotation */
 .home-chat-bubble-container {
   position: absolute;
-  left: 40%;
-  top: 21.8%;
-  width: 43.47%;
-  height: 42.38%;
-  transform: rotate(10deg);
+  left: 38%;
+  top: 14.8%;
+  width: 50%;
+  height: 48%;
+  transform: rotate(-1deg);
   transform-origin: center center;
   z-index: 2;
 }
@@ -90,6 +90,7 @@
 .home-union {
   position: absolute;
   inset: 0;
+  z-index: 1;
 }
 
 .home-union img {
@@ -98,59 +99,34 @@
   object-fit: contain;
 }
 
-/* Main text - exact Figma: x=806, y=384.7, w=339.9, h=188.8 */
+/* Main text - combined Hello and main content */
 .home-chat-text-main {
   position: absolute;
-  left: 36.8%; /* (806-576)/626 = 36.8% relative to container */
-  top: 30.1%; /* (384.7-254)/434 = 30.1% relative to container */
-  width: 54.3%; /* 339.9/626 = 54.3% */
-  height: 43.5%; /* 188.8/434 = 43.5% */
+  left: 173px;
+  top: 88px;
   display: flex;
   align-items: flex-start;
   justify-content: flex-start;
   transform: rotate(348.843deg) skewX(356.295deg);
   transform-origin: top left;
+  z-index: 3;
+  width: auto;
+  height: auto;
 }
 
 .home-chat-text-content {
-  font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
+  font-family: "DigitalStrip 2.0 BB", 'Arial Black', 'Arial Bold', Arial, sans-serif;
   font-weight: 700;
-  line-height: 38px;
-  font-size: 32px;
+  line-height: 52px;
+  font-size: 27px;
   color: #254c63;
-  letter-spacing: -1.28px;
-  white-space: normal;
-  margin: 0;
-  padding: 0;
-  width: 100%;
-}
-
-/* Hello text - exact Figma: x=801, y=338.7, w=218.6, h=83.6 */
-.home-chat-text-hello {
-  position: absolute;
-  left: 35.9%; /* (801-576)/626 = 35.9% relative to container */
-  top: 19.5%; /* (338.7-254)/434 = 19.5% relative to container */
-  width: 34.9%; /* 218.6/626 = 34.9% */
-  height: 19.3%; /* 83.6/434 = 19.3% */
-  display: flex;
-  align-items: flex-start;
-  justify-content: flex-start;
-  transform: rotate(348.843deg) skewX(356.295deg);
-  transform-origin: top left;
-}
-
-.home-chat-text-hello p {
-  font-family: 'Arial Black', 'Arial Bold', Arial, sans-serif;
-  font-weight: 700;
-  line-height: 40px;
-  font-size: 34px;
-  color: #254c63;
-  letter-spacing: -1.36px;
+  letter-spacing: -1.76px;
   white-space: pre-wrap;
   margin: 0;
   padding: 0;
-  width: 100%;
+  width: auto;
 }
+
 
 /* Blue character - exact Figma: x=246, y=310, w=456, h=495 */
 .home-blue-character {

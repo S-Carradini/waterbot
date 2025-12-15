@@ -316,7 +316,6 @@ function SpeakingWaveforms() {
 export default function RecordingModal({ isVisible, onClose, transcript = "" }) {
   const [state, setState] = useState("listening");
   const [mounted, setMounted] = useState(false);
-  const [displayedText, setDisplayedText] = useState("");
 
   // Ensure component is mounted before rendering portal
   useEffect(() => {
@@ -328,61 +327,10 @@ export default function RecordingModal({ isVisible, onClose, transcript = "" }) 
   useEffect(() => {
     if (isVisible) {
       setState("listening");
-      setDisplayedText(""); // Reset text when modal opens
     } else {
       setState("idle");
     }
   }, [isVisible]);
-
-  // Animate text appearance as it's transcribed
-  useEffect(() => {
-    if (!transcript) {
-      setDisplayedText("");
-      return;
-    }
-
-    if (transcript.length > displayedText.length) {
-      // New text added - show it immediately for real-time feel
-      // But animate the new characters appearing
-      const newChars = transcript.slice(displayedText.length);
-      
-      // For better UX, show text immediately but animate the last few characters
-      if (newChars.length > 10) {
-        // If a lot of new text, show most immediately, animate last part
-        const immediateText = transcript.slice(0, transcript.length - 5);
-        setDisplayedText(immediateText);
-        
-        // Animate the last few characters
-        let index = immediateText.length;
-        const interval = setInterval(() => {
-          if (index < transcript.length) {
-            setDisplayedText(transcript.slice(0, index + 1));
-            index++;
-          } else {
-            clearInterval(interval);
-          }
-        }, 50);
-        
-        return () => clearInterval(interval);
-      } else {
-        // Small amount of new text - animate it
-        let index = displayedText.length;
-        const interval = setInterval(() => {
-          if (index < transcript.length) {
-            setDisplayedText(transcript.slice(0, index + 1));
-            index++;
-          } else {
-            clearInterval(interval);
-          }
-        }, 30);
-        
-        return () => clearInterval(interval);
-      }
-    } else if (transcript !== displayedText) {
-      // Direct update if transcript changed (shouldn't happen often)
-      setDisplayedText(transcript);
-    }
-  }, [transcript, displayedText]);
 
   if (!mounted) return null;
 
@@ -390,72 +338,60 @@ export default function RecordingModal({ isVisible, onClose, transcript = "" }) 
     <AnimatePresence>
       {isVisible && (
         <>
-          {/* Backdrop */}
+          {/* Fuzzy backdrop with blur effect - full screen */}
+          <motion.div
+            initial={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            animate={{ opacity: 1, backdropFilter: 'blur(8px)' }}
+            exit={{ opacity: 0, backdropFilter: 'blur(0px)' }}
+            transition={{ duration: 0.3 }}
+            className="recording-modal-backdrop"
+            style={{
+              backgroundColor: 'rgba(0, 0, 0, 0.2)',
+              backdropFilter: 'blur(8px)',
+              pointerEvents: 'none',
+            }}
+          />
+          
+          {/* Clear overlay for input area and language toggle - covers entire input-wrapper area */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            onClick={onClose}
-            className="recording-modal-backdrop"
+            transition={{ duration: 0.3 }}
             style={{
-              backgroundColor: 'rgba(0, 0, 0, 0.6)',
-              backdropFilter: 'blur(4px)',
+              position: 'fixed',
+              top: '87.21%',
+              right: '1.81%',
+              bottom: '5.57%',
+              left: '1.74%',
+              backgroundColor: '#7dc8e0', /* Match page background */
+              borderRadius: '16px', /* Match input container border radius */
+              pointerEvents: 'none',
+              zIndex: 1000, /* Between backdrop (999) and input (1001) */
             }}
           />
 
-          {/* Modal */}
+          {/* Modal container - transparent, only for positioning */}
           <motion.div
-            initial={{ opacity: 0, scale: 0.9, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.9, y: 20 }}
+            initial={{ opacity: 0, scale: 0.9 }}
+            animate={{ opacity: 1, scale: 1 }}
+            exit={{ opacity: 0, scale: 0.9 }}
             transition={{ type: "spring", damping: 25, stiffness: 300 }}
             className="recording-modal-container"
             style={{
-              borderRadius: '24px',
-              boxShadow: '0 25px 50px -12px rgba(0, 0, 0, 0.25)',
-              overflow: 'hidden',
               background: 'transparent',
-              backdropFilter: 'blur(20px)'
+              pointerEvents: 'none',
             }}
           >
-            {/* Content */}
+            {/* Content - transparent, only blue character visible */}
             <div 
               className="relative size-full" 
               data-name="Desktop - 6"
               style={{
-                background: 'rgba(125, 200, 224, 0.7)',
-                borderRadius: '24px',
-                backdropFilter: 'blur(30px)',
-                border: '1px solid rgba(255, 255, 255, 0.3)',
-                boxShadow: 'inset 0 1px 0 0 rgba(255, 255, 255, 0.2)',
-                overflow: 'hidden'
+                background: 'transparent',
+                pointerEvents: 'none',
               }}
             >
-              <div 
-                style={{
-                  position: 'absolute',
-                  top: '20px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  width: '60%',
-                  display: 'flex',
-                  flexDirection: 'column',
-                  fontFamily: "'Libre Franklin', -apple-system, BlinkMacSystemFont, sans-serif",
-                  fontWeight: 800,
-                  lineHeight: 'normal',
-                  color: '#7dc8e0',
-                  fontSize: 'clamp(28px, 4vw, 48px)',
-                  letterSpacing: '0.64px',
-                  justifyContent: 'center',
-                  alignItems: 'center',
-                  textAlign: 'center',
-                  overflow: 'hidden',
-                  zIndex: 5
-                }}
-              >
-                <p style={{ lineHeight: '1.2', margin: 0, padding: 0, whiteSpace: 'nowrap' }}>Chat With Blue</p>
-              </div>
-
               {/* Listening ripples */}
               <AnimatePresence>
                 {state === "listening" && <ListeningRipples />}
@@ -480,171 +416,6 @@ export default function RecordingModal({ isVisible, onClose, transcript = "" }) 
                   </motion.div>
                 )}
               </AnimatePresence>
-
-              {/* Transcription Preview */}
-              <motion.div
-                initial={{ opacity: 0, y: 20, x: '-50%' }}
-                animate={{ opacity: 1, y: 0, x: '-50%' }}
-                style={{
-                  position: 'absolute',
-                  bottom: '140px',
-                  left: '50%',
-                  width: '85%',
-                  maxWidth: '800px',
-                  zIndex: 20,
-                  padding: '0 20px',
-                  boxSizing: 'border-box'
-                }}
-              >
-                <div
-                  style={{
-                    background: displayedText ? 'rgba(255, 255, 255, 0.3)' : 'rgba(255, 255, 255, 0.2)',
-                    borderRadius: '20px',
-                    padding: '24px 32px',
-                    boxShadow: '0 10px 40px rgba(0, 0, 0, 0.15)',
-                    backdropFilter: 'blur(10px)',
-                    border: 'none',
-                    minHeight: '80px',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    width: '100%',
-                    boxSizing: 'border-box',
-                    maxWidth: '100%'
-                  }}
-                >
-                  {displayedText ? (
-                    <motion.p
-                      key={displayedText}
-                      initial={{ opacity: 0, scale: 0.98 }}
-                      animate={{ opacity: 1, scale: 1 }}
-                      transition={{ duration: 0.2 }}
-                      style={{
-                        fontFamily: "'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                        fontSize: '20px',
-                        lineHeight: '1.6',
-                        color: '#254c63',
-                        margin: 0,
-                        wordWrap: 'break-word',
-                        whiteSpace: 'pre-wrap',
-                        width: '100%',
-                        textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)'
-                      }}
-                    >
-                      {displayedText}
-                      {transcript && transcript.length > displayedText.length && (
-                        <motion.span
-                          animate={{ opacity: [1, 0.3, 1] }}
-                          transition={{
-                            duration: 1,
-                            repeat: Infinity,
-                            ease: "easeInOut"
-                          }}
-                          style={{
-                            color: '#8C1D40',
-                            fontWeight: 'bold',
-                            marginLeft: '2px'
-                          }}
-                        >
-                          |
-                        </motion.span>
-                      )}
-                    </motion.p>
-                  ) : (
-                    <motion.p
-                      animate={{ opacity: [0.5, 1, 0.5] }}
-                      transition={{
-                        duration: 2,
-                        repeat: Infinity,
-                        ease: "easeInOut"
-                      }}
-                      style={{
-                        fontFamily: "'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif",
-                        fontSize: '18px',
-                        color: '#8C1D40',
-                        margin: 0,
-                        fontStyle: 'italic',
-                        textShadow: '0 1px 2px rgba(255, 255, 255, 0.8)'
-                      }}
-                    >
-                      Listening...
-                    </motion.p>
-                  )}
-                </div>
-              </motion.div>
-
-              {/* Interactive button */}
-              <div
-                style={{
-                  position: 'absolute',
-                  bottom: '40px',
-                  left: '50%',
-                  transform: 'translateX(-50%)',
-                  zIndex: 30
-                }}
-              >
-                <button
-                  onClick={onClose}
-                  style={{
-                    position: 'relative',
-                    background: 'none',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: 0
-                  }}
-                >
-                  <div
-                    style={{
-                      backgroundColor: '#8C1D40',
-                      position: 'relative',
-                      borderRadius: '50%',
-                      width: '80px',
-                      height: '80px',
-                      transition: 'all 0.2s ease',
-                      cursor: 'pointer'
-                    }}
-                    onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#7a1937';
-                      e.currentTarget.style.transform = 'scale(1.05)';
-                    }}
-                    onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#8C1D40';
-                      e.currentTarget.style.transform = 'scale(1)';
-                    }}
-                    data-name="Interact with Blue"
-                  >
-                    <div
-                      aria-hidden="true"
-                      style={{
-                        position: 'absolute',
-                        border: '2px solid #5a1229',
-                        inset: '-2px',
-                        pointerEvents: 'none',
-                        borderRadius: '50%'
-                      }}
-                    />
-                    <div
-                      style={{
-                        display: 'flex',
-                        flexDirection: 'row',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        width: '100%',
-                        height: '100%'
-                      }}
-                    >
-                      <Square
-                        style={{
-                          width: '40px',
-                          height: '40px',
-                          color: 'white',
-                          fill: 'white'
-                        }}
-                      />
-                    </div>
-                  </div>
-                </button>
-              </div>
             </div>
           </motion.div>
         </>

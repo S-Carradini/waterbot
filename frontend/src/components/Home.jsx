@@ -31,7 +31,7 @@ export default function Home() {
         <img alt="" src={imgVector} />
       </div>
 
-      {/* Chat bubble with text */}
+      {/* Chat bubble */}
       <div className="home-chat-bubble-container" data-node-id="1:8">
         <div className="home-union" data-name="Union" data-node-id="1:9">
           <img alt="" src={imgUnion} />

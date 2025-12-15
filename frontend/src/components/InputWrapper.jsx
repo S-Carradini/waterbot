@@ -4,14 +4,25 @@ import RecordingModal from './RecordingModal';
 const speechLangCode = (lang) => (lang === 'es' ? 'es-ES' : 'en-US');
 const SILENCE_TIMEOUT = 2000; // Stop recording after 2 seconds of silence (adjust as needed)
 
-export default function InputWrapper({ onSendMessage, isLoading, language = 'en', onLanguageChange }) {
+const InputWrapper = React.forwardRef(function InputWrapper({ onSendMessage, isLoading, language = 'en', onLanguageChange, onListeningChange }, ref) {
   const [inputValue, setInputValue] = useState('');
   const [isListening, setIsListening] = useState(false);
   const recognitionRef = useRef(null);
-  const micAnimationRef = useRef(null);
   const languageRef = useRef(language);
   const finalTranscriptRef = useRef(''); // Store accumulated final transcripts
   const silenceTimeoutRef = useRef(null); // Timeout for auto-stop on silence
+
+  // Expose toggleListening function to parent via ref
+  React.useImperativeHandle(ref, () => ({
+    click: toggleListening,
+  }));
+
+  // Notify parent of listening state changes
+  useEffect(() => {
+    if (onListeningChange) {
+      onListeningChange(isListening);
+    }
+  }, [isListening, onListeningChange]);
 
   // Initialize speech recognition
   useEffect(() => {
@@ -70,12 +81,6 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
                   recognitionRef.current.setIsCurrentlyListening(false);
                 }
                 setIsListening(false);
-                
-                // Hide Lottie animation if available
-                if (micAnimationRef.current?.animation) {
-                  micAnimationRef.current.style.display = 'none';
-                  micAnimationRef.current.animation.stop();
-                }
 
                 // Auto-submit the transcribed text if there's any
                 // Use a small delay to ensure state is updated
@@ -130,48 +135,11 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
       };
     }
 
-    // Initialize Lottie animation if available
-    const initLottie = () => {
-      if (window.lottie && micAnimationRef.current) {
-        try {
-          const animation = window.lottie.loadAnimation({
-            container: micAnimationRef.current,
-            renderer: 'svg',
-            loop: true,
-            autoplay: false,
-            path: '/static/animation/mic.json',
-            rendererSettings: {
-              preserveAspectRatio: 'xMidYMid slice',
-            },
-          });
-          if (micAnimationRef.current) {
-            micAnimationRef.current.animation = animation;
-          }
-        } catch (e) {
-          console.warn('Could not load mic animation:', e);
-        }
+    return () => {
+      if (recognitionRef.current) {
+        recognitionRef.current.stop();
       }
     };
-
-    // Wait for Lottie to load
-    if (window.lottie) {
-      initLottie();
-    } else {
-      // Wait for script to load
-      const checkLottie = setInterval(() => {
-        if (window.lottie) {
-          clearInterval(checkLottie);
-          initLottie();
-        }
-      }, 100);
-      
-      return () => {
-        clearInterval(checkLottie);
-        if (recognitionRef.current) {
-          recognitionRef.current.stop();
-        }
-      };
-    }
 
     return () => {
       // Cleanup: clear timeout and stop recognition
@@ -240,12 +208,6 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
           recognitionRef.current.setIsCurrentlyListening(true);
         }
         setIsListening(true);
-        
-        // Show Lottie animation if available
-        if (micAnimationRef.current?.animation) {
-          micAnimationRef.current.style.display = 'block';
-          micAnimationRef.current.animation.play();
-        }
       } catch (e) {
         console.error('Error starting recognition:', e);
         setIsListening(false);
@@ -267,12 +229,6 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
           recognitionRef.current.setIsCurrentlyListening(false);
         }
         setIsListening(false);
-        
-        // Hide Lottie animation if available
-        if (micAnimationRef.current?.animation) {
-          micAnimationRef.current.style.display = 'none';
-          micAnimationRef.current.animation.stop();
-        }
 
         // Auto-submit the transcribed text if there's any
         if (inputValue.trim() && !isLoading) {
@@ -327,37 +283,6 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
           </button>
         </form>
       </div>
-      {/* Mic Icon Button */}
-      <div style={{ position: 'relative', overflow: 'visible', zIndex: 10 }}>
-        <button 
-          type="button" 
-          className={`mic-icon-button ${isListening ? 'recording' : ''}`}
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Button click event fired');
-            toggleListening();
-          }}
-          disabled={isLoading}
-          style={{ position: 'relative', zIndex: 10 }}
-        >
-          <i 
-            className="fas fa-microphone" 
-            style={{ 
-              display: 'block',
-              color: isListening ? 'white' : '#8c1d40',
-              position: 'relative',
-              zIndex: 11,
-              pointerEvents: 'none'
-            }}
-          ></i>
-        </button>
-          <div 
-            ref={micAnimationRef}
-            className="mic-animation-container"
-          style={{ display: isListening ? 'block' : 'none', pointerEvents: 'none' }}
-          ></div>
-      </div>
       {/* Recording Modal */}
       <RecordingModal 
         isVisible={isListening} 
@@ -384,5 +309,7 @@ export default function InputWrapper({ onSendMessage, isLoading, language = 'en'
       )}
     </div>
   );
-}
+});
+
+export default InputWrapper;
 
