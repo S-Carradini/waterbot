@@ -67,27 +67,39 @@ export default function ChatBubble({
   }, [cleanTextContent, isTypewriterEnabled]);
 
   // Scroll to bottom when displayedText updates during typewriter effect
-  // Use a ref to throttle scroll calls (only scroll every 5 characters or so)
+  // Scroll with every line (newline character) and continuously for natural line wraps
   const scrollTimeoutRef = useRef(null);
-  const lastScrollLengthRef = useRef(0);
+  const lastTextRef = useRef('');
+  const lastLineCountRef = useRef(0);
   
   useEffect(() => {
     if (displayedText && isTypewriterEnabled && onContentUpdate) {
-      const currentLength = displayedText.length;
-      const lengthDiff = currentLength - lastScrollLengthRef.current;
+      const currentText = displayedText;
+      const lastText = lastTextRef.current;
       
-      // Scroll more frequently for better UX, but throttle to avoid performance issues
-      if (lengthDiff >= 3 || currentLength % 10 === 0) {
+      // Count lines (both explicit newlines and estimate natural wraps)
+      const currentLineCount = (currentText.match(/\n/g) || []).length + 1;
+      const lastLineCount = lastLineCountRef.current;
+      
+      // Check if a newline character was added (new line detected)
+      const hasNewLine = currentText.length > lastText.length && 
+                        currentText.slice(lastText.length).includes('\n');
+      
+      // Scroll on every character update to catch line wraps, but prioritize newlines
+      if (currentText.length > lastText.length) {
         // Clear existing timeout
         if (scrollTimeoutRef.current) {
           clearTimeout(scrollTimeoutRef.current);
         }
         
-        // Scroll after a small delay to ensure DOM is updated
+        // Scroll immediately for newlines, or with minimal delay for regular updates
+        const delay = hasNewLine || currentLineCount > lastLineCount ? 10 : 20;
+        
         scrollTimeoutRef.current = setTimeout(() => {
           onContentUpdate();
-          lastScrollLengthRef.current = currentLength;
-        }, 50);
+          lastTextRef.current = currentText;
+          lastLineCountRef.current = currentLineCount;
+        }, delay);
       }
       
       return () => {
