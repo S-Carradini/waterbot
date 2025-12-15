@@ -352,7 +352,7 @@ export default function RecordingModal({ isVisible, onClose, transcript = "" }) 
             }}
           />
           
-          {/* Clear overlay for input area and language toggle - covers entire input-wrapper area */}
+          {/* Clear overlay for input-container only - language toggle will be blurred */}
           <motion.div
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
@@ -361,7 +361,7 @@ export default function RecordingModal({ isVisible, onClose, transcript = "" }) 
             style={{
               position: 'fixed',
               top: '87.21%',
-              right: '1.81%',
+              right: 'calc(1.81% + 150px + 15px)', /* Exclude language toggle (150px) and gap (15px) */
               bottom: '5.57%',
               left: '1.74%',
               backgroundColor: '#7dc8e0', /* Match page background */
@@ -416,6 +416,79 @@ export default function RecordingModal({ isVisible, onClose, transcript = "" }) 
                   </motion.div>
                 )}
               </AnimatePresence>
+
+              {/* Stop Recording Button - positioned below blue character, slightly to the left */}
+              <motion.div
+                initial={{ opacity: 0, scale: 0.8 }}
+                animate={{ opacity: 1, scale: 1 }}
+                exit={{ opacity: 0, scale: 0.8 }}
+                transition={{ duration: 0.3 }}
+                style={{
+                  position: 'absolute',
+                  top: 'calc(29.49% + 40vh)',
+                  left: 'calc(35.16% + 132px)', /* calc(35.16% - -132px) = calc(35.16% + 132px) */
+                  zIndex: 30,
+                  pointerEvents: 'auto',
+                  opacity: 1,
+                  transform: 'none',
+                }}
+              >
+                <button
+                  onClick={onClose}
+                  style={{
+                    position: 'relative',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: 0,
+                  }}
+                  aria-label="Stop Recording"
+                >
+                  <div
+                    style={{
+                      backgroundColor: '#8C1D40',
+                      position: 'relative',
+                      borderRadius: '50%',
+                      width: '80px',
+                      height: '80px',
+                      transition: 'all 0.2s ease',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
+                    }}
+                    onMouseEnter={(e) => {
+                      e.currentTarget.style.backgroundColor = '#7a1937';
+                      e.currentTarget.style.transform = 'scale(1.05)';
+                    }}
+                    onMouseLeave={(e) => {
+                      e.currentTarget.style.backgroundColor = '#8C1D40';
+                      e.currentTarget.style.transform = 'scale(1)';
+                    }}
+                    data-name="Stop Recording"
+                  >
+                    <div
+                      aria-hidden="true"
+                      style={{
+                        position: 'absolute',
+                        border: '2px solid #5a1229',
+                        inset: '-2px',
+                        pointerEvents: 'none',
+                        borderRadius: '50%'
+                      }}
+                    />
+                    <Square
+                      style={{
+                        width: '40px',
+                        height: '40px',
+                        color: 'white',
+                        fill: 'white'
+                      }}
+                    />
+                  </div>
+                </button>
+              </motion.div>
             </div>
           </motion.div>
         </>
