@@ -46,6 +46,13 @@ $(document).ready(function () {
       }
     });
 
+  // Home button - navigate to waterbot page
+  document
+    .querySelector(".nav-item:first-child")
+    .addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = '/waterbot';
+    });
   
   // JavaScript to animate open/close on hover
   const navContainer = document.querySelector(".top-right-icon");
