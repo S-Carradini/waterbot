@@ -544,7 +544,7 @@ $(document).ready(function () {
         console.error("Error:", error.message);
         removeLoadingAnimation();
         $("#user_query").prop("disabled", false);
-        $("#submit-button").prop("disabled", false");
+        $("#submit-button").prop("disabled", false);
         scrollToBottom();
       });
   }
