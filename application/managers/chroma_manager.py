@@ -38,12 +38,10 @@ class ChromaManager():
         
     async def ann_search(self, user_query):
         docs=self.vectordb.similarity_search(user_query)
-        sources=[docs[i].metadata["source"] for i in range(len(docs))]
-
-
+        sources=[docs[i].metadata.get("source", "") for i in range(len(docs))]
+        
         # Map to human readable; if source is not in the mapping use source name
         sources_parsed = [self.parse_source(source) for source in list(set(sources))]
-
 
         return {
             "documents":docs,

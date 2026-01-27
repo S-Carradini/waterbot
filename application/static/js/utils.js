@@ -342,6 +342,7 @@ $(document).ready(function () {
     fetch(apiUrl, {
       method: "POST",
       body: requestBody,
+      credentials: "include", // ✅ Send cookies with request
     })
       .then((response) => response.json())
       .then((botResponse) => {
@@ -428,6 +429,7 @@ $(document).ready(function () {
     scrollToBottom();
     fetch(apiUrl, {
       method: "POST",
+      credentials: "include", // ✅ Send cookies with request
     })
       .then((response) => response.json())
       .then((botResponse) => {

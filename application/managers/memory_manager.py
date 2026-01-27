@@ -90,11 +90,17 @@ class MemoryManager:
         for source in source_list:
             human_readable = source["human_readable"]
             url = source["url"]
-            if human_readable:  # Skip if human_readable is an empty string
+            filename = source.get("filename", "")
+            
+            # Use human_readable if available, otherwise fall back to filename
+            display_name = human_readable if human_readable else filename
+            
+            if display_name:  # Only display if we have something to show
+                html += "<br>" + str(counter) + ". " + display_name
                 if url:
-                    html += "<br>" + str(counter)  + ". " + human_readable + "<br>" + url
-                    has_items=True
-                    counter+=1
+                    html += "<br>" + url
+                has_items = True
+                counter += 1
 
         if has_items:
             return html

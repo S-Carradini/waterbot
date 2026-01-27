@@ -90,14 +90,17 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         
         # Set the application cookie in the response headers
+        # secure=True for production (HTTPS), False for local development (HTTP)
+        is_local = request.url.hostname in ["localhost", "127.0.0.1"]
+        
         response.set_cookie(
             key=COOKIE_NAME,
             value=session_value,
             max_age=7200,  # 2 hours
             path="/",      # ✅ Valid for all paths
-            httponly=True,
-            secure=True,   # ✅ Required for HTTPS through CloudFront
-            samesite="Lax" # ✅ Changed from "Strict" to allow cross-site navigation
+            httponly=False,  # ✅ False locally to allow JS to read for debugging
+            secure=not is_local,   # ✅ True in AWS (HTTPS), False locally (HTTP)
+            samesite="None" if not is_local else "Lax" # ✅ None for production, Lax for local
         )
         print(f"🍪 Set cookie {COOKIE_NAME} = {session_value}")
         
@@ -884,11 +887,9 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
     language = detect_language(user_query)
     
     if language == 'es':
-        # print("Inside spanish chromaDB")
         docs = await knowledge_base_spanish.ann_search(user_query)
         doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
     else:
-        #  print("Inside english chromaDB")
          docs = await knowledge_base.ann_search(user_query)
          doc_content_str = await knowledge_base.knowledge_to_string(docs)
     

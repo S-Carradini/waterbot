@@ -383,6 +383,7 @@ function showReactions(message) {
     fetch(apiUrl, {
         method: 'POST',
         body: requestBody,
+        credentials: 'include', // ✅ Send cookies with request
       })
       .then(response => response.json())
       .then(botResponse => {
@@ -472,6 +473,7 @@ function showReactions(message) {
     scrollToBottom();
     fetch(apiUrl, {
         method: 'POST',
+        credentials: 'include', // ✅ Send cookies with request
       })
       .then(response => response.json())
       .then(botResponse => {

@@ -436,6 +436,7 @@ $(document).ready(function () {
     fetch(apiUrl, {
       method: "POST",
       body: requestBody,
+      credentials: "include", // ✅ Send cookies with request
     })
       .then((response) => response.json())
       .then((botResponse) => {
@@ -522,6 +523,7 @@ $(document).ready(function () {
     scrollToBottom();
     fetch(apiUrl, {
       method: "POST",
+      credentials: "include", // ✅ Send cookies with request
     })
       .then((response) => {
         if (!response.ok) {
@@ -542,7 +544,7 @@ $(document).ready(function () {
         console.error("Error:", error.message);
         removeLoadingAnimation();
         $("#user_query").prop("disabled", false);
-        $("#submit-button").prop("disabled", false);
+        $("#submit-button").prop("disabled", false");
         scrollToBottom();
       });
   }
