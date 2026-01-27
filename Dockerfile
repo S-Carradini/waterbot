@@ -10,11 +10,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 WORKDIR /app
 
 # Copy the large 'chroma' folder first to maximize caching
-# COPY /application/docs/chroma /app/docs/chroma
+COPY /application/docs/chroma /app/docs/chroma
 
 # Set permissions for the chroma directory (if necessary)
-# RUN chown -R root:root /app/docs/chroma && \
-#     chmod -R 755 /app/docs/chroma
+RUN chown -R root:root /app/docs/chroma && \
+    chmod -R 755 /app/docs/chroma
 
 # Copy only requirements files first to optimize layer caching
 COPY /application/requirements.txt /app/
