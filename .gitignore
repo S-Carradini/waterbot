@@ -1,6 +1,12 @@
 #local util
 ecr_auth.sh
 
+# Markdown documentation files
+*.md
+
+# Mac OS files
+.DS_Store
+
 # Database
 application/docs/
 application/newData

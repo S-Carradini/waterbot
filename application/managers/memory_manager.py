@@ -92,13 +92,10 @@ class MemoryManager:
             url = source["url"]
             filename = source.get("filename", "")
             
-            # Use human_readable if available, otherwise fall back to filename
-            display_name = human_readable if human_readable else filename
-            
-            if display_name:  # Only display if we have something to show
-                html += "<br>" + str(counter) + ". " + display_name
-                if url:
-                    html += "<br>" + url
+            # Only display sources that have both name and URL
+            if human_readable and url:
+                html += "<br>" + str(counter) + ". " + human_readable
+                html += "<br>" + url
                 has_items = True
                 counter += 1
 
