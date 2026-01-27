@@ -294,11 +294,11 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
 # Secure endpoint
 @app.get("/messages")
 def get_messages(user: str = Depends(authenticate)):  # Requires authentication
-    """Read the messages from the PostgreSQL database"""
+    """Read all messages from the PostgreSQL database"""
     try:
         conn = psycopg2.connect(**DB_PARAMS)
         cursor = conn.cursor(cursor_factory=DictCursor)
-        cursor.execute("SELECT * FROM messages ORDER BY created_at DESC LIMIT 100;")
+        cursor.execute("SELECT * FROM messages ORDER BY created_at DESC;")
         messages = cursor.fetchall()
         cursor.close()
         conn.close()
