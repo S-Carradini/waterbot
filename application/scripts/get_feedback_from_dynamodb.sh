@@ -104,29 +104,19 @@ echo "📄 Creating detailed TXT report..."
   echo ""
   
   # Show only messages with feedback (reaction or comment)
-  echo "$MESSAGES" | jq -r '.[] | select(.reaction != null or .userComment != null) | 
+  echo "$MESSAGES" | jq -r '.[] | select(.reaction != null or (.userComment != null and .userComment != "")) | 
   "FEEDBACK ENTRY\n" +
   "━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n" +
-  "Session UUID:  " + .sessionId + "\n" +
+  "Session ID:    " + .sessionId + "\n" +
   "Message ID:    " + .msgId + "\n" +
-  "Timestamp:     " + .timestamp + "\n" +
-  "\n" +
-  "👤 USER QUERY:\n" + .userQuery + "\n" +
-  "\n" +
-  "🤖 BOT RESPONSE:\n" + (.responseContent | gsub("<br><br>"; "\n\n") | gsub("<br>"; "\n") | gsub("</p><p>"; "\n\n")) + "\n" +
   "\n" +
   (if .reaction != null then
-    "👍👎 REACTION: " + .reaction + "\n"
+    "👍👎 REACTION:     " + (if .reaction == 1 or .reaction == "thumbs_up" then "👍 Thumbs Up (1)" elif .reaction == 0 or .reaction == "thumbs_down" then "👎 Thumbs Down (0)" else (.reaction | tostring) end) + "\n"
   else "" end) +
-  (if .userComment != null then
-    "💭 USER COMMENT: " + .userComment + "\n"
+  (if .userComment != null and .userComment != "" then
+    "💭 USER COMMENT:  " + .userComment + "\n"
   else "" end) +
-  "\n" +
-  "📚 SOURCES: " + (.source | length | tostring) + " sources" +
-  (if (.source | length) > 0 then 
-    "\n" + (.source | to_entries | map("   [" + (.key + 1 | tostring) + "] " + .value) | join("\n"))
-  else "" end) +
-  "\n\n" + 
+  "\n" + 
   "================================================================================================\n\n"'
   
   echo ""
@@ -144,20 +134,16 @@ echo ""
 
 echo "📊 Creating CSV file for spreadsheet analysis..."
 
-# Include all messages (not just those with feedback) for complete analysis
+# Include all messages for complete analysis (4 columns only)
 echo "$MESSAGES" | jq -r '
 # CSV Header
-["sessionId", "msgId", "timestamp", "userQuery", "responseContent", "reaction", "userComment", "source_count"],
-# CSV Data (clean HTML tags from response)
+["sessionId", "msgId", "reaction", "userComment"],
+# CSV Data
 (.[] | [
   .sessionId,
   .msgId,
-  .timestamp,
-  .userQuery,
-  (.responseContent | gsub("<br><br>"; " ") | gsub("<br>"; " ") | gsub("</p><p>"; " ") | gsub("<[^>]*>"; "")),
   (.reaction // ""),
-  (.userComment // ""),
-  (.source | length)
+  (.userComment // "")
 ])
 | @csv' > "$CSV_OUTPUT"
 
@@ -187,24 +173,15 @@ echo "📈 Feedback Statistics:"
 SESSION_COUNT=$(echo "$MESSAGES" | jq '[.[].sessionId] | unique | length')
 echo "   • Unique Sessions: $SESSION_COUNT"
 
-# Get date range
-FIRST_DATE=$(echo "$MESSAGES" | jq -r '.[-1].timestamp' | cut -d'T' -f1)
-LAST_DATE=$(echo "$MESSAGES" | jq -r '.[0].timestamp' | cut -d'T' -f1)
-echo "   • Date Range: $FIRST_DATE to $LAST_DATE"
-
-# Get messages with sources
-WITH_SOURCES=$(echo "$MESSAGES" | jq '[.[] | select((.source | length) > 0)] | length')
-echo "   • Messages with Sources: $WITH_SOURCES"
-
-# Reaction statistics
-THUMBS_UP=$(echo "$MESSAGES" | jq '[.[] | select(.reaction == "thumbs_up")] | length')
-THUMBS_DOWN=$(echo "$MESSAGES" | jq '[.[] | select(.reaction == "thumbs_down")] | length')
-WITH_COMMENTS=$(echo "$MESSAGES" | jq '[.[] | select(.userComment != null)] | length')
+# Reaction statistics (handle both numeric 0/1 and string values)
+THUMBS_UP=$(echo "$MESSAGES" | jq '[.[] | select(.reaction == 1 or .reaction == "thumbs_up")] | length')
+THUMBS_DOWN=$(echo "$MESSAGES" | jq '[.[] | select(.reaction == 0 or .reaction == "thumbs_down")] | length')
+WITH_COMMENTS=$(echo "$MESSAGES" | jq '[.[] | select(.userComment != null and .userComment != "")] | length')
 
 echo ""
 echo "👍 Reaction Breakdown:"
-echo "   • Thumbs Up: $THUMBS_UP"
-echo "   • Thumbs Down: $THUMBS_DOWN"
+echo "   • Thumbs Up (reaction=1): $THUMBS_UP"
+echo "   • Thumbs Down (reaction=0): $THUMBS_DOWN"
 echo "   • With Comments: $WITH_COMMENTS"
 
 # Calculate feedback rate

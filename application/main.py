@@ -333,32 +333,32 @@ def get_feedback(user: str = Depends(authenticate)):  # Requires authentication
         dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
         table = dynamodb.Table(MESSAGES_TABLE)
         
-        # Scan the entire table
+        # Scan the entire table - NO LIMITS, gets ALL data
         response = table.scan()
         items = response.get('Items', [])
         
-        # Handle pagination if there are more items
+        # Handle pagination to get ALL items (DynamoDB returns max 1MB per scan)
+        scan_count = 1
         while 'LastEvaluatedKey' in response:
             response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
             items.extend(response.get('Items', []))
+            scan_count += 1
         
-        # Convert to more readable format and sort by timestamp
+        logging.info(f"DynamoDB scan complete: {len(items)} total items retrieved in {scan_count} scans")
+        
+        # Convert to readable format - only 4 columns in DynamoDB
         messages = []
         for item in items:
             message = {
                 'sessionId': item.get('sessionId'),
                 'msgId': item.get('msgId'),
-                'timestamp': item.get('timestamp'),
-                'userQuery': item.get('userQuery'),
-                'responseContent': item.get('responseContent'),
-                'source': item.get('source', []),
                 'reaction': item.get('reaction'),
                 'userComment': item.get('userComment')
             }
             messages.append(message)
         
-        # Sort by timestamp (newest first)
-        messages.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        # Sort by msgId (since no timestamp available)
+        messages.sort(key=lambda x: x.get('msgId') or '', reverse=True)
         
         return messages
     except Exception as e:
