@@ -322,6 +322,49 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
     except Exception as e:
         logging.error("Database Error: %s", e, exc_info=True)
 
+@app.get("/feedback")
+def get_feedback(user: str = Depends(authenticate)):  # Requires authentication
+    """Read all messages with feedback (reactions/comments) from DynamoDB"""
+    try:
+        import boto3
+        from boto3.dynamodb.conditions import Attr
+        
+        # Get DynamoDB table
+        dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
+        table = dynamodb.Table(MESSAGES_TABLE)
+        
+        # Scan the entire table
+        response = table.scan()
+        items = response.get('Items', [])
+        
+        # Handle pagination if there are more items
+        while 'LastEvaluatedKey' in response:
+            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
+            items.extend(response.get('Items', []))
+        
+        # Convert to more readable format and sort by timestamp
+        messages = []
+        for item in items:
+            message = {
+                'sessionId': item.get('sessionId'),
+                'msgId': item.get('msgId'),
+                'timestamp': item.get('timestamp'),
+                'userQuery': item.get('userQuery'),
+                'responseContent': item.get('responseContent'),
+                'source': item.get('source', []),
+                'reaction': item.get('reaction'),
+                'userComment': item.get('userComment')
+            }
+            messages.append(message)
+        
+        # Sort by timestamp (newest first)
+        messages.sort(key=lambda x: x.get('timestamp', ''), reverse=True)
+        
+        return messages
+    except Exception as e:
+        logging.error("DynamoDB Error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail=f"Error fetching feedback: {str(e)}")
+
 def log_message(session_uuid, msg_id, user_query, response_content, source, chatbot_type="waterbot"):
     """Insert a message into the PostgreSQL database."""
     print("=" * 60)
