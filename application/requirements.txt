@@ -1,9 +1,8 @@
-chroma-hnswlib
-chromadb>=1.0.0
 langchain
 langchain-openai
 langchain-community
-langchain-chroma>=1.0.0
+psycopg[binary]
+pgvector
 langchain-aws>=1.0.0
 openai
 fastapi

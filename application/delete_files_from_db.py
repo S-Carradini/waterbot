@@ -1,29 +1,52 @@
-from langchain.vectorstores import Chroma
-from langchain.embeddings import OpenAIEmbeddings
+"""
+Delete RAG chunks by source path from pgvector rag_chunks table.
+Usage: set DB_* env, then run with source path as argument or edit source_to_delete below.
+"""
+import os
+import sys
 
-# Initialize Chroma with the correct directory and embedding function
-persist_directory = 'docs/chroma/'
-embeddings = OpenAIEmbeddings()
+_application_dir = os.path.dirname(os.path.abspath(__file__))
+if _application_dir not in sys.path:
+    sys.path.insert(0, _application_dir)
 
-"""Collections available in the database:
-spanish_collection
-langchain"""
+from dotenv import load_dotenv
+load_dotenv(os.path.join(_application_dir, ".env"))
 
-db = Chroma(persist_directory=persist_directory, embedding_function=embeddings, collection_name="langchain")
+import psycopg
+from pgvector.psycopg import register_vector
 
-def delete_documents_by_source(db, source_query):
-    # Retrieve documents with the specified source
-    filtered_docs = db.get(where={"source": source_query})
-    
-    if not filtered_docs['ids']:
-        print("No documents found with the specified source to delete.")
-        return
 
-    # Delete documents by their IDs
-    db._collection.delete(ids=filtered_docs['ids'])
-    print(f"Deleted {len(filtered_docs['ids'])} documents with the source: {source_query}")
+def _connect():
+    db_host = os.getenv("DB_HOST")
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+    db_name = os.getenv("DB_NAME")
+    if not all([db_host, db_user, db_password, db_name]):
+        print("Set DB_HOST, DB_USER, DB_PASSWORD, DB_NAME")
+        sys.exit(1)
+    conn = psycopg.connect(
+        dbname=db_name, user=db_user, password=db_password, host=db_host, port="5432"
+    )
+    register_vector(conn)
+    return conn
 
-# Example usage
+
+def delete_documents_by_source(source_query: str) -> int:
+    """Delete rows in rag_chunks whose metadata->>'source' matches source_query."""
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "DELETE FROM rag_chunks WHERE metadata->>'source' = %s RETURNING id",
+                (source_query,),
+            )
+            deleted = cur.rowcount
+        conn.commit()
+    return deleted
+
+
 if __name__ == "__main__":
-    source_to_delete = "newData/Nogales Water-2.pdf"
-    delete_documents_by_source(db, source_to_delete)
+    source_to_delete = os.environ.get("SOURCE_TO_DELETE", "newData/Nogales Water-2.pdf")
+    if len(sys.argv) > 1:
+        source_to_delete = sys.argv[1]
+    n = delete_documents_by_source(source_to_delete)
+    print(f"Deleted {n} chunks with source: {source_to_delete}")

@@ -51,123 +51,7 @@ if [[ "$OSTYPE" == "linux-gnu"* ]]; then
     fi
 fi
 
-# Check if ChromaDB directory exists
-if [ ! -d "application/docs/chroma" ]; then
-    echo "⚠️  ChromaDB directory not found at application/docs/chroma"
-    echo "   Building the vector database first..."
-    
-    # Load environment variables for building the index
-    if [ -f ".env" ]; then
-        echo "📄 Loading environment variables from .env file..."
-        export $(grep -v '^#' .env | xargs)
-    elif [ -f "application/.env" ]; then
-        echo "📄 Loading environment variables from application/.env file..."
-        export $(grep -v '^#' application/.env | xargs)
-    fi
-    
-    if [ -z "$OPENAI_API_KEY" ]; then
-        echo "❌ OPENAI_API_KEY not set. Cannot build ChromaDB index."
-        echo "   Set it in .env file or with: export OPENAI_API_KEY='your-key'"
-        exit 1
-    fi
-    
-    echo "🔨 Building ChromaDB index..."
-    
-    # Get the script's directory (works even when run with sudo)
-    SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-    
-    # Detect if running with sudo and get original user's environment
-    if [ -n "$SUDO_USER" ]; then
-        ORIGINAL_USER="$SUDO_USER"
-        ORIGINAL_HOME=$(eval echo ~$SUDO_USER)
-        echo "⚠️  Running with sudo - will run Python as original user to preserve venv"
-        
-        # Change to script directory
-        cd "$SCRIPT_DIR"
-        
-        # Try to detect venv - check multiple locations
-        PYTHON_CMD=""
-        
-        # First, check VIRTUAL_ENV variable (set when venv is activated)
-        if [ -n "$VIRTUAL_ENV" ] && [ -f "$VIRTUAL_ENV/bin/python" ]; then
-            PYTHON_CMD="$VIRTUAL_ENV/bin/python"
-            echo "✅ Found activated venv: $VIRTUAL_ENV"
-        # Check current working directory (PWD is preserved by sudo)
-        elif [ -f "$PWD/.venv/bin/python" ]; then
-            PYTHON_CMD="$PWD/.venv/bin/python"
-            echo "✅ Found venv at $PWD/.venv"
-        elif [ -f "$PWD/venv/bin/python" ]; then
-            PYTHON_CMD="$PWD/venv/bin/python"
-            echo "✅ Found venv at $PWD/venv"
-        # Check script directory
-        elif [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
-            PYTHON_CMD="$SCRIPT_DIR/.venv/bin/python"
-            echo "✅ Found venv at $SCRIPT_DIR/.venv"
-        elif [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
-            PYTHON_CMD="$SCRIPT_DIR/venv/bin/python"
-            echo "✅ Found venv at $SCRIPT_DIR/venv"
-        # Check original user's home directory (from error message path)
-        elif [ -f "$ORIGINAL_HOME/applications/waterbot/waterbot/.venv/bin/python" ]; then
-            PYTHON_CMD="$ORIGINAL_HOME/applications/waterbot/waterbot/.venv/bin/python"
-            echo "✅ Found venv at $ORIGINAL_HOME/applications/waterbot/waterbot/.venv"
-        elif [ -f "$ORIGINAL_HOME/applications/waterbot/waterbot/venv/bin/python" ]; then
-            PYTHON_CMD="$ORIGINAL_HOME/applications/waterbot/waterbot/venv/bin/python"
-            echo "✅ Found venv at $ORIGINAL_HOME/applications/waterbot/waterbot/venv"
-        fi
-        
-        if [ -n "$PYTHON_CMD" ]; then
-            # Use the found venv Python, running as original user
-            echo "🐍 Using Python: $PYTHON_CMD"
-            sudo -u "$ORIGINAL_USER" "$PYTHON_CMD" application/scripts/Add_files_to_db.py
-        else
-            # Fallback: try with original user's PATH (may include venv)
-            echo "⚠️  Venv not found in common locations, trying with original user's environment..."
-            sudo -u "$ORIGINAL_USER" -E env "PATH=$PATH" python3 application/scripts/Add_files_to_db.py || {
-                echo ""
-                echo "❌ Could not find virtual environment or run Python script."
-                echo "   Options:"
-                echo "   1. Run without sudo (recommended):"
-                echo "      sudo usermod -aG docker $ORIGINAL_USER"
-                echo "      # Then logout/login and run: ./docker_build.sh"
-                echo "   2. Or install dependencies in system Python:"
-                echo "      sudo pip3 install python-dotenv langchain-community langchain-chroma langchain-text-splitters langchain-openai"
-                exit 1
-            }
-        fi
-    else
-        # Not running with sudo - normal detection
-    if [ -f ".venv/bin/python" ]; then
-        PYTHON_CMD=".venv/bin/python"
-        elif [ -f "venv/bin/python" ]; then
-            PYTHON_CMD="venv/bin/python"
-        elif [ -f "$SCRIPT_DIR/.venv/bin/python" ]; then
-            PYTHON_CMD="$SCRIPT_DIR/.venv/bin/python"
-        elif [ -f "$SCRIPT_DIR/venv/bin/python" ]; then
-            PYTHON_CMD="$SCRIPT_DIR/venv/bin/python"
-    else
-        PYTHON_CMD="python3"
-            echo "⚠️  No virtual environment found, using system Python"
-    fi
-        
-        echo "🐍 Using Python: $PYTHON_CMD"
-        
-        # Change to script directory to ensure relative paths work
-        cd "$SCRIPT_DIR"
-    
-    $PYTHON_CMD application/scripts/Add_files_to_db.py
-    fi
-    
-    if [ ! -d "application/docs/chroma" ]; then
-        echo "❌ Failed to build ChromaDB. Please check the error messages above."
-        exit 1
-    fi
-    
-    echo "✅ ChromaDB index built successfully"
-else
-    echo "✅ Found pre-built ChromaDB at application/docs/chroma"
-    echo "   Using existing vector database (no rebuild needed)"
-fi
-
+# RAG vector store is PostgreSQL (pgvector). Ingest with Add_files_to_db.py when DB_* and OPENAI_API_KEY are set.
 echo "✅ Frontend will be built inside Docker (OS-agnostic)"
 
 # Load environment variables from .env file if it exists (for OPENAI_API_KEY in container)
@@ -190,7 +74,7 @@ fi
 # Allow platform override via PLATFORM env var, default to linux/amd64 for consistency
 PLATFORM="${PLATFORM:-linux/amd64}"
 echo "🔨 Building Docker image for ${PLATFORM} platform..."
-echo "   Using pre-built ChromaDB from application/docs/chroma"
+echo "   RAG uses PostgreSQL (pgvector); set DB_* in container for RAG."
 echo "   Building frontend inside Docker (OS-agnostic)"
 docker build --platform ${PLATFORM} $BUILD_ARGS -t waterbot .
 

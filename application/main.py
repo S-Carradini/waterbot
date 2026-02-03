@@ -19,15 +19,29 @@ from fastapi.middleware.cors import CORSMiddleware  # ✅ ADDED: CORS middleware
 
 from managers.memory_manager import MemoryManager
 from managers.dynamodb_manager import DynamoDBManager
-from managers.chroma_manager import ChromaManager
+from managers.rag_manager import RAGManager
+from managers.pgvector_store import PgVectorStore
 from managers.s3_manager import S3Manager
 
-from adapters.claude import BedrockClaudeAdapter
 from adapters.openai import OpenAIAdapter
+try:
+    # Optional dependency: this imports `langchain_aws`, which may not be installed/compatible
+    # in local/dev environments that only use the OpenAI adapter.
+    from adapters.claude import BedrockClaudeAdapter
+except Exception as e:
+    BedrockClaudeAdapter = None  # type: ignore[assignment]
+    logging.warning("BedrockClaudeAdapter unavailable (skipping): %s", e)
 
-from amazon_transcribe.client import TranscribeStreamingClient
-from amazon_transcribe.handlers import TranscriptResultStreamHandler
-from amazon_transcribe.model import TranscriptEvent
+try:
+    # Optional dependency (only needed for the `/transcribe` websocket endpoint)
+    from amazon_transcribe.client import TranscribeStreamingClient
+    from amazon_transcribe.handlers import TranscriptResultStreamHandler
+    from amazon_transcribe.model import TranscriptEvent
+except Exception as e:
+    TranscribeStreamingClient = None  # type: ignore[assignment]
+    TranscriptResultStreamHandler = None  # type: ignore[assignment]
+    TranscriptEvent = None  # type: ignore[assignment]
+    logging.warning("Amazon Transcribe dependencies unavailable (skipping): %s", e)
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.websockets import WebSocketState
 from langdetect import detect, DetectorFactory
@@ -118,63 +132,65 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         
         return response
 
-class MyEventHandler(TranscriptResultStreamHandler):
-    def __init__(self, output_stream, websocket):
-        super().__init__(output_stream)
-        self.websocket = websocket
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-        
-        self.base_url = f"http://{websocket.base_url.hostname}:{websocket.base_url.port if websocket.base_url.port else ''}"
-        
-        print("printing the base url inside event handler: ", self.base_url)
-        self.api_endpoints = {
-            "tell me more": str(self.base_url) + "/chat_detailed_api",
-            "next steps": str(self.base_url) +"/chat_actionItems_api",
-            "sources": str(self.base_url) + "/chat_sources_api",
-        }
-        self.transcribed_text = None
-        self.designated_action = None
+if TranscriptResultStreamHandler is not None and TranscriptEvent is not None:
+    class MyEventHandler(TranscriptResultStreamHandler):
+        def __init__(self, output_stream, websocket):
+            super().__init__(output_stream)
+            self.websocket = websocket
+            logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    async def handle_transcript_event(self, transcript_event: TranscriptEvent):
-        results = transcript_event.transcript.results
-        for result in results:
-            if not result.is_partial:
-                for alt in result.alternatives:
-                    logging.info(f"Handling full transcript: {alt.transcript}")
-                    api_url = self.determine_api_url(alt.transcript.strip().lower())
-                    # print(api_url)
-                    self.transcribed_text = alt.transcript
-                    self.designated_action = api_url
-                    form_data = {'user_query': alt.transcript}
-                    try:
-                        async with httpx.AsyncClient() as client:
-                            response = await client.post(api_url, data=form_data)
-                            response.raise_for_status()  # This will raise an exception for HTTP error responses
-                            await self.send_responses(alt.transcript, response)
-                    except (httpx.HTTPError, httpx.RequestError) as e:
-                        logging.error(f"Failed to post to chat API: {e}")
-                        await self.websocket.send_json({'type': 'error', 'details': str(e)})
+            self.base_url = f"http://{websocket.base_url.hostname}:{websocket.base_url.port if websocket.base_url.port else ''}"
 
-    def determine_api_url(self, transcript):
-        # Exact matches for specific requests, considering an optional period
-        for key, url in self.api_endpoints.items():
-            if transcript == key or transcript == key + '.':
-                return url
-        return str(self.base_url) + "/chat_api"  # Default API if no exact match is found
+            print("printing the base url inside event handler: ", self.base_url)
+            self.api_endpoints = {
+                "tell me more": str(self.base_url) + "/chat_detailed_api",
+                "next steps": str(self.base_url) + "/chat_actionItems_api",
+                "sources": str(self.base_url) + "/chat_sources_api",
+            }
+            self.transcribed_text = None
+            self.designated_action = None
 
-    async def send_responses(self, user_transcript, api_response):
-        await self.websocket.send_json({
-            'type': 'user',
-            'transcript': user_transcript
-        })
-        logging.info("Sent user message to client.")
-        api_response_data = api_response.json()
-        await self.websocket.send_json({
-            'type': 'bot',
-            'response': api_response_data['resp'],
-            'messageID': api_response_data['msgID']
-        })
-        logging.info("Sent bot response to client.")
+        async def handle_transcript_event(self, transcript_event: TranscriptEvent):
+            results = transcript_event.transcript.results
+            for result in results:
+                if not result.is_partial:
+                    for alt in result.alternatives:
+                        logging.info(f"Handling full transcript: {alt.transcript}")
+                        api_url = self.determine_api_url(alt.transcript.strip().lower())
+                        self.transcribed_text = alt.transcript
+                        self.designated_action = api_url
+                        form_data = {'user_query': alt.transcript}
+                        try:
+                            async with httpx.AsyncClient() as client:
+                                response = await client.post(api_url, data=form_data)
+                                response.raise_for_status()  # This will raise an exception for HTTP error responses
+                                await self.send_responses(alt.transcript, response)
+                        except (httpx.HTTPError, httpx.RequestError) as e:
+                            logging.error(f"Failed to post to chat API: {e}")
+                            await self.websocket.send_json({'type': 'error', 'details': str(e)})
+
+        def determine_api_url(self, transcript):
+            # Exact matches for specific requests, considering an optional period
+            for key, url in self.api_endpoints.items():
+                if transcript == key or transcript == key + '.':
+                    return url
+            return str(self.base_url) + "/chat_api"  # Default API if no exact match is found
+
+        async def send_responses(self, user_transcript, api_response):
+            await self.websocket.send_json({
+                'type': 'user',
+                'transcript': user_transcript
+            })
+            logging.info("Sent user message to client.")
+            api_response_data = api_response.json()
+            await self.websocket.send_json({
+                'type': 'bot',
+                'response': api_response_data['resp'],
+                'messageID': api_response_data['msgID']
+            })
+            logging.info("Sent bot response to client.")
+else:
+    MyEventHandler = None  # type: ignore[assignment]
 
 # Take environment variables from .env
 load_dotenv(override=True)  
@@ -264,23 +280,28 @@ MESSAGES_TABLE=os.getenv("MESSAGES_TABLE")
 TRANSCRIPT_BUCKET_NAME=os.getenv("TRANSCRIPT_BUCKET_NAME")
 
 # adapter choices
-ADAPTERS = {
-    "claude.haiku":BedrockClaudeAdapter("anthropic.claude-3-haiku-20240307-v1:0"),
-    "claude.":BedrockClaudeAdapter("anthropic.claude-3-sonnet-20240229-v1:0"),
-    "openai-gpt4.1":OpenAIAdapter("gpt-4.1")
+ADAPTERS: dict[str, object] = {
+    "openai-gpt4.1": OpenAIAdapter("gpt-4.1"),
 }
+if BedrockClaudeAdapter is not None:
+    ADAPTERS.update(
+        {
+            "claude.haiku": BedrockClaudeAdapter("anthropic.claude-3-haiku-20240307-v1:0"),
+            "claude.": BedrockClaudeAdapter("anthropic.claude-3-sonnet-20240229-v1:0"),
+        }
+    )
+else:
+    logging.warning("Claude/Bedrock adapters disabled (dependency missing/incompatible).")
 
 # Set adapter choice
 # llm_adapter=ADAPTERS["claude.haiku"]
-llm_adapter=ADAPTERS["openai-gpt4.1"]
+llm_adapter = ADAPTERS["openai-gpt4.1"]
 
 embeddings = llm_adapter.get_embeddings()
 
 # Manager classes
 memory = MemoryManager()  # Assuming you have a MemoryManager class
 datastore = DynamoDBManager(messages_table=MESSAGES_TABLE)
-knowledge_base = ChromaManager(persist_directory="docs/chroma/", embedding_function=embeddings,collection_metadata={"hnsw:space": "cosine"})
-knowledge_base_spanish = ChromaManager(persist_directory="docs/chroma/spanish", embedding_function=embeddings,collection_metadata={"hnsw:space": "cosine"})
 s3_manager = S3Manager(bucket_name=TRANSCRIPT_BUCKET_NAME)
 
 # Database connection variables
@@ -288,6 +309,9 @@ db_host = os.getenv("DB_HOST")
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
 db_name = os.getenv("DB_NAME")
+
+# PostgreSQL is optional (e.g. for local dev without a DB)
+POSTGRES_ENABLED = all([db_host, db_user, db_password, db_name])
 
 # Database connection parameters
 DB_PARAMS = {
@@ -297,6 +321,21 @@ DB_PARAMS = {
     "host": db_host,
     "port": "5432"
 }
+
+# RAG vector store: pgvector (PostgreSQL). Postgres is required for RAG.
+def get_vector_store():
+    if not POSTGRES_ENABLED:
+        raise ValueError(
+            "PostgreSQL (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) is required for the RAG vector store."
+        )
+    return PgVectorStore(db_params=DB_PARAMS, embedding_function=embeddings)
+
+
+try:
+    knowledge_base = RAGManager(get_vector_store())
+except ValueError as e:
+    knowledge_base = None
+    logging.warning("RAG disabled: %s", e)
 
 # Authentication function
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
@@ -310,6 +349,8 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
 @app.get("/messages")
 def get_messages(user: str = Depends(authenticate)):  # Requires authentication
     """Read the messages from the PostgreSQL database"""
+    if not POSTGRES_ENABLED:
+        return json.dumps([])
     try:
         conn = psycopg2.connect(**DB_PARAMS)
         cursor = conn.cursor(cursor_factory=DictCursor)
@@ -335,7 +376,9 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
         logging.error("Database Error: %s", e, exc_info=True)
 
 def log_message(session_uuid, msg_id, user_query, response_content, source):
-    """Insert a message into the PostgreSQL database."""
+    """Insert a message into the PostgreSQL database. No-op if DB is not configured or connection fails."""
+    if not POSTGRES_ENABLED:
+        return
     try:
         source_json = json.dumps(source)  # Convert source (list/dict) to a JSON string
         msg_id_str = str(msg_id)  # Ensure msg_id is a string
@@ -358,12 +401,25 @@ def log_message(session_uuid, msg_id, user_query, response_content, source):
         conn.close()
         logging.info("Message logged successfully in PostgreSQL.")
 
+    except psycopg2.OperationalError as e:
+        logging.warning("PostgreSQL unavailable (message not logged): %s", e)
     except Exception as e:
         logging.error("Database Error: %s", e, exc_info=True)
 
 @app.websocket("/transcribe")
 async def transcribe(websocket: WebSocket):
     await websocket.accept()
+
+    # This endpoint is optional. If amazon-transcribe (and its native deps like `awscrt`) are not installed,
+    # keep the rest of the app running and return a clear error for this endpoint only.
+    if TranscribeStreamingClient is None or MyEventHandler is None:
+        await websocket.send_json({
+            "type": "error",
+            "details": "Transcribe dependencies are not installed/compatible in this environment."
+        })
+        await websocket.close()
+        return
+
     client = TranscribeStreamingClient(region="us-east-1")
     stream = await client.start_stream_transcription(
         language_code="en-US",
@@ -591,11 +647,10 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
     
     language = detect_language(user_query)
-    
-    if language == 'es':
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})     
-    else:
-        doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
+
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
+    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
 
     llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
@@ -651,10 +706,9 @@ async def chat_action_items_api_post(
     
     response_language = determine_prompt_language(language, language_preference)
 
-    if language == 'es':
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})     
-    else:
-        doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
+    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
 
     llm_body=await llm_adapter.get_llm_nextsteps_body(
         kb_data=doc_content_str,
@@ -709,10 +763,9 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
     
     language = detect_language(user_query)
 
-    if language == 'es':
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})
-    else:
-        doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
+    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
 
     llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
@@ -768,10 +821,9 @@ async def chat_detailed_api_post(
 
     response_language = determine_prompt_language(language, language_preference)
 
-    if language == 'es':
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})
-    else:
-        doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
+    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
 
     llm_body=await llm_adapter.get_llm_detailed_body(
         kb_data=doc_content_str,
@@ -876,20 +928,17 @@ async def chat_api_post(
     detected_language = detect_language(user_query)
     language = resolve_language(language_preference, detected_language)
     response_language = determine_prompt_language(language, language_preference)
-    
-    if language == 'es':
-        docs = await knowledge_base_spanish.ann_search(user_query)
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
-        logging.info(f"🔍 RAG Search (Spanish): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
-    else:
-        docs = await knowledge_base.ann_search(user_query)
-        doc_content_str = await knowledge_base.knowledge_to_string(docs)
-        logging.info(f"🔍 RAG Search (English): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
+
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) with pgvector.")
+    docs = await knowledge_base.ann_search(user_query, locale=language)
+    doc_content_str = await knowledge_base.knowledge_to_string(docs)
+    logging.info(f"🔍 RAG Search ({language}): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
     
     if docs.get('sources'):
         logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
     else:
-        logging.warning("⚠️  No sources found in RAG search - ChromaDB may be empty")
+        logging.warning("⚠️  No sources found in RAG search - vector store may be empty")
     
     logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
     
@@ -972,20 +1021,17 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
     )
     
     language = detect_language(user_query)
-    
-    if language == 'es':
-        docs = await knowledge_base_spanish.ann_search(user_query)
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
-        logging.info(f"🔍 RAG Search (Spanish): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
-    else:
-        docs = await knowledge_base.ann_search(user_query)
-        doc_content_str = await knowledge_base.knowledge_to_string(docs)
-        logging.info(f"🔍 RAG Search (English): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
+
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) with pgvector.")
+    docs = await knowledge_base.ann_search(user_query, locale=language)
+    doc_content_str = await knowledge_base.knowledge_to_string(docs)
+    logging.info(f"🔍 RAG Search ({language}): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
     
     if docs.get('sources'):
         logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
     else:
-        logging.warning("⚠️  No sources found in RAG search - ChromaDB may be empty")
+        logging.warning("⚠️  No sources found in RAG search - vector store may be empty")
     
     logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
     

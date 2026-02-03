@@ -20,7 +20,7 @@ if [ -z "$AWS_ACCESS_KEY_ID" ] || [ -z "$AWS_SECRET_ACCESS_KEY" ]; then
 fi
 
 if [ -z "$OPENAI_API_KEY" ]; then
-    echo "⚠️  OPENAI_API_KEY not set. ChromaDB build will be skipped."
+    echo "⚠️  OPENAI_API_KEY not set. RAG ingestion (Add_files_to_db.py) can be run later with DB_* set."
     BUILD_ARGS=""
 else
     BUILD_ARGS="--build-arg OPENAI_API_KEY=$OPENAI_API_KEY"

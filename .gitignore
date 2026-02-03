@@ -170,7 +170,8 @@ cython_debug/
 
 push_to_ecr.sh
 application/newData/
-docs/chroma/chroma.sqlite3
+# Legacy ChromaDB (replaced by pgvector)
+docs/chroma/
 application/ADWR Blogs/
 application/AMWUA_Blog_Posts/.env
 
