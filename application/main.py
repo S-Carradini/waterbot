@@ -529,17 +529,18 @@ async def session_transcript_post(request: Request):
         return {"message": "No chat history found for this session."}
 
     filename = f"{session_uuid}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
-    object_key = f"session-transcript/{filename}"
-    
     session_text = ""
     for entry in session_history:
         if isinstance(entry, dict) and "role" in entry and "content" in entry:
             session_text += f"Role: {entry['role']}\nContent: {entry['content']}\n\n"
 
-    await s3_manager.upload(key=object_key, body=session_text)
-    url = await s3_manager.generate_presigned(key=object_key)
-
-    return {'presigned_url': url}
+    if TRANSCRIPT_BUCKET_NAME:
+        object_key = f"session-transcript/{filename}"
+        await s3_manager.upload(key=object_key, body=session_text)
+        url = await s3_manager.generate_presigned(key=object_key)
+        return {"presigned_url": url}
+    # No S3 bucket configured: return transcript inline so frontend can still trigger download
+    return {"presigned_url": None, "transcript": session_text, "filename": filename}
 
 @app.post('/submit_rating_api')
 async def submit_rating_api_post(

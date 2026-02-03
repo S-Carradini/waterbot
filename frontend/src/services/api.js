@@ -175,13 +175,22 @@ export async function downloadTranscript() {
   const data = await response.json();
 
   if (data.presigned_url) {
-    // Trigger file download
     const link = document.createElement('a');
     link.href = data.presigned_url;
     link.download = 'session-transcript.txt';
     document.body.appendChild(link);
     link.click();
     document.body.removeChild(link);
+  } else if (data.transcript != null) {
+    const blob = new Blob([data.transcript], { type: 'text/plain' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = data.filename || 'session-transcript.txt';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
   }
 
   return data;
