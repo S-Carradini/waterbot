@@ -10,6 +10,11 @@ from typing import Any, Dict, List, Optional
 import psycopg
 from pgvector.psycopg import register_vector
 
+try:
+    from pgvector.psycopg import Vector
+except ImportError:
+    from pgvector import Vector  # type: ignore[attr-defined]
+
 from managers.vector_store import VectorStoreBase
 
 
@@ -76,6 +81,8 @@ class PgVectorStore(VectorStoreBase):
         embedding = self._embedding_function.embed_query(query)
         if not embedding:
             return []
+        # Ensure list and wrap in Vector so psycopg sends as vector type (not double precision[])
+        embedding = Vector(list(embedding))
 
         with self._connect() as conn:
             with conn.cursor() as cur:

@@ -424,6 +424,8 @@ RAG uses PostgreSQL with the pgvector extension. Set either `DATABASE_URL` (e.g.
 ### Common Issues
 
 - **RAG not available (503)**: Configure PostgreSQL with pgvector and ensure rag_chunks is populated.
+- **operator does not exist: vector <=> double precision[]**: Fixed by passing embeddings as pgvector `Vector` type; ensure you're on a recent pgvector application image.
+- **relation "messages" does not exist**: The app expects a `messages` table for chat history. If your database was not initialized by the AWS db_init Lambda (e.g. Railway, Render), create the table and indexes using the same DDL as in `iac/cdk/lambda/db_init/index.py` (CREATE TABLE messages ... and related CREATE INDEX).
 - **Empty search results**: Run Add_files_to_db.py and Add_files_to_db-spanish.py with DB_* and OPENAI_API_KEY set.
 - **Embedding rate limits**: Check OpenAI API rate limits if using OpenAI embeddings.
 
