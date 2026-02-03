@@ -24,8 +24,6 @@ if os.path.isfile(api_key_file_path):
 text_splitter = RecursiveCharacterTextSplitter(chunk_size=1500, chunk_overlap=150)
 directory_path = os.path.join(os.path.dirname(__file__), "..", "Data")
 
-persist_directory = "docs/chroma/"  # unused; pgvector used
-
 splits = []
 for root, dirs, files in os.walk(directory_path):
     for file in files:

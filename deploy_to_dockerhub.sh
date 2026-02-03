@@ -43,7 +43,7 @@ TAG="${1:-latest}"
 
 # Build the image for linux/amd64 platform (required for most cloud platforms)
 echo "🔨 Building Docker image for linux/amd64 platform..."
-echo "   RAG uses PostgreSQL (pgvector); set DB_* in container."
+echo "   RAG uses PostgreSQL (pgvector); set DATABASE_URL or DB_* in container."
 echo "   Building frontend inside Docker (OS-agnostic)"
 docker build --platform linux/amd64 $BUILD_ARGS -t "${IMAGE_NAME}:${TAG}" .
 
@@ -90,5 +90,5 @@ echo "💡 To use this image:"
 echo "   docker pull ${IMAGE_NAME}:${TAG}"
 echo "   docker run -p 8000:8000 ${IMAGE_NAME}:${TAG}"
 echo ""
-echo "📝 The frontend was built inside Docker. RAG uses PostgreSQL (pgvector); set DB_* in container."
+echo "📝 The frontend was built inside Docker. RAG uses PostgreSQL (pgvector); set DATABASE_URL or DB_* in container."
 

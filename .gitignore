@@ -170,6 +170,7 @@ cython_debug/
 
 push_to_ecr.sh
 application/newData/
+application/retrieved_documents.txt
 # Legacy ChromaDB (replaced by pgvector)
 docs/chroma/
 application/ADWR Blogs/

@@ -296,7 +296,8 @@ AWS_ACCESS_KEY_ID=your_aws_key
 AWS_SECRET_ACCESS_KEY=your_aws_secret
 AWS_REGION=us-west-2
 
-# Database Configuration
+# Database Configuration (messages + RAG). Use either DATABASE_URL or DB_*.
+# DATABASE_URL=postgresql://user:password@host:5432/dbname
 DB_HOST=your_db_host
 DB_USER=your_db_user
 DB_PASSWORD=your_db_password
@@ -380,7 +381,7 @@ llm_adapter = ADAPTERS["openai-gpt4"]  # or "claude.haiku"
 
 ### RAG / pgvector Configuration
 
-RAG uses PostgreSQL with the pgvector extension. Set `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (same as for messages). The `rag_chunks` table is created by the db_init Lambda. Ingest with `application/scripts/Add_files_to_db.py` and `Add_files_to_db-spanish.py`; migrate from ChromaDB with `migrate_chroma_to_pgvector.py` (requires `pip install chromadb` temporarily).
+RAG uses PostgreSQL with the pgvector extension. Set either `DATABASE_URL` (e.g. `postgresql://user:password@host:5432/dbname`) or `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (same as for messages). The `rag_chunks` table is created by the db_init Lambda. Ingest with `application/scripts/Add_files_to_db.py` and `Add_files_to_db-spanish.py`. If migrating from an existing ChromaDB install, use `application/scripts/migrate_chroma_to_pgvector.py` once (requires `pip install chromadb` temporarily).
 
 ### RAG Parameters
 
@@ -416,9 +417,9 @@ RAG uses PostgreSQL with the pgvector extension. Set `DB_HOST`, `DB_USER`, `DB_P
 
 ### RAG Pipeline Not Working
 
-1. **Check PostgreSQL**: Ensure DB_HOST, DB_USER, DB_PASSWORD, DB_NAME are set and the db_init Lambda has created the `rag_chunks` table and pgvector extension.
+1. **Check PostgreSQL**: Ensure `DATABASE_URL` or `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` are set and the db_init Lambda has created the `rag_chunks` table and pgvector extension.
 2. **Check Embeddings**: Verify embeddings are being generated (OpenAI or Bedrock).
-3. **Check Documents**: Verify documents exist in `rag_chunks` (run ingestion scripts or migrate_chroma_to_pgvector.py).
+3. **Check Documents**: Verify documents exist in `rag_chunks` (run ingestion scripts or, for one-time migration from ChromaDB, `application/scripts/migrate_chroma_to_pgvector.py`).
 
 ### Common Issues
 

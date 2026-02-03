@@ -52,7 +52,7 @@ az containerapp update \
 
 echo "✅ Deployment complete!"
 echo ""
-echo "📝 RAG uses PostgreSQL (pgvector). Set DB_* and run migration or ingestion after deployment."
+echo "📝 RAG uses PostgreSQL (pgvector). Set DATABASE_URL or DB_* and run migration or ingestion after deployment."
 echo ""
 echo "💡 To rebuild the vector database with new documents:"
 echo "   1. Run locally: python application/scripts/Add_files_to_db.py"

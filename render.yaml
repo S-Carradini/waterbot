@@ -12,6 +12,9 @@ services:
         sync: false
       - key: TRANSCRIPT_BUCKET_NAME
         sync: false
+      # PostgreSQL (messages + RAG). Use either DATABASE_URL or DB_*.
+      - key: DATABASE_URL
+        sync: false
       - key: DB_HOST
         sync: false
       - key: DB_USER

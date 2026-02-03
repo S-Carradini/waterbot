@@ -1,6 +1,9 @@
 """
 Migrate existing ChromaDB collections (en + es) to pgvector rag_chunks table.
-Run from application directory with DB_* env set. Requires chromadb (pip install chromadb) for one-time migration.
+Run from application directory. Requires chromadb (pip install chromadb) for one-time migration.
+Set DATABASE_URL (e.g. Railway) or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME.
+DATABASE_URL must be: postgresql://USER:PASSWORD@HOST:PORT/DATABASE
+(no extra @ in the middle; if password contains @ or :, URL-encode it as %40 or %3A).
 Usage: python scripts/migrate_chroma_to_pgvector.py
 """
 import hashlib
@@ -13,7 +16,9 @@ if _application_dir not in sys.path:
     sys.path.insert(0, _application_dir)
 
 from dotenv import load_dotenv
+# Load application/.env first, then root .env with override so root (canonical) wins
 load_dotenv(os.path.join(_application_dir, ".env"))
+load_dotenv(os.path.join(os.path.dirname(_application_dir), ".env"), override=True)
 
 
 def migrate_locale(chroma_persist_path: str, locale: str, pg_store) -> int:
@@ -73,20 +78,24 @@ def main():
     print("🚀 ChromaDB → pgvector migration")
     application_dir = _application_dir
 
+    database_url = os.getenv("DATABASE_URL")
     db_host = os.getenv("DB_HOST")
     db_user = os.getenv("DB_USER")
     db_password = os.getenv("DB_PASSWORD")
     db_name = os.getenv("DB_NAME")
-    if not all([db_host, db_user, db_password, db_name]):
-        print("❌ Set DB_HOST, DB_USER, DB_PASSWORD, DB_NAME", file=sys.stderr)
-        sys.exit(1)
 
     from managers.pgvector_store import PgVectorStore
 
-    pg_store = PgVectorStore(
-        db_params={"dbname": db_name, "user": db_user, "password": db_password, "host": db_host, "port": "5432"},
-        embedding_function=None,
-    )
+    if database_url:
+        pg_store = PgVectorStore(db_url=database_url, embedding_function=None)
+    elif all([db_host, db_user, db_password, db_name]):
+        pg_store = PgVectorStore(
+            db_params={"dbname": db_name, "user": db_user, "password": db_password, "host": db_host, "port": "5432"},
+            embedding_function=None,
+        )
+    else:
+        print("❌ Set DATABASE_URL or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME", file=sys.stderr)
+        sys.exit(1)
 
     chroma_en = os.path.join(application_dir, "docs", "chroma")
     chroma_es = os.path.join(application_dir, "docs", "chroma", "spanish")

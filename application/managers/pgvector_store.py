@@ -28,6 +28,24 @@ def _filter_params(params: Dict[str, Optional[str]]) -> Dict[str, str]:
     return {k: str(v) for k, v in params.items() if v is not None and v != ""}
 
 
+def _strip_nul(s: str) -> str:
+    """Remove NUL bytes; PostgreSQL TEXT cannot contain them."""
+    if not isinstance(s, str):
+        return s
+    return s.replace("\x00", "")
+
+
+def _strip_nul_meta(val: Any) -> Any:
+    """Recursively strip NUL from string values in metadata (dict/list/str)."""
+    if isinstance(val, dict):
+        return {k: _strip_nul_meta(v) for k, v in val.items()}
+    if isinstance(val, list):
+        return [_strip_nul_meta(v) for v in val]
+    if isinstance(val, str):
+        return _strip_nul(val)
+    return val
+
+
 class PgVectorStore(VectorStoreBase):
     """Vector store using PostgreSQL pgvector. Uses same DB as messages (DB_PARAMS)."""
 
@@ -141,12 +159,18 @@ class PgVectorStore(VectorStoreBase):
         """Insert or update chunks with precomputed embeddings (e.g. for Chroma migration)."""
         if not (ids and len(ids) == len(doc_ids) == len(chunk_indices) == len(contents) == len(embeddings) == len(metadatas) == len(content_hashes)):
             raise ValueError("All lists must be non-empty and same length")
+        locale_clean = _strip_nul(str(locale))
         with self._connect() as conn:
             with conn.cursor() as cur:
                 for i, id_, doc_id, cidx, content, emb, meta, ch in zip(
                     range(len(ids)), ids, doc_ids, chunk_indices, contents, embeddings, metadatas, content_hashes
                 ):
-                    meta_ser = json.loads(json.dumps(meta, default=str)) if isinstance(meta, dict) else {}
+                    id_ = _strip_nul(str(id_))
+                    doc_id = _strip_nul(str(doc_id))
+                    content = _strip_nul(content if isinstance(content, str) else str(content))
+                    ch = _strip_nul(str(ch))
+                    meta_ser = _strip_nul_meta(meta) if isinstance(meta, dict) else {}
+                    meta_ser = json.loads(json.dumps(meta_ser, default=str))
                     cur.execute(
                         """
                         INSERT INTO rag_chunks (id, doc_id, chunk_index, content, embedding, metadata, content_hash, locale)
@@ -158,7 +182,7 @@ class PgVectorStore(VectorStoreBase):
                             metadata = EXCLUDED.metadata,
                             content_hash = EXCLUDED.content_hash;
                         """,
-                        (id_, doc_id, cidx, content, emb, json.dumps(meta_ser), ch, locale),
+                        (id_, doc_id, cidx, content, emb, json.dumps(meta_ser), ch, locale_clean),
                     )
             conn.commit()
         logging.info("PgVectorStore: upserted %s chunks for locale=%s", len(ids), locale)

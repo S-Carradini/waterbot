@@ -74,7 +74,7 @@ fi
 # Allow platform override via PLATFORM env var, default to linux/amd64 for consistency
 PLATFORM="${PLATFORM:-linux/amd64}"
 echo "🔨 Building Docker image for ${PLATFORM} platform..."
-echo "   RAG uses PostgreSQL (pgvector); set DB_* in container for RAG."
+echo "   RAG uses PostgreSQL (pgvector); set DATABASE_URL or DB_* in container for RAG."
 echo "   Building frontend inside Docker (OS-agnostic)"
 docker build --platform ${PLATFORM} $BUILD_ARGS -t waterbot .
 

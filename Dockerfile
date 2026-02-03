@@ -41,7 +41,7 @@ RUN pip install --upgrade pip && \
 # Copy the application code
 COPY application/ /app/
 
-# RAG vector store is PostgreSQL (pgvector). Run migration or ingestion after deploy when DB_* are set.
+# RAG vector store is PostgreSQL (pgvector). Run migration or ingestion after deploy when DATABASE_URL or DB_* are set.
 # Optionally copy newData for runtime ingestion: COPY application/newData /app/newData
 
 # Copy the built React frontend from the frontend-builder stage

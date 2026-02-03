@@ -59,7 +59,6 @@ from starlette.middleware.base import BaseHTTPMiddleware
 ### Postgres
 import psycopg2
 from psycopg2.extras import execute_values, DictCursor
-import logging
 
 # Configure logging
 logging.basicConfig(
@@ -294,7 +293,6 @@ else:
     logging.warning("Claude/Bedrock adapters disabled (dependency missing/incompatible).")
 
 # Set adapter choice
-# llm_adapter=ADAPTERS["claude.haiku"]
 llm_adapter = ADAPTERS["openai-gpt4.1"]
 
 embeddings = llm_adapter.get_embeddings()
@@ -304,16 +302,15 @@ memory = MemoryManager()  # Assuming you have a MemoryManager class
 datastore = DynamoDBManager(messages_table=MESSAGES_TABLE)
 s3_manager = S3Manager(bucket_name=TRANSCRIPT_BUCKET_NAME)
 
-# Database connection variables
+# Database connection: DATABASE_URL (e.g. Railway) or DB_HOST/DB_USER/DB_PASSWORD/DB_NAME
+DATABASE_URL = os.getenv("DATABASE_URL")
 db_host = os.getenv("DB_HOST")
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
 db_name = os.getenv("DB_NAME")
 
-# PostgreSQL is optional (e.g. for local dev without a DB)
-POSTGRES_ENABLED = all([db_host, db_user, db_password, db_name])
+POSTGRES_ENABLED = bool(DATABASE_URL) or all([db_host, db_user, db_password, db_name])
 
-# Database connection parameters
 DB_PARAMS = {
     "dbname": db_name,
     "user": db_user,
@@ -322,12 +319,22 @@ DB_PARAMS = {
     "port": "5432"
 }
 
+
+def _pg_connect():
+    """Return a PostgreSQL connection (for messages table). Use for both psycopg2 paths."""
+    if DATABASE_URL:
+        return psycopg2.connect(DATABASE_URL)
+    return psycopg2.connect(**DB_PARAMS)
+
+
 # RAG vector store: pgvector (PostgreSQL). Postgres is required for RAG.
 def get_vector_store():
     if not POSTGRES_ENABLED:
         raise ValueError(
-            "PostgreSQL (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) is required for the RAG vector store."
+            "PostgreSQL (DATABASE_URL or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) is required for the RAG vector store."
         )
+    if DATABASE_URL:
+        return PgVectorStore(db_url=DATABASE_URL, embedding_function=embeddings)
     return PgVectorStore(db_params=DB_PARAMS, embedding_function=embeddings)
 
 
@@ -352,7 +359,7 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
     if not POSTGRES_ENABLED:
         return json.dumps([])
     try:
-        conn = psycopg2.connect(**DB_PARAMS)
+        conn = _pg_connect()
         cursor = conn.cursor(cursor_factory=DictCursor)
         cursor.execute("SELECT * FROM messages ORDER BY created_at DESC LIMIT 100;")
         messages = cursor.fetchall()
@@ -384,7 +391,7 @@ def log_message(session_uuid, msg_id, user_query, response_content, source):
         msg_id_str = str(msg_id)  # Ensure msg_id is a string
 
         # Connect to PostgreSQL
-        conn = psycopg2.connect(**DB_PARAMS)
+        conn = _pg_connect()
         cursor = conn.cursor()
 
         # Insert the message
@@ -930,7 +937,7 @@ async def chat_api_post(
     response_language = determine_prompt_language(language, language_preference)
 
     if not knowledge_base:
-        raise HTTPException(503, "RAG is not available. Configure PostgreSQL (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) with pgvector.")
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL (DATABASE_URL or DB_*) with pgvector.")
     docs = await knowledge_base.ann_search(user_query, locale=language)
     doc_content_str = await knowledge_base.knowledge_to_string(docs)
     logging.info(f"🔍 RAG Search ({language}): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
@@ -1023,7 +1030,7 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
     language = detect_language(user_query)
 
     if not knowledge_base:
-        raise HTTPException(503, "RAG is not available. Configure PostgreSQL (DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) with pgvector.")
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL (DATABASE_URL or DB_*) with pgvector.")
     docs = await knowledge_base.ann_search(user_query, locale=language)
     doc_content_str = await knowledge_base.knowledge_to_string(docs)
     logging.info(f"🔍 RAG Search ({language}): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
