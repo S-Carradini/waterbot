@@ -409,10 +409,10 @@
   justify-content: center;
   font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   font-weight: 700;
-  line-height: 25px;
+  line-height: 28px;
   font-style: normal;
   color: #060606;
-  font-size: 16px;
+  font-size: 20px;
   text-align: center;
   letter-spacing: -0.64px;
   white-space: nowrap;
@@ -1393,8 +1393,8 @@
   .button-text-tell-me-more,
   .button-text-next-steps,
   .button-text-sources {
-    font-size: 14px;
-    line-height: 20px;
+    font-size: 18px;
+    line-height: 22px;
     letter-spacing: -0.4px;
   }
 
@@ -1560,8 +1560,8 @@
   .button-text-tell-me-more,
   .button-text-next-steps,
   .button-text-sources {
-    font-size: 12px;
-    line-height: 18px;
+    font-size: 16px;
+    line-height: 20px;
   }
 
   .thumbs-container .thumbs-up,
