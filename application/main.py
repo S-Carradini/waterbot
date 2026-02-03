@@ -197,6 +197,13 @@ load_dotenv(override=True)
 # FastaAPI startup
 app = FastAPI()
 
+
+@app.on_event("startup")
+def startup_ensure_db():
+    """Ensure messages table exists when using PostgreSQL (e.g. Railway/Render without db_init Lambda)."""
+    _ensure_messages_table()
+
+
 # ✅ ADDED: CORS Middleware - MUST be added before other middleware
 app.add_middleware(
     CORSMiddleware,
@@ -327,6 +334,41 @@ def _pg_connect():
     return psycopg2.connect(**DB_PARAMS)
 
 
+def _ensure_messages_table():
+    """Create messages table and indexes if they don't exist (e.g. Railway/Render without db_init Lambda)."""
+    if not POSTGRES_ENABLED:
+        return
+    try:
+        conn = _pg_connect()
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id SERIAL PRIMARY KEY,
+                session_uuid VARCHAR(255) NOT NULL,
+                msg_id VARCHAR(255) NOT NULL,
+                user_query TEXT NOT NULL,
+                response_content TEXT NOT NULL,
+                source JSONB,
+                chatbot_type VARCHAR(50) DEFAULT 'waterbot',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        for idx in (
+            "CREATE INDEX IF NOT EXISTS idx_session_uuid ON messages(session_uuid);",
+            "CREATE INDEX IF NOT EXISTS idx_created_at ON messages(created_at);",
+            "CREATE INDEX IF NOT EXISTS idx_msg_id ON messages(msg_id);",
+            "CREATE INDEX IF NOT EXISTS idx_session_created ON messages(session_uuid, created_at);",
+            "CREATE INDEX IF NOT EXISTS idx_chatbot_type ON messages(chatbot_type);",
+        ):
+            cur.execute(idx)
+        cur.close()
+        conn.close()
+        logging.info("Messages table ready.")
+    except Exception as e:
+        logging.warning("Could not ensure messages table (non-fatal): %s", e)
+
+
 # RAG vector store: pgvector (PostgreSQL). Postgres is required for RAG.
 def get_vector_store():
     if not POSTGRES_ENABLED:
@@ -386,32 +428,37 @@ def log_message(session_uuid, msg_id, user_query, response_content, source):
     """Insert a message into the PostgreSQL database. No-op if DB is not configured or connection fails."""
     if not POSTGRES_ENABLED:
         return
-    try:
-        source_json = json.dumps(source)  # Convert source (list/dict) to a JSON string
-        msg_id_str = str(msg_id)  # Ensure msg_id is a string
-
-        # Connect to PostgreSQL
-        conn = _pg_connect()
-        cursor = conn.cursor()
-
-        # Insert the message
-        query = """
-        INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, created_at) 
+    source_json = json.dumps(source)  # Convert source (list/dict) to a JSON string
+    msg_id_str = str(msg_id)  # Ensure msg_id is a string
+    query = """
+        INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, created_at)
         VALUES (%s, %s, %s, %s, %s, %s);
-        """
-        # Execute query
-        cursor.execute(query, (session_uuid, msg_id_str, user_query, response_content, source_json, datetime.datetime.utcnow()))
+    """
+    args = (session_uuid, msg_id_str, user_query, response_content, source_json, datetime.datetime.utcnow())
 
-        # Commit and close
-        conn.commit()
-        cursor.close()
-        conn.close()
-        logging.info("Message logged successfully in PostgreSQL.")
-
-    except psycopg2.OperationalError as e:
-        logging.warning("PostgreSQL unavailable (message not logged): %s", e)
-    except Exception as e:
-        logging.error("Database Error: %s", e, exc_info=True)
+    for attempt in range(2):
+        try:
+            conn = _pg_connect()
+            cursor = conn.cursor()
+            cursor.execute(query, args)
+            conn.commit()
+            cursor.close()
+            conn.close()
+            logging.info("Message logged successfully in PostgreSQL.")
+            return
+        except psycopg2.OperationalError as e:
+            logging.warning("PostgreSQL unavailable (message not logged): %s", e)
+            return
+        except psycopg2.ProgrammingError as e:
+            if getattr(e, "pgcode", None) == "42P01" and attempt == 0:  # undefined_table
+                logging.info("Messages table missing, creating it and retrying.")
+                _ensure_messages_table()
+            else:
+                logging.error("Database Error: %s", e, exc_info=True)
+                return
+        except Exception as e:
+            logging.error("Database Error: %s", e, exc_info=True)
+            return
 
 @app.websocket("/transcribe")
 async def transcribe(websocket: WebSocket):
