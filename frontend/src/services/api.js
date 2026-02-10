@@ -160,6 +160,26 @@ export async function submitRating(messageId, reaction, userComment = null) {
 }
 
 /**
+ * Translate a list of texts to the target language (used when switching UI language).
+ * Returns { translations: string[] } with same length and order as texts.
+ */
+export async function translateMessages(texts, targetLang) {
+  const response = await fetch(`${API_BASE_URL}/translate`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    credentials: 'include',
+    body: JSON.stringify({ texts, target_lang: targetLang }),
+  });
+
+  if (!response.ok) {
+    const detail = await response.text();
+    throw new Error(detail || `Translate failed: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
  * Download session transcript
  */
 export async function downloadTranscript() {

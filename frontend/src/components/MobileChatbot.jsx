@@ -4,7 +4,7 @@ import Header from './Header';
 import ChatBubble from './ChatBubble';
 import InputWrapper from './InputWrapper';
 import MobileOnlyGuard from './MobileOnlyGuard';
-import { sendChatMessage, getDetailedResponse, getActionItems, getSources, submitRating } from '../services/api';
+import { sendChatMessage, getDetailedResponse, getActionItems, getSources, submitRating, translateMessages } from '../services/api';
 import imgPolygon2 from '../assets/polygon-2.png';
 import { useMobileDetection } from '../hooks/useMobileDetection';
 
@@ -217,13 +217,36 @@ export default function MobileChatbot() {
     }
   };
 
-  const handleLanguageChange = (nextLanguage) => {
+  const handleLanguageChange = async (nextLanguage) => {
     if (nextLanguage === language) return;
-    setLanguage(nextLanguage);
-    setMessages(prev => {
-      const filtered = prev.filter(msg => msg.type !== 'intro');
-      return [buildDefaultMessage(nextLanguage), ...filtered];
-    });
+    const filtered = messages.filter(msg => msg.type !== 'intro');
+    const botMessagesToTranslate = filtered.filter(
+      m => m.type === 'bot' && m.content && String(m.content).trim()
+    );
+    const textsToTranslate = botMessagesToTranslate.map(m => m.content);
+
+    if (textsToTranslate.length === 0) {
+      setLanguage(nextLanguage);
+      setMessages([buildDefaultMessage(nextLanguage), ...filtered]);
+      return;
+    }
+
+    try {
+      const { translations } = await translateMessages(textsToTranslate, nextLanguage);
+      let idx = 0;
+      const updatedFiltered = filtered.map(msg => {
+        if (msg.type === 'bot' && msg.content && String(msg.content).trim() && translations[idx] != null) {
+          return { ...msg, content: translations[idx++] };
+        }
+        return msg;
+      });
+      setLanguage(nextLanguage);
+      setMessages([buildDefaultMessage(nextLanguage), ...updatedFiltered]);
+    } catch (err) {
+      console.error('Translation failed, switching language without translating messages:', err);
+      setLanguage(nextLanguage);
+      setMessages([buildDefaultMessage(nextLanguage), ...filtered]);
+    }
   };
 
   const handleMicClick = () => {

@@ -29,6 +29,10 @@ export default defineConfig({
         target: API_URL,
         changeOrigin: true,
       },
+      '/translate': {
+        target: API_URL,
+        changeOrigin: true,
+      },
       '/transcribe': {
         target: API_URL,
         changeOrigin: true,

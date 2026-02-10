@@ -565,6 +565,77 @@ async def submit_rating_api_post(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating rating: {str(e)}")
 
+# Max texts and chars for translate to avoid timeouts/cost
+TRANSLATE_MAX_TEXTS = 20
+TRANSLATE_MAX_TOTAL_CHARS = 50_000
+
+
+async def _translate_one(text: str, target_lang: str) -> str:
+    """Translate a single text via LLM. Returns translated string."""
+    lang_name = "Spanish" if target_lang == "es" else "English"
+    system = (
+        "You are a translator. Translate the following to "
+        + lang_name
+        + ". Output only the translation, no preamble or explanation. "
+        "Preserve line breaks and HTML-like tags (e.g. <br>) as in the original."
+    )
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": text},
+    ]
+    llm_body = json.dumps({"messages": messages, "temperature": 0.3})
+    out = await llm_adapter.generate_response(llm_body=llm_body)
+    return out or ""
+
+
+@app.post("/translate")
+async def translate_post(request: Request):
+    """Translate a list of texts to the target language. Used when user switches UI language."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    texts = body.get("texts")
+    target_lang = body.get("target_lang")
+    if not isinstance(texts, list) or not target_lang or target_lang not in ("es", "en"):
+        raise HTTPException(
+            status_code=400,
+            detail="Body must include 'texts' (array of strings) and 'target_lang' ('es' or 'en').",
+        )
+    if len(texts) > TRANSLATE_MAX_TEXTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"At most {TRANSLATE_MAX_TEXTS} texts allowed.",
+        )
+    total_chars = sum(len(t) for t in texts if isinstance(t, str))
+    if total_chars > TRANSLATE_MAX_TOTAL_CHARS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Total length of texts exceeds {TRANSLATE_MAX_TOTAL_CHARS} characters.",
+        )
+    # Filter to non-empty strings and translate in parallel
+    to_translate = [t for t in texts if isinstance(t, str) and t.strip()]
+    if not to_translate:
+        return {"translations": list(texts)}
+    try:
+        translations = await asyncio.gather(
+            *[_translate_one(t, target_lang) for t in to_translate]
+        )
+    except Exception as e:
+        logging.warning("Translate LLM failed: %s", e)
+        raise HTTPException(status_code=503, detail="Translation service unavailable.")
+    # Map back: preserve order; empty/non-string slots get original
+    out = []
+    idx = 0
+    for t in texts:
+        if isinstance(t, str) and t.strip():
+            out.append(translations[idx] if idx < len(translations) else t)
+            idx += 1
+        else:
+            out.append(t if isinstance(t, str) else "")
+    return {"translations": out}
+
+
 @app.post('/riverbot_chat_sources_api')
 async def riverbot_chat_sources_post(request: Request, background_tasks:BackgroundTasks):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
