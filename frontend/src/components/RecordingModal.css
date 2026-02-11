@@ -1,0 +1,54 @@
+/* Recording Modal Styles - Now using Framer Motion for animations */
+/* Most styling is handled inline with Tailwind classes in the component */
+
+/* Ensure modal is centered and on top */
+.recording-modal-backdrop {
+  position: fixed !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+  z-index: 999 !important;
+}
+
+.recording-modal-container {
+  position: fixed !important;
+  left: 50% !important;
+  top: 50% !important;
+  transform: translate(-50%, -50%) !important;
+  z-index: 1000 !important;
+  width: 90vw;
+  max-width: 1200px;
+  height: 90vh;
+  max-height: 800px;
+}
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES FOR RECORDING MODAL
+   ============================================ */
+
+/* Tablet and below (768px and smaller) */
+@media (max-width: 768px) {
+  .recording-modal-container {
+    width: 95vw;
+    height: 85vh;
+    max-height: 600px;
+  }
+}
+
+/* Small mobile devices (480px and smaller) */
+@media (max-width: 480px) {
+  .recording-modal-container {
+    width: 100vw;
+    height: 80vh;
+    max-height: 500px;
+  }
+}
+
+/* Very small devices (360px and smaller) */
+@media (max-width: 360px) {
+  .recording-modal-container {
+    height: 75vh;
+    max-height: 450px;
+  }
+}

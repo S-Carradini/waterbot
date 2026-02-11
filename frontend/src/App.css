@@ -1,0 +1,1667 @@
+.desktop-container {
+  position: relative;
+  width: 100vw;
+  height: 100vh;
+  background-color: #7dc8e0;
+  overflow: hidden;
+}
+
+/* Ensure download transcript container is not clipped by desktop-container */
+.desktop-container .download-transcript-container {
+  overflow: visible !important;
+  clip-path: none !important;
+}
+
+/* Ensure input wrapper is never clipped on mobile */
+@media (max-width: 768px) {
+  .desktop-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    /* Allow input wrapper to be visible */
+    position: relative;
+  }
+  
+  /* Ensure no parent clips the input */
+  .desktop-container > * {
+    position: relative;
+  }
+  
+  /* Ensure input wrapper can escape container bounds */
+  .input-wrapper {
+    position: fixed !important;
+  }
+}
+
+/* Header Unit - Contains main card, ASU sunburst, title, and download transcript */
+.header-unit {
+  position: relative;
+  width: 95%;
+  height: 100%;
+  overflow: visible;
+}
+
+
+/* Chat Bubble Tail - Polygon 2 (positioned relative to user-query) */
+.user-query .polygon-2-container {
+  position: absolute;
+  bottom: -20px;
+  right: -10px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 0;
+  pointer-events: none;
+  transform: rotate(263.748deg);
+}
+
+.polygon-2-wrapper {
+  position: relative;
+  flex: none;
+  ;
+  height: 56.441px;
+  transform: rotate(271.969deg) scaleY(-1);
+  width: 64.235px;
+}
+
+.polygon-2 {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.polygon-2 img {
+  position: absolute;
+  bottom: 25%;
+  left: 6.7%;
+  right: 6.7%;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Chat Bubble Tail - Polygon 1 (positioned relative to content-card-1) */
+.content-card-1 .polygon-1-container {
+  position: absolute;
+  left: -62px;
+  top: 30%;
+  transform: rotate(263.969deg);
+  display: flex;
+  align-items: center;
+  transform: rotate(96deg);
+  justify-content: center;
+  z-index: 0;
+  pointer-events: none;
+}
+
+.polygon-1-wrapper {
+  flex: none;
+  transform: rotate(263.748deg);
+  width: 100px;
+  height: 100px;
+}
+
+.polygon-1 {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.polygon-1 img {
+  position: absolute;
+  bottom: 25%;
+  left: 6.7%;
+  right: 6.7%;
+  top: 0;
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+/* Main White Card */
+.main-card {
+  position: absolute;
+  top: 2.25%;
+  right: 10.28%;
+  bottom: 86.52%;
+  left: 0.97%;
+  background-color: white;
+  border-radius: 50px;
+}
+
+/* ASU Sunburst Background */
+.asu-sunburst {
+  position: absolute;
+  top: 2.54%;
+  right: 85.6%;
+  bottom: 86.82%;
+  left: 2.36%;
+}
+
+.asu-sunburst img {
+  position: absolute;
+  inset: 0;
+  object-fit: contain;
+  object-position: center;
+  pointer-events: none;
+  width: 100%;
+  height: 100%;
+}
+
+/* Title */
+.title {
+  position: absolute;
+  top: 4.1%;
+  right: 33.26%;
+  bottom: 88.38%;
+  left: 30.76%;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  font-family: 'Libre Franklin', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-weight: 800;
+  line-height: 0;
+  color: #7dc8e0;
+  font-size: clamp(32px, 3.33vw, 64px);
+  letter-spacing: 0.64px;
+  text-shadow: 
+    -2px -2px 0 white,
+    2px -2px 0 white,
+    -2px 2px 0 white,
+    2px 2px 0 white,
+    -1px -1px 2px rgba(0, 0, 0, 0.1);
+}
+
+.title p {
+  line-height: 100px;
+  white-space: pre-wrap;
+}
+
+/* Chat Column Container */
+.chat-column {
+  position: absolute;
+  top: 17.36%;
+  right: 0;
+  bottom: 15%; /* Adjusted to leave space above input-wrapper (starts at 87.21%) */
+  left: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 10px 2.36% 20px 2.36%; /* Reduced bottom padding since we have more space from bottom value */
+  overflow-y: auto;
+  overflow-x: hidden;
+}
+
+/* Character and Chat Bubble Row */
+.character-chat-row {
+  
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 40px;
+  flex-shrink: 0;
+  align-self: flex-start;
+  max-width: 60%;
+}
+
+/* Content Card 1 - System Chat Bubble */
+.content-card-1 {
+  position: relative;
+  flex: 0 1 auto;
+  background-color: white;
+  border-radius: 30px;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 15px; /* Added gap between answer text and actions row for better spacing */
+  overflow: visible;
+  width: auto;
+  height: auto;
+}
+
+/* Ensure minimum height is enforced - more specific selector */
+.character-chat-row .content-card-1 {
+  min-height: 150px !important; /* Fixed minimum height to prevent awkward polygon positioning with short responses */
+}
+
+
+/* User Query - In chat column */
+.chat-column .user-query {
+  right: 121px;
+  position: relative;
+  background-color: white;
+  border-radius: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 20px;
+  align-self: flex-end;
+  flex: 0 1 auto;
+  max-width: 60%;
+  min-width: 200px;
+  margin-right: 2.36%;
+  width: auto;
+  min-height: 80px;
+  height: auto;
+}
+
+/* Question Text */
+.question-text {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
+  line-height: 16px;
+  font-style: normal;
+  color: #000000;
+  font-size: 31px;
+  text-align: center;
+  letter-spacing: -0.8px;
+  width: 100%;
+  height: auto;
+  z-index: 1;
+}
+
+.question-text p {
+  line-height: 35px; /* Increased to prevent overlap with 31px font-size, keeping it tight */
+  margin: 0;
+  margin-bottom: 0; /* Remove extra margin since line-height handles spacing */
+}
+
+/* Answer Text */
+.answer-text {
+  position: relative;
+  display: block;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 400;
+  font-style: normal;
+  color: black;
+  font-size: 31px;
+  line-height: 32px; /* Slightly above font-size to prevent overlap, but tighter than 35px */
+  letter-spacing: -0.8px;
+  overflow: visible;
+  z-index: 1;
+  margin-bottom: 5px; /* Added margin for better spacing */
+  padding-left: 4px; /* Add padding to prevent first word from being cut off due to negative letter-spacing */
+  padding-right: 4px; /* Add padding on right as well for consistency */
+}
+
+.answer-text p {
+  line-height: 32px; /* Slightly above font-size to prevent overlap, but tighter than 35px */
+  white-space: pre-wrap;
+  margin: 0;
+  margin-bottom: 12px; /* Spacing between paragraphs */
+  padding: 0;
+  min-height: 50px; /* Ensure paragraph has minimum height even when empty during typewriter effect */
+  text-indent: 0; /* Ensure no text indentation */
+}
+
+.answer-text p:last-child {
+  margin-bottom: 0; /* No margin after last paragraph */
+}
+
+/* Thumbs Buttons Container */
+.thumbs-container .thumbs-up,
+.thumbs-container .thumbs-down {
+  position: relative;
+  width: 40px;
+  height: 40px;
+  cursor: pointer;
+  display: inline-block;
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+}
+
+.thumbs-container .thumbs-up:hover,
+.thumbs-container .thumbs-down:hover {
+  opacity: 0.8;
+}
+
+.thumbs-container .thumbs-up img,
+.thumbs-container .thumbs-down img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+  object-position: center;
+}
+
+.thumbs-container .thumbs-down {
+  transform: rotate(180deg);
+}
+
+/* Actions Row - Contains thumbs and buttons on same line */
+.actions-row {
+  justify-content: space-evenly;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  padding-top: 5px; /* Added padding for better spacing */
+  margin-top: 0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  flex-shrink: 0;
+  position: relative;
+  z-index: 1;
+}
+
+/* Thumbs buttons wrapper */
+.thumbs-container {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-shrink: 0;
+}
+
+/* Action Buttons */
+.button-tell-me-more,
+.button-next-steps,
+.button-sources {
+  position: relative;
+  background-color: #7dc8e0;
+  border-radius: 10px;
+  border: none;
+  cursor: pointer;
+  padding: 10px 15px;
+  min-height: 40px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: opacity 0.2s;
+  flex: 1;
+  min-width: 0;
+  white-space: nowrap;
+}
+
+.button-tell-me-more:hover,
+.button-next-steps:hover,
+.button-sources:hover {
+  opacity: 0.9;
+}
+
+.button-tell-me-more:active,
+.button-next-steps:active,
+.button-sources:active {
+  opacity: 0.8;
+}
+
+/* Action Buttons Container */
+.buttons-container {
+  display: flex;
+  gap: 10px;
+  flex: 1;
+}
+
+/* Button Text */
+.button-text-tell-me-more,
+.button-text-next-steps,
+.button-text-sources {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-family: 'SF Pro', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  line-height: 28px;
+  font-style: normal;
+  color: #060606;
+  font-size: 20px;
+  text-align: center;
+  letter-spacing: -0.64px;
+  white-space: nowrap;
+}
+
+
+
+
+
+
+
+/* Input Wrapper - Contains input container, mic button, and language toggle */
+.input-wrapper {
+  position: absolute;
+  top: 87.21%;
+  right: 1.81%;
+  bottom: 5.57%;
+  left: 1.74%;
+  display: flex;
+  align-items: center;
+  gap: 15px;
+  overflow: visible;
+  z-index: 1001; /* Above modal backdrop (z-index: 999) */
+  isolation: isolate; /* Create new stacking context to prevent backdrop blur from affecting children */
+  /* Ensure minimum height matches language toggle */
+  min-height: 70px;
+  box-sizing: border-box;
+}
+
+/* Position mic button container to header area */
+.mic-button-header-container {
+  position: fixed !important;
+  top: 3.1% !important;
+  right: calc(1.81% + 243px) !important; /* Position after download/home buttons */
+  z-index: 100 !important;
+}
+
+/* Mic button styling when in header */
+.mic-button-header-container .mic-icon-button {
+  width: 94px !important;
+  height: 94px !important;
+  min-width: 94px !important;
+  min-height: 94px !important;
+}
+
+/* Language Toggle Switch - Figma Design */
+.language-toggle-switch {
+  position: relative;
+  display: block;
+  cursor: pointer;
+  width: 150px;
+  height: 70px;
+  min-height: 70px;
+  max-height: 70px;
+  flex-shrink: 0;
+  flex-grow: 0;
+  align-self: center;
+  border: none;
+  background: transparent;
+  padding: 0;
+  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
+  border-radius: 43px;
+  overflow: hidden;
+  z-index: 1001; /* Same as input-wrapper, will be blurred */
+}
+
+.language-toggle-switch:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.language-toggle-background {
+  position: absolute;
+  inset: 0;
+  background-color: white;
+  border-radius: 43px;
+  height: 70px;
+  min-height: 70px;
+  max-height: 70px;
+  z-index: -1; /* Behind toggle content */
+}
+
+.language-toggle-slider {
+  position: absolute;
+  bottom: 0;
+  top: 0;
+  width: 60%;
+  background-color: #8c1d40;
+  border-radius: 43px;
+  transition: left 0.3s ease, right 0.3s ease;
+  z-index: 1;
+}
+
+.language-toggle-slider.left {
+  left: 0;
+  right: 40%;
+}
+
+.language-toggle-slider.right {
+  right: 0;
+  left: 40%;
+}
+
+.language-toggle-text {
+  position: absolute;
+  font-family: 'Montserrat', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-weight: 700;
+  font-size: 14px;
+  line-height: 1.615;
+  text-align: center;
+  text-transform: uppercase;
+  white-space: pre-wrap;
+  z-index: 2;
+  transition: color 0.3s ease;
+  pointer-events: none;
+}
+
+.language-toggle-en {
+  top: 31.37%;
+  bottom: 31.37%;
+  left: 5%;
+  right: 56.11%;
+}
+
+.language-toggle-es {
+  top: 31.37%;
+  bottom: 31.37%;
+  left: 55%;
+  right: 3.89%;
+}
+
+.language-toggle-text.active {
+  color: white;
+}
+
+.language-toggle-text:not(.active) {
+  color: black;
+}
+
+/* Text Input Container */
+.input-container {
+  position: relative;
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  background-color: white;
+  border-radius: 16px;
+  padding: 0 20px;
+  gap: 15px;
+  height: 70px; /* Match language toggle height exactly */
+  min-height: 70px; /* Match language toggle min-height */
+  max-height: 70px; /* Match language toggle max-height */
+  box-sizing: border-box; /* Include padding in height calculation */
+  z-index: 1002; /* Above input-wrapper z-index */
+  isolation: isolate; /* Create new stacking context */
+  backdrop-filter: none; /* Ensure no blur on input */
+}
+
+/* Text Input */
+.text-input {
+  flex: 1;
+  border: none;
+  outline: none;
+  background: transparent;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: clamp(16px, 1.04vw, 20px);
+  color: #060606;
+  line-height: normal;
+  padding: 0;
+}
+
+.text-input:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  color: #747474;
+}
+
+.text-input::placeholder {
+  color: #747474;
+  font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  font-size: clamp(16px, 1.04vw, 20px);
+}
+
+/* Paper Plane Icon Button */
+.paper-plane-icon-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c1d40;
+  font-size: clamp(24px, 2.08vw, 40px);
+  transition: opacity 0.2s;
+}
+
+.paper-plane-icon-button:hover {
+  opacity: 0.8;
+}
+
+.paper-plane-icon-button:active {
+  opacity: 0.6;
+}
+
+/* Mic Icon Button */
+/* Mic button in header - positioned absolutely when in header-buttons-container */
+.header-buttons-container .mic-icon-button {
+  position: relative;
+  background-color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c1d40;
+  font-size: clamp(24px, 2.08vw, 40px);
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+  width: 94px;
+  height: 94px;
+  min-width: 94px;
+  min-height: 94px;
+  z-index: 2;
+  overflow: visible;
+}
+
+/* Mic button in input wrapper - keep original styling */
+.input-wrapper .mic-icon-button {
+  background-color: white;
+  border: none;
+  border-radius: 50%;
+  cursor: pointer;
+  padding: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #8c1d40;
+  font-size: clamp(24px, 2.08vw, 40px);
+  transition: opacity 0.2s;
+  flex-shrink: 0;
+  width: 75.78125px;
+  height: 75.78125px;
+  min-width: 75.78125px;
+  min-height: 75.78125px;
+  position: relative;
+  z-index: 2;
+  overflow: visible;
+}
+
+.mic-icon-button:hover:not(:disabled) {
+  opacity: 0.8;
+}
+
+.mic-icon-button:active:not(:disabled) {
+  opacity: 0.6;
+}
+
+.mic-icon-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.mic-icon-button.recording {
+  background-color: #8C1D40;
+  color: white;
+  animation: recordingPulse 1.5s ease-in-out infinite;
+}
+
+.mic-icon-button.recording:hover {
+  opacity: 1;
+}
+
+.mic-icon-button.recording i {
+  color: white !important;
+  z-index: 2;
+  position: relative;
+}
+
+/* Recording Indicator */
+.recording-indicator {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 75.78125px;
+  height: 75.78125px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+  z-index: 1;
+  overflow: visible;
+}
+
+.recording-pulse-ring {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 75.78125px;
+  height: 75.78125px;
+  border-radius: 50%;
+  border: 2px solid rgba(140, 29, 64, 0.6);
+  pointer-events: none;
+  z-index: 1;
+}
+
+.recording-pulse-ring.ring-1 {
+  animation: recordingPulseRing1 2s ease-out infinite;
+}
+
+.recording-pulse-ring.ring-2 {
+  animation: recordingPulseRing2 2s ease-out infinite;
+  animation-delay: 0.4s;
+}
+
+.recording-pulse-ring.ring-3 {
+  animation: recordingPulseRing3 2s ease-out infinite;
+  animation-delay: 0.8s;
+}
+
+@keyframes recordingPulse {
+  0%, 100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 0 rgba(140, 29, 64, 0.7);
+  }
+  50% {
+    transform: scale(1.05);
+    box-shadow: 0 0 0 10px rgba(140, 29, 64, 0);
+  }
+}
+
+@keyframes recordingPulseRing1 {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.8;
+    border-width: 2px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.5);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+@keyframes recordingPulseRing2 {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.6;
+    border-width: 2px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(2.2);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+@keyframes recordingPulseRing3 {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.4;
+    border-width: 2px;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(1.9);
+    opacity: 0;
+    border-width: 1px;
+  }
+}
+
+/* Blue Character */
+.character-chat-row .blue-character {
+  position: relative;
+  top: 31%;
+  flex-shrink: 0;
+  width: auto;
+  height: auto;
+}
+
+.character-chat-row .blue-character img {
+  display: block;
+  width: auto;
+  height: auto;
+  max-width: 300px;
+  max-height: 450px;
+  object-fit: contain;
+  object-position: center;
+}
+
+
+
+
+/* Download Transcript Button */
+/* Header Buttons Container - Home, Download, Mic */
+.header-buttons-container {
+  position: absolute;
+  top: 2.1%;
+  right: -2.19%;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 25px;
+  overflow: visible;
+  z-index: 100;
+}
+
+/* Header Dropdown Menu */
+.header-dropdown {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
+
+.header-dropdown-toggle {
+  width: 94px;
+  height: 94px;
+  min-width: 94px;
+  min-height: 94px;
+  background: white;
+  border: none;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.2s ease;
+  z-index: 101;
+}
+
+.header-dropdown-toggle:hover {
+  opacity: 0.8;
+  transform: scale(1.05);
+}
+
+.header-dropdown-toggle i {
+  font-size: 32px;
+  color: #8c1d40;
+}
+
+.header-dropdown-menu {
+  position: relative;
+  background: white;
+  border-radius: 50px; /* Pill shape */
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
+  padding: 18px; /* Increased by 50% from 12px */
+  z-index: 102;
+  display: flex;
+  flex-direction: column;
+  gap: 12px; /* Increased by 50% from 8px */
+  overflow: hidden;
+  align-items: center;
+}
+
+@keyframes dropdownFadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.header-dropdown-item {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  width: 72px; /* Increased by 50% from 48px */
+  height: 72px; /* Increased by 50% from 48px */
+  min-width: 72px; /* Increased by 50% from 48px */
+  min-height: 72px; /* Increased by 50% from 48px */
+  background: #8c1d40; /* Red circle background */
+  border: none;
+  border-radius: 50%; /* Circular icon buttons */
+  cursor: pointer;
+  transition: all 0.2s ease;
+  flex-shrink: 0;
+}
+
+.header-dropdown-item:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.header-dropdown-item img {
+  width: 48px; /* Increased by 50% from 32px */
+  height: 48px; /* Increased by 50% from 32px */
+  object-fit: contain;
+  flex-shrink: 0;
+}
+
+.header-dropdown-download img {
+  width: 70px; /* Maximum size to fit in 72px button */
+  height: 70px; /* Maximum size to fit in 72px button */
+}
+
+.header-dropdown-item i {
+  width: 48px;
+  height: 48px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 34px;
+  color: white;
+  flex-shrink: 0;
+}
+
+.header-dropdown-item.recording {
+  background-color: #6b1630; /* Darker red when recording */
+  color: white;
+}
+
+.header-dropdown-item.recording i {
+  color: white;
+}
+
+.header-dropdown-item.recording:hover {
+  background-color: #6b1630; /* Keep same color, no hover change */
+}
+
+
+.loading-spinner {
+  width: 36px; /* Increased by 50% from 24px */
+  height: 36px; /* Increased by 50% from 24px */
+  border: 4px solid #f3f3f3; /* Increased by 50% from 3px */
+  border-top: 4px solid #8c1d40; /* Increased by 50% from 3px */
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.download-transcript-container {
+  position: relative;
+  display: flex;
+  flex-direction: row;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 25px;
+  overflow: visible;
+  flex-shrink: 0;
+}
+
+.download-transcript-ellipse {
+  position: relative;
+  width: 94px;
+  height: 94px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.download-transcript-ellipse:hover {
+  opacity: 0.8;
+}
+
+.download-transcript-ellipse img {
+  display: block;
+  width: 94px;
+  height: 88px;
+  object-fit: contain;
+  object-position: center;
+  position: relative;
+  z-index: 21;
+}
+
+/* Hide old hamburger button elements if they exist */
+.download-transcript-link,
+.download-transcript-hamburger,
+.download-transcript-card {
+  display: none !important;
+  visibility: hidden !important;
+}
+
+.download-transcript-icon-container {
+  position: relative;
+  width: 94px;
+  height: 94px;
+  min-width: 94px;
+  min-height: 94px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  cursor: pointer;
+  transition: opacity 0.2s;
+  overflow: visible;
+}
+
+.download-transcript-icon-container:hover {
+  opacity: 0.8;
+}
+
+.download-transcript-icon-inner {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  min-width: 94px;
+  min-height: 94px;
+  overflow: visible;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.download-transcript-icon-inner img {
+  position: absolute;
+  inset: 0;
+  display: block;
+  width: 94px;
+  height: 94px;
+  min-width: 94px;
+  min-height: 94px;
+  object-fit: contain;
+  object-position: center;
+  flex-shrink: 0;
+}
+
+/* Loading Message - Standalone (kept for backward compatibility) */
+.loading-message {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 20px;
+  background: white;
+  border-radius: 30px;
+  margin: 10px 0;
+  align-self: flex-start;
+  max-width: 60%;
+}
+
+/* Loading Message - Inside content-card-1 */
+.loading-message-inline {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 20px;
+  justify-content: center;
+  min-height: 100px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.loader {
+  border: 5px solid #f3f3f3;
+  border-top: 5px solid #4a8ca8;
+  border-radius: 50%;
+  width: 50px;
+  height: 50px;
+  animation: spin 1s linear infinite;
+  flex-shrink: 0;
+}
+
+@keyframes spin {
+  0% { transform: rotate(0deg); }
+  100% { transform: rotate(360deg); }
+}
+
+.loading-message span,
+.loading-message-inline span {
+  font-family: 'SF Pro', sans-serif;
+  font-size: 22px;
+  color: #003d5c;
+}
+
+/* Mic Animation Container */
+.mic-animation-container {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 150px;
+  height: 150px;
+  z-index: 10;
+  pointer-events: none;
+}
+
+
+/* Responsive adjustments - images will maintain aspect ratio with object-fit: contain */
+
+/* ============================================
+   DESKTOP CONSISTENT HEIGHTS
+   ============================================ */
+
+/* Ensure input-container and language-toggle maintain same height on desktop */
+@media (min-width: 769px) {
+  .input-container {
+    height: 70px !important;
+    min-height: 70px !important;
+    max-height: 70px !important;
+  }
+
+  .language-toggle-switch {
+    height: 70px !important;
+    min-height: 70px !important;
+    max-height: 70px !important;
+  }
+
+  .language-toggle-background {
+    height: 70px !important;
+    min-height: 70px !important;
+    max-height: 70px !important;
+  }
+
+  /* Ensure input-wrapper has minimum height to accommodate children */
+  .input-wrapper {
+    min-height: 70px !important;
+  }
+}
+
+/* ============================================
+   MOBILE RESPONSIVE STYLES
+   ============================================ */
+
+/* Base mobile styles (applies to all mobile devices) */
+@media (max-width: 1024px) {
+  .desktop-container {
+    overflow-y: auto;
+    overflow-x: hidden;
+    -webkit-overflow-scrolling: touch;
+    /* Ensure container doesn't push input off screen */
+    padding-bottom: 0;
+    margin-bottom: 0;
+  }
+
+  /* Prevent body from scrolling when input is focused (helps with keyboard) */
+  body {
+    position: relative;
+    overflow-x: hidden;
+  }
+}
+
+/* Tablet and below (768px and smaller) */
+@media (max-width: 768px) {
+  /* Desktop Container */
+  .desktop-container {
+    min-height: 100vh;
+    height: auto;
+    overflow-y: auto;
+  }
+
+  /* Header Unit */
+  .header-unit {
+    width: 100%;
+    min-height: 100vh;
+  }
+
+  /* Header Buttons Container - Stack vertically on mobile */
+  .header-buttons-container {
+    position: fixed;
+    top: 10px;
+    right: 10px;
+    flex-direction: column;
+    gap: 10px;
+    z-index: 1000;
+  }
+
+  /* Header Dropdown Menu - Adjust for mobile */
+  .header-dropdown-menu {
+    padding: 12px;
+    gap: 8px;
+    border-radius: 30px;
+  }
+
+  .header-dropdown-item {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+  }
+
+  .header-dropdown-item img {
+    width: 36px;
+    height: 36px;
+  }
+
+  .header-dropdown-download img {
+    width: 50px;
+    height: 50px;
+  }
+
+  .header-dropdown-item i {
+    width: 36px;
+    height: 36px;
+    font-size: 26px;
+  }
+
+  .loading-spinner {
+    width: 28px;
+    height: 28px;
+    border-width: 3px;
+  }
+
+  /* Input Wrapper - Adjust positioning for mobile */
+  .input-wrapper {
+    position: fixed !important;
+    bottom: 0 !important;
+    left: 0 !important;
+    right: 0 !important;
+    top: auto !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    padding: 10px !important;
+    gap: 10px !important;
+    background-color: #7dc8e0 !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
+    box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1) !important;
+    z-index: 10000 !important; /* Very high z-index to ensure it's always on top */
+    margin: 0 !important;
+    box-sizing: border-box !important;
+    /* Safe area for mobile notches */
+    padding-bottom: max(10px, env(safe-area-inset-bottom, 10px)) !important;
+    /* Ensure it stays visible even when keyboard appears */
+    transform: translateZ(0) !important;
+    -webkit-transform: translateZ(0) !important;
+  }
+
+  /* Input Container */
+  .input-container {
+    min-height: 50px !important;
+    height: auto !important;
+    padding: 0 15px !important;
+    border-radius: 25px !important;
+    flex: 1 !important;
+    max-width: 100% !important;
+    box-sizing: border-box !important;
+  }
+
+  /* Text Input */
+  .text-input {
+    font-size: 16px;
+  }
+
+  .text-input::placeholder {
+    font-size: 16px;
+  }
+
+  /* Language Toggle - Smaller on mobile */
+  .language-toggle-switch {
+    width: 120px;
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    border-radius: 28px;
+  }
+
+  .language-toggle-background {
+    height: 56px;
+    min-height: 56px;
+    max-height: 56px;
+    border-radius: 28px;
+  }
+
+  .language-toggle-text {
+    font-size: 12px;
+  }
+
+  .language-toggle-slider {
+    width: 55%;
+  }
+
+  .language-toggle-slider.left {
+    right: 45%;
+  }
+
+  .language-toggle-slider.right {
+    left: 45%;
+  }
+
+  /* Mic Icon Button - Smaller on mobile */
+  .input-wrapper .mic-icon-button {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+  }
+
+  .header-buttons-container .mic-icon-button {
+    width: 56px;
+    height: 56px;
+    min-width: 56px;
+    min-height: 56px;
+  }
+
+  .paper-plane-icon-button {
+    font-size: 28px;
+  }
+
+  /* Chat Column - Adjust for mobile */
+  .chat-column {
+    padding: 10px !important;
+    padding-bottom: 120px !important; /* Extra space for input wrapper */
+    margin-bottom: 0 !important;
+  }
+
+  /* User Query - Full width on mobile */
+  .chat-column .user-query {
+    right: auto;
+    max-width: 85%;
+    min-width: auto;
+    margin-right: 0;
+    margin-left: auto;
+    padding: 15px;
+    border-radius: 20px;
+    min-height: 60px;
+  }
+
+  /* Question Text - Smaller on mobile */
+  .question-text {
+    font-size: 18px;
+    line-height: 22px;
+    letter-spacing: -0.4px;
+  }
+
+  .question-text p {
+    line-height: 22px;
+  }
+
+  /* Content Card - Adjust for mobile */
+  .content-card-1 {
+    max-width: 85%;
+    padding: 15px;
+    border-radius: 20px;
+    min-height: 100px;
+  }
+
+  /* Answer Text - Smaller on mobile */
+  .answer-text {
+    font-size: 18px;
+    line-height: 22px;
+    letter-spacing: -0.4px;
+  }
+
+  .answer-text p {
+    line-height: 22px;
+    margin-bottom: 10px;
+  }
+
+  /* Actions Row - Stack on mobile if needed */
+  .actions-row {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  /* Thumbs Container */
+  .thumbs-container .thumbs-up,
+  .thumbs-container .thumbs-down {
+    width: 36px;
+    height: 36px;
+  }
+
+  /* Action Buttons - Smaller text on mobile */
+  .button-tell-me-more,
+  .button-next-steps,
+  .button-sources {
+    padding: 8px 12px;
+    min-height: 36px;
+    border-radius: 8px;
+  }
+
+  .button-text-tell-me-more,
+  .button-text-next-steps,
+  .button-text-sources {
+    font-size: 18px;
+    line-height: 22px;
+    letter-spacing: -0.4px;
+  }
+
+  /* Blue Character - Smaller on mobile */
+  .character-chat-row .blue-character img {
+    max-width: 200px;
+    max-height: 300px;
+  }
+
+  /* Loading Message */
+  .loading-message {
+    max-width: 85%;
+    padding: 15px;
+    border-radius: 20px;
+  }
+
+  .loading-message span {
+    font-size: 18px;
+  }
+
+  .loader {
+    width: 40px;
+    height: 40px;
+    border-width: 4px;
+  }
+
+  /* Polygon tails - Hide or scale down on mobile */
+  .user-query .polygon-2-container {
+    display: none; /* Hide chat tails on mobile for cleaner look */
+  }
+
+  .content-card-1 .polygon-1-container {
+    display: none; /* Hide chat tails on mobile for cleaner look */
+  }
+}
+
+/* Small mobile devices (480px and smaller) */
+@media (max-width: 480px) {
+  /* Header Buttons Container - Even smaller */
+  .header-buttons-container {
+    top: 5px;
+    right: 5px;
+    gap: 8px;
+  }
+
+  /* Header Dropdown */
+  .header-dropdown-menu {
+    padding: 10px;
+    gap: 6px;
+  }
+
+  .header-dropdown-item {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .header-dropdown-item img {
+    width: 32px;
+    height: 32px;
+  }
+
+  .header-dropdown-download img {
+    width: 42px;
+    height: 42px;
+  }
+
+  .header-dropdown-item i {
+    width: 32px;
+    height: 32px;
+    font-size: 22px;
+  }
+
+  /* Input Wrapper - Tighter spacing */
+  .input-wrapper {
+    padding: 8px !important;
+    gap: 8px !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px)) !important;
+  }
+
+  /* Input Container */
+  .input-container {
+    min-height: 48px !important;
+    height: auto !important;
+    padding: 0 12px !important;
+    border-radius: 24px !important;
+  }
+
+  /* Language Toggle - Even smaller */
+  .language-toggle-switch {
+    width: 100px;
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+  }
+
+  .language-toggle-background {
+    height: 48px;
+    min-height: 48px;
+    max-height: 48px;
+  }
+
+  .language-toggle-text {
+    font-size: 11px;
+  }
+
+  /* Mic and Send buttons */
+  .input-wrapper .mic-icon-button {
+    width: 48px;
+    height: 48px;
+    min-width: 48px;
+    min-height: 48px;
+  }
+
+  .paper-plane-icon-button {
+    font-size: 24px;
+  }
+
+  /* Chat messages - Even more compact */
+  .chat-column .user-query {
+    max-width: 90%;
+    padding: 12px;
+    border-radius: 18px;
+    min-height: 50px;
+  }
+
+  .content-card-1 {
+    max-width: 90%;
+    padding: 12px;
+    border-radius: 18px;
+    min-height: 80px;
+  }
+
+  /* Text sizes - Smaller */
+  .question-text {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .question-text p {
+    line-height: 20px;
+  }
+
+  .answer-text {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .answer-text p {
+    line-height: 20px;
+    margin-bottom: 8px;
+  }
+
+  /* Buttons - More compact */
+  .button-tell-me-more,
+  .button-next-steps,
+  .button-sources {
+    padding: 6px 10px;
+    min-height: 32px;
+  }
+
+  .button-text-tell-me-more,
+  .button-text-next-steps,
+  .button-text-sources {
+    font-size: 16px;
+    line-height: 20px;
+  }
+
+  .thumbs-container .thumbs-up,
+  .thumbs-container .thumbs-down {
+    width: 32px;
+    height: 32px;
+  }
+
+  /* Blue Character - Even smaller */
+  .character-chat-row .blue-character img {
+    max-width: 150px;
+    max-height: 225px;
+  }
+
+  /* Loading */
+  .loading-message {
+    padding: 12px;
+  }
+
+  .loading-message span {
+    font-size: 16px;
+  }
+
+  .loader {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* Very small devices (360px and smaller) */
+@media (max-width: 360px) {
+  .input-wrapper {
+    padding: 6px !important;
+    gap: 6px !important;
+    padding-bottom: max(6px, env(safe-area-inset-bottom, 6px)) !important;
+  }
+
+  .input-container {
+    min-height: 44px !important;
+    height: auto !important;
+    padding: 0 10px !important;
+  }
+
+  .language-toggle-switch {
+    width: 90px;
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+  }
+
+  .language-toggle-background {
+    height: 44px;
+    min-height: 44px;
+    max-height: 44px;
+  }
+
+  .input-wrapper .mic-icon-button {
+    width: 44px;
+    height: 44px;
+    min-width: 44px;
+    min-height: 44px;
+  }
+
+  .question-text,
+  .answer-text {
+    font-size: 14px;
+    line-height: 18px;
+  }
+}
+
+/* Landscape orientation on mobile */
+@media (max-width: 768px) and (orientation: landscape) {
+  .input-wrapper {
+    padding: 8px !important;
+    padding-bottom: max(8px, env(safe-area-inset-bottom, 8px)) !important;
+  }
+
+  .chat-column {
+    padding-bottom: 100px !important;
+  }
+
+  .header-buttons-container {
+    top: 5px;
+    right: 5px;
+  }
+}
+
+/* Touch-friendly targets (minimum 44x44px for accessibility) */
+@media (max-width: 768px) {
+  button,
+  .header-dropdown-item,
+  .mic-icon-button,
+  .paper-plane-icon-button,
+  .thumbs-up,
+  .thumbs-down,
+  .button-tell-me-more,
+  .button-next-steps,
+  .button-sources {
+    min-width: 44px;
+    min-height: 44px;
+  }
+}
+

@@ -26,8 +26,8 @@ class OpenAIAdapter(ModelAdapter):
         )  
     
 
-    async def get_llm_detailed_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5 ):
-        system_prompt=await self.get_chat_detailed_prompt(kb_data)
+    async def get_llm_detailed_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language='en' ):
+        system_prompt=await self.get_chat_detailed_prompt(kb_data, language=language)
         messages=[]
         messages.append(
             {
@@ -43,8 +43,8 @@ class OpenAIAdapter(ModelAdapter):
         return openai_payload
     
 
-    async def get_llm_nextsteps_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5 ):
-        system_prompt=await self.get_action_item_prompt(kb_data)
+    async def get_llm_nextsteps_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language='en' ):
+        system_prompt=await self.get_action_item_prompt(kb_data, language=language)
 
 
         messages=[]
@@ -97,19 +97,36 @@ class OpenAIAdapter(ModelAdapter):
         if endpoint_type == "riverbot":
             # Riverbot system prompt
             system_prompt = f"""You are River. Answer as a river would."""
+        elif endpoint_type == "spanish":
+            system_prompt = f"""
+        Eres una asistente amable llamada Blue que ofrece información sobre el agua en Arizona.
+
+        Responde siempre en español (registro neutral) y adapta los ejemplos a residentes de Arizona.
+
+        Cuando te pregunten por nombres de funcionarios electos, excepto la gobernadora, responde: "La información más actualizada sobre los funcionarios electos está disponible en az.gov."
+
+        Evita incluir información irrelevante o especulativa.
+
+        Utiliza el siguiente conocimiento para responder las preguntas:
+        <knowledge>
+        {kb_data}
+        </knowledge>
+
+        Responde en 150 palabras o menos con un tono cercano, sin usar listas.
+
+        En respuestas más largas, separa los párrafos con saltos de línea y agrega un salto adicional antes de la frase de cierre.
+
+        Al final de cada mensaje incluye:
+
+        "¡Me encantaría contarte más! Solo haz clic en los botones de abajo o haz una pregunta de seguimiento."
+        """
         else:
             system_prompt = f"""
         You are a helpful assistant named Blue that provides information about water in Arizona.
 
         You will be provided with Arizona water-related queries.
 
-        The governor of Arizona is Katie Hobbs.
-
-        When asked the name of the governor or current governor, you should respond with the name Katie Hobbs.
-
         For any other inquiries regarding the names of elected officials excluding the name of the governor, you should respond: 'The most current information on the names of elected officials is available at az.gov.'
-
-        The acronym AMA always means 'Active Management Area'.
 
         Verify not to include any information that is irrelevant to the current query.
 

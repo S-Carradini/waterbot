@@ -11,6 +11,7 @@ services:
       - MESSAGES_TABLE=${MESSAGES_TABLE}
     volumes:
       - ./application:/app  # Mount the application code for live updates
+      - ./frontend/dist:/app/frontend/dist  # Mount the built React frontend
     ports:
       - "8000:8000"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

@@ -1,34 +1,64 @@
-from langchain.vectorstores import Chroma
-from langchain.embeddings import OpenAIEmbeddings
+"""
+Query pgvector rag_chunks by source and write snippets to a file.
+Usage: set DB_* env, then run with source query as argument or edit source_to_query below.
+"""
+import os
+import sys
 
-# Initialize Chroma with the correct directory and embedding function
-persist_directory = 'docs/chroma/'
-embeddings = OpenAIEmbeddings()
-db = Chroma(persist_directory=persist_directory, embedding_function=embeddings)
+_application_dir = os.path.dirname(os.path.abspath(__file__))
+if _application_dir not in sys.path:
+    sys.path.insert(0, _application_dir)
 
-def retrieve_documents_by_source(db, source_query):
-    # Using the 'get' method to filter collection based on metadata
-    filtered_docs = db.get(where={"source": source_query})
-    return filtered_docs
+from dotenv import load_dotenv
+load_dotenv(os.path.join(_application_dir, ".env"))
 
-def write_documents_to_file(docs, file_path):
-    with open(file_path, 'w', encoding='utf-8') as file:
-        for idx, doc_id in enumerate(docs['ids']):
-            file.write(f"Document ID: {doc_id}\n")
-            file.write(f"Document Metadata: {docs['metadatas'][idx]}\n")
-            document_content = docs['documents'][idx][:200]  # Get first 200 characters
-            file.write(f"Document Content (Snippet): {document_content}...\n")
-            file.write("-" * 40 + "\n")
+import psycopg
+from pgvector.psycopg import register_vector
 
-# Example usage
+
+def _connect():
+    db_host = os.getenv("DB_HOST")
+    db_user = os.getenv("DB_USER")
+    db_password = os.getenv("DB_PASSWORD")
+    db_name = os.getenv("DB_NAME")
+    if not all([db_host, db_user, db_password, db_name]):
+        print("Set DB_HOST, DB_USER, DB_PASSWORD, DB_NAME")
+        sys.exit(1)
+    conn = psycopg.connect(
+        dbname=db_name, user=db_user, password=db_password, host=db_host, port="5432"
+    )
+    register_vector(conn)
+    return conn
+
+
+def retrieve_documents_by_source(source_query: str):
+    with _connect() as conn:
+        with conn.cursor() as cur:
+            cur.execute(
+                "SELECT id, content, metadata FROM rag_chunks WHERE metadata->>'source' = %s",
+                (source_query,),
+            )
+            return cur.fetchall()
+
+
+def write_documents_to_file(rows, file_path: str):
+    with open(file_path, "w", encoding="utf-8") as f:
+        for row in rows:
+            doc_id, content, metadata = row[0], row[1], row[2]
+            f.write(f"Document ID: {doc_id}\n")
+            f.write(f"Metadata: {metadata}\n")
+            f.write(f"Content (snippet): {(content or '')[:200]}...\n")
+            f.write("-" * 40 + "\n")
+
+
 if __name__ == "__main__":
-    source_to_query = "newData\\100+ Water Saving Tips.pdf"
-    found_documents = retrieve_documents_by_source(db, source_to_query)
-    
-    if found_documents['ids']:
-        print(f"Found {len(found_documents['ids'])} documents with the specified source.")
-        output_file = "retrieved_documents.txt"
-        write_documents_to_file(found_documents, output_file)
-        print(f"All documents have been written to {output_file}")
+    source_to_query = os.environ.get("SOURCE_QUERY", "newData/100+ Water Saving Tips.pdf")
+    if len(sys.argv) > 1:
+        source_to_query = sys.argv[1]
+    rows = retrieve_documents_by_source(source_to_query)
+    if rows:
+        print(f"Found {len(rows)} chunks with source: {source_to_query}")
+        write_documents_to_file(rows, os.path.join(_application_dir, "retrieved_documents.txt"))
+        print("Written to retrieved_documents.txt")
     else:
         print("No documents found with the specified source.")

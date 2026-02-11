@@ -36,6 +36,7 @@ if [ -z "$MESSAGES_TABLE" ]; then
 fi
 
 # Run the Docker container if all environment variables are set
+# For RAG (pgvector), also pass DATABASE_URL or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME
 docker run -e AWS_ACCESS_KEY_ID="$AWS_ACCESS_KEY_ID" \
            -e AWS_SECRET_ACCESS_KEY="$AWS_SECRET_ACCESS_KEY" \
            -e AWS_SESSION_TOKEN="$AWS_SESSION_TOKEN" \
