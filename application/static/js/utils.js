@@ -593,10 +593,12 @@ function displayBotMessage(botResponse, messageID) {
         </div>
         </div>
       </div>
-      <div id="feedback-${messageID}" class="row" style="display:none;">
-        <div class="col-2"></div>
-        <div class="col-10">
-          <div class="row" style="border: 1px solid #ccc;border-radius: 4px">
+      <div id="feedback-${messageID}" class="row justify-content-start feedback-card-row" style="display:none;">
+        <div class="col-auto d-flex flex-wrap align-items-end justify-content-center">
+          <img class="waterdrop1" style="visibility:hidden;pointer-events:none;" alt="" />
+        </div>
+        <div class="col-xs-9 col-sm-9 col-md-9 col-lg-9 col-xl-9 col-9">
+          <div class="row feedback-card-inner">
                 <div class="col-3" style="align-self: center;">
                     <img class="waterdrop4">
                 </div>
