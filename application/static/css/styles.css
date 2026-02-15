@@ -461,12 +461,11 @@ a {
   gap: 0.5rem;
   height: calc(100vh - 310px);
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
   flex-shrink: 0;
-  padding-bottom: 10px;
+  padding: 24px 32px 24px 32px;
   max-width: 100%;
   margin-left: 0;
-  padding-top: 16px;
 }
 
 .card-footer {
@@ -479,7 +478,10 @@ a {
   position: relative;
   border: transparent;
   background-color: transparent;
+  overflow: visible;
 }
+
+
 
 .reactions {
   display: block;
@@ -546,6 +548,7 @@ waterdrop5 {
   padding: 1rem;
   border-radius: 35px 35px 35px 0px;
   background: #eee;
+  box-shadow: 1px 3px 8px 0px rgb(11 11 10 / 96%), 5px 5px 6px 0px rgb(13 12 12 / 36%) !important;
 
   white-space: normal;
   overflow-wrap: anywhere;
@@ -555,7 +558,7 @@ waterdrop5 {
 }
 
 .message-body {
-  
+
 }
 
 .nav-items .nav-download {
@@ -589,6 +592,7 @@ waterdrop5 {
   background-attachment: fixed;
   color: #1f1d1d;
   border-radius: 20px 20px 0px 20px;
+  box-shadow: -3px 3px 3px rgb(22 20 20 / 14%), -4px 3px 0px 1px rgb(34 33 33 / 34%) !important;
   height: fit-content;
   width: fit-content;
   padding: 1rem 1rem;
