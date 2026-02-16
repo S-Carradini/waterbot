@@ -223,27 +223,29 @@ export default function App() {
       return msg;
     });
 
-    if (textsToTranslate.length === 0) {
-      setLanguage(nextLanguage);
-      setMessages([buildDefaultMessage(nextLanguage), ...updatedFiltered]);
-      return;
-    }
+    // Switch language and static UI immediately (optimistic update)
+    setLanguage(nextLanguage);
+    setMessages([buildDefaultMessage(nextLanguage), ...updatedFiltered]);
 
+    if (textsToTranslate.length === 0) return;
+
+    // Translate bot messages in background and update when done
     try {
       const { translations } = await translateMessages(textsToTranslate, nextLanguage);
-      let idx = 0;
-      const withTranslatedBots = updatedFiltered.map(msg => {
-        if (msg.type === 'bot' && msg.content && String(msg.content).trim() && translations[idx] != null) {
-          return { ...msg, content: translations[idx++] };
-        }
-        return msg;
+      setMessages(prev => {
+        const intro = prev.find(m => m.type === 'intro');
+        const rest = prev.filter(m => m.type !== 'intro');
+        let idx = 0;
+        const withTranslatedBots = rest.map(msg => {
+          if (msg.type === 'bot' && msg.content && String(msg.content).trim() && translations[idx] != null) {
+            return { ...msg, content: translations[idx++] };
+          }
+          return msg;
+        });
+        return intro ? [intro, ...withTranslatedBots] : withTranslatedBots;
       });
-      setLanguage(nextLanguage);
-      setMessages([buildDefaultMessage(nextLanguage), ...withTranslatedBots]);
     } catch (err) {
-      console.error('Translation failed, switching language without translating messages:', err);
-      setLanguage(nextLanguage);
-      setMessages([buildDefaultMessage(nextLanguage), ...updatedFiltered]);
+      console.error('Translation failed, bot messages remain in previous language:', err);
     }
   };
 
