@@ -4,19 +4,7 @@ import imgPolygon1 from '../assets/polygon-1.png';
 import imgThumbsUp from '../assets/thumbs-up.png';
 import imgThumbsDown from '../assets/thumbs-down.png';
 import { useTypewriter } from '../hooks/useTypewriter';
-
-const BUTTON_TEXT = {
-  en: {
-    'tell-me-more': 'Tell Me More',
-    'next-steps': 'Next Steps',
-    sources: 'Sources',
-  },
-  es: {
-    'tell-me-more': 'Cuéntame más',
-    'next-steps': 'Próximos pasos',
-    sources: 'Fuentes',
-  },
-};
+import { uiText } from '../i18n/uiText';
 
 export default function ChatBubble({
   answerText,
@@ -32,6 +20,9 @@ export default function ChatBubble({
 }) {
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [selectedReaction, setSelectedReaction] = useState(null);
+  const [feedbackSelection, setFeedbackSelection] = useState(null);
+  const [feedbackOtherText, setFeedbackOtherText] = useState('');
+  const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [shouldStartTyping, setShouldStartTyping] = useState(false);
   
   // Convert answerText to string for typewriter effect
@@ -142,6 +133,8 @@ export default function ChatBubble({
     if (messageId && !ratingSubmitted) {
       setSelectedReaction(1);
       setRatingSubmitted(true);
+      setFeedbackSelection(null);
+      setFeedbackOtherText('');
       onRating?.(messageId, 1);
     }
   };
@@ -152,6 +145,30 @@ export default function ChatBubble({
       setRatingSubmitted(true);
       onRating?.(messageId, 0);
     }
+  };
+
+  const handleFeedbackClick = (value) => {
+    setFeedbackSelection(value);
+    if (value !== 'other') {
+      setFeedbackOtherText('');
+    }
+    if (value !== 'other' && messageId) {
+      const t = uiText[language] || uiText.en;
+      const commentMap = {
+        'factually-incorrect': t.factuallyIncorrect,
+        'generic-response': t.genericResponse,
+        refused: t.refusedToAnswer,
+      };
+      onRating?.(messageId, 0, commentMap[value] || value);
+      setFeedbackSubmitted(true);
+    }
+  };
+
+  const handleOtherSubmit = () => {
+    const trimmed = feedbackOtherText.trim();
+    if (!trimmed || !messageId) return;
+    onRating?.(messageId, 0, trimmed);
+    setFeedbackSubmitted(true);
   };
 
   const handleActionClick = (actionType) => {
@@ -173,7 +190,8 @@ export default function ChatBubble({
     return null;
   };
 
-  const buttonLabels = BUTTON_TEXT[language] || BUTTON_TEXT.en;
+  const t = uiText[language] || uiText.en;
+  const buttonLabels = t.actionLabels;
 
   return (
     <div className="character-chat-row">
@@ -188,7 +206,7 @@ export default function ChatBubble({
         {isLoading && (!cleanTextContent || cleanTextContent.trim() === '') ? (
           <div className="loading-message-inline">
             <div className="loader"></div>
-            <span>{language === 'es' ? 'Generando respuesta...' : 'Generating response...'}</span>
+            <span>{t.loadingMessage}</span>
           </div>
         ) : (
           /* Answer Text */
@@ -245,6 +263,90 @@ export default function ChatBubble({
                 <span className="button-text-sources">{buttonLabels['sources']}</span>
               </button>
             </div>
+          </div>
+        )}
+        {selectedReaction === 0 && (
+          <div className="feedback-card-row" role="region" aria-label="Feedback">
+            {feedbackSubmitted ? (
+              <>
+                <div className="feedback-card-icon">
+                  <img
+                    className="feedback-icon-image feedback-icon-image-thankyou"
+                    src="/static/images/WaterDrop5.png"
+                    alt=""
+                    aria-hidden="true"
+                  />
+                </div>
+                <div className="feedback-card feedback-thankyou">
+                  {t.feedbackThankYou}
+                </div>
+              </>
+            ) : (
+              <>
+                <div className="feedback-card-icon">
+                  <img
+                    className="feedback-icon-image"
+                    src="/static/images/WaterDrop3.png"
+                    alt=""
+                    aria-hidden="true"
+                  />
+                </div>
+                <div className="feedback-card">
+                  <div className="feedback-card-title">
+                    {t.feedbackTitle}
+                  </div>
+                  <div className="feedback-card-body">
+                    <button
+                      type="button"
+                      className={`feedback-button ${feedbackSelection === 'factually-incorrect' ? 'selected' : ''}`}
+                      onClick={() => handleFeedbackClick('factually-incorrect')}
+                    >
+                      {t.factuallyIncorrect}
+                    </button>
+                    <button
+                      type="button"
+                      className={`feedback-button ${feedbackSelection === 'generic-response' ? 'selected' : ''}`}
+                      onClick={() => handleFeedbackClick('generic-response')}
+                    >
+                      {t.genericResponse}
+                    </button>
+                    <button
+                      type="button"
+                      className={`feedback-button ${feedbackSelection === 'refused' ? 'selected' : ''}`}
+                      onClick={() => handleFeedbackClick('refused')}
+                    >
+                      {t.refusedToAnswer}
+                    </button>
+                    <button
+                      type="button"
+                      className={`feedback-button feedback-other-button ${feedbackSelection === 'other' ? 'selected' : ''}`}
+                      onClick={() => handleFeedbackClick('other')}
+                    >
+                      {t.other}
+                    </button>
+                    {feedbackSelection === 'other' && (
+                      <div className="feedback-other-wrapper">
+                        <textarea
+                          className="feedback-other-input"
+                          rows={3}
+                          placeholder={t.tellUsMore}
+                          value={feedbackOtherText}
+                          onChange={(event) => setFeedbackOtherText(event.target.value)}
+                        />
+                        <button
+                          type="button"
+                          className="feedback-submit-button"
+                          onClick={handleOtherSubmit}
+                          disabled={!feedbackOtherText.trim()}
+                        >
+                          {t.submit}
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </>
+            )}
           </div>
         )}
         {/* Chat Bubble Tail - Polygon 1 */}

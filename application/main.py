@@ -12,6 +12,7 @@ import mappings.custom_tags as custom_tags
 from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException
 from fastapi import Request, Form
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
+from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import WebSocket
@@ -20,6 +21,7 @@ from fastapi.middleware.cors import CORSMiddleware  # ✅ ADDED: CORS middleware
 from managers.memory_manager import MemoryManager
 from managers.dynamodb_manager import DynamoDBManager
 from managers.rag_manager import RAGManager
+from sources_verifier import should_show_sources
 from managers.pgvector_store import PgVectorStore
 from managers.s3_manager import S3Manager
 
@@ -200,8 +202,9 @@ app = FastAPI()
 
 @app.on_event("startup")
 def startup_ensure_db():
-    """Ensure messages table exists when using PostgreSQL (e.g. Railway/Render without db_init Lambda)."""
+    """Ensure messages and rag_chunks tables exist when using PostgreSQL (e.g. Railway/Render without db_init Lambda)."""
     _ensure_messages_table()
+    _ensure_rag_chunks_table()
 
 
 # ✅ ADDED: CORS Middleware - MUST be added before other middleware
@@ -221,6 +224,9 @@ app.add_middleware(
 )
 
 security = HTTPBasic()
+# Jinja templates (splash screen, waterbot chat, etc.) - path relative to this file
+_templates_dir = pathlib.Path(__file__).parent / "templates"
+templates = Jinja2Templates(directory=str(_templates_dir))
 # Mount static files from the React frontend build
 # Get the path to the frontend dist directory
 # In Docker container: /app/frontend/dist (since WORKDIR is /app and main.py is at /app/main.py)
@@ -315,6 +321,7 @@ db_host = os.getenv("DB_HOST")
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
 db_name = os.getenv("DB_NAME")
+db_port = os.getenv("DB_PORT", "5432")
 
 POSTGRES_ENABLED = bool(DATABASE_URL) or all([db_host, db_user, db_password, db_name])
 
@@ -323,7 +330,7 @@ DB_PARAMS = {
     "user": db_user,
     "password": db_password,
     "host": db_host,
-    "port": "5432"
+    "port": db_port,
 }
 
 
@@ -369,6 +376,53 @@ def _ensure_messages_table():
         logging.warning("Could not ensure messages table (non-fatal): %s", e)
 
 
+def _ensure_rag_chunks_table():
+    """Create pgvector extension and rag_chunks table if they don't exist (e.g. local/Railway without db_init Lambda)."""
+    if not POSTGRES_ENABLED:
+        return
+    try:
+        conn = _pg_connect()
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+        logging.info("pgvector extension enabled (or already present).")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS rag_chunks (
+                id TEXT PRIMARY KEY,
+                doc_id TEXT,
+                chunk_index INT,
+                content TEXT NOT NULL,
+                embedding vector(1536),
+                metadata JSONB,
+                content_hash TEXT,
+                locale TEXT NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT now()
+            );
+        """)
+        for idx in (
+            "CREATE INDEX IF NOT EXISTS idx_rag_chunks_doc_id ON rag_chunks (doc_id);",
+            "CREATE INDEX IF NOT EXISTS idx_rag_chunks_metadata ON rag_chunks USING GIN (metadata);",
+            "CREATE INDEX IF NOT EXISTS idx_rag_chunks_locale ON rag_chunks (locale);",
+        ):
+            try:
+                cur.execute(idx)
+            except Exception as idx_e:
+                logging.warning("Could not create RAG index (non-fatal): %s", idx_e)
+        try:
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS rag_chunks_embedding_idx
+                ON rag_chunks USING ivfflat (embedding vector_cosine_ops)
+                WITH (lists = 100);
+            """)
+        except Exception as ivf_e:
+            logging.warning("Could not create ivfflat index (table may be empty): %s", ivf_e)
+        cur.close()
+        conn.close()
+        logging.info("rag_chunks table ready.")
+    except Exception as e:
+        logging.warning("Could not ensure rag_chunks table (non-fatal): %s", e)
+
+
 # RAG vector store: pgvector (PostgreSQL). Postgres is required for RAG.
 def get_vector_store():
     if not POSTGRES_ENABLED:
@@ -380,9 +434,11 @@ def get_vector_store():
     return PgVectorStore(db_params=DB_PARAMS, embedding_function=embeddings)
 
 
+# Ensure rag_chunks table exists before creating RAG manager (table is created at startup, but we also run it here for import-time init)
+_ensure_rag_chunks_table()
 try:
     knowledge_base = RAGManager(get_vector_store())
-except ValueError as e:
+except Exception as e:
     knowledge_base = None
     logging.warning("RAG disabled: %s", e)
 
@@ -550,9 +606,12 @@ async def submit_rating_api_post(
         userComment: str = Form(None, description="Optional user comment")
     ):
     try:
+        if not MESSAGES_TABLE:
+            # DynamoDB not configured: accept feedback but don't persist; UI still works
+            return {"status": "success"}
         session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-        counter_uuid=await memory.get_message_count_uuid(session_uuid)
-        message_uuid_combo=counter_uuid+"."+message_id
+        counter_uuid = await memory.get_message_count_uuid(session_uuid)
+        message_uuid_combo = counter_uuid + "." + message_id
         await datastore.update_rating_fields(
             session_uuid=session_uuid,
             message_id=message_uuid_combo,
@@ -636,12 +695,21 @@ async def translate_post(request: Request):
     return {"translations": out}
 
 
+NO_SOURCES_MESSAGE = {"en": "Sources are not available for this reply.", "es": "Las fuentes no están disponibles para esta respuesta."}
+
+
 @app.post('/riverbot_chat_sources_api')
 async def riverbot_chat_sources_post(request: Request, background_tasks:BackgroundTasks):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
+    user_question = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-2)
+    bot_response = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-1)
+    show_sources = await should_show_sources(user_question or "", bot_response or "", sources or [])
+    if not show_sources:
+        lang = "es" if detect_language(user_query or user_question or "") == "es" else "en"
+        return {"resp": NO_SOURCES_MESSAGE[lang], "msgID": await memory.get_message_count(session_uuid)}
     language = detect_language(user_query)
 
     memory_payload={
@@ -690,6 +758,14 @@ async def chat_sources_post(
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
+    user_question = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-2)
+    bot_response_content = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-1)
+    show_sources = await should_show_sources(user_question or "", bot_response_content or "", sources or [])
+    if not show_sources:
+        detected_language = detect_language(user_query or user_question or "")
+        language = resolve_language(language_preference, detected_language)
+        lang = "es" if language == "es" else "en"
+        return {"resp": NO_SOURCES_MESSAGE[lang], "msgID": await memory.get_message_count(session_uuid)}
     detected_language = detect_language(user_query)
     language = resolve_language(language_preference, detected_language)
     response_language = determine_prompt_language(language, language_preference)
@@ -1211,26 +1287,36 @@ async def favicon_png():
         return FileResponse(str(favicon_path))
     raise HTTPException(status_code=404)
 
-# Serve React frontend - root route
+# Root and /waterbot: serve Jinja templates (splash screen, chat UI)
 @app.get("/", response_class=HTMLResponse)
-async def root():
-    """Serve the React app's index.html for the root path"""
+async def root(request: Request):
+    """Serve the splash screen (Jinja template)"""
+    return templates.TemplateResponse("splashScreen.html", {"request": request})
+
+@app.get("/waterbot", response_class=HTMLResponse)
+async def waterbot(request: Request):
+    """Serve the waterbot chat page (Jinja template)"""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+# React SPA at /museum
+@app.get("/museum", response_class=HTMLResponse)
+@app.get("/museum/", response_class=HTMLResponse)
+async def museum_root():
+    """Serve the React app's index.html for /museum"""
     if not frontend_dist_path:
         raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
     index_path = frontend_dist_path / "index.html"
     if index_path.exists():
         return FileResponse(str(index_path))
-    else:
-        raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+    raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
 
-# Serve React frontend - catch-all route for SPA routing
+# Serve React frontend - catch-all for /museum SPA routing (e.g. /museum/foo)
 # This must be defined AFTER all API routes
-@app.get("/{full_path:path}", response_class=HTMLResponse)
+@app.get("/museum/{full_path:path}", response_class=HTMLResponse)
 async def serve_react_app(full_path: str, request: Request):
     """
-    Catch-all route for React SPA routing.
-    Serves index.html for all routes that don't match API endpoints.
-    Note: The root path "/" is handled by the root() function above.
+    Catch-all for React SPA at /museum (e.g. /museum/foo for client-side routing).
+    Serves index.html for all /museum/* paths except API-like paths.
     """
     # Skip empty path (root is handled by root() function)
     if not full_path or full_path == "":

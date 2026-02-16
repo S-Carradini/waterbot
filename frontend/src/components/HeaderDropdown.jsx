@@ -2,10 +2,12 @@ import React, { useState, useRef, useEffect } from 'react';
 import imgEllipse3 from '../assets/home.png';
 import imgDownloadTranscript from '../assets/download-transcript.png';
 import { downloadTranscript } from '../services/api';
+import { uiText } from '../i18n/uiText';
 
-export default function HeaderDropdown({ onMicClick, isListening }) {
+export default function HeaderDropdown({ onMicClick, isListening, language = 'en' }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const dropdownRef = useRef(null);
+  const t = uiText[language] || uiText.en;
 
   const handleDownload = async (e) => {
     e.preventDefault();
@@ -16,7 +18,7 @@ export default function HeaderDropdown({ onMicClick, isListening }) {
       await downloadTranscript();
     } catch (error) {
       console.error('Error downloading transcript:', error);
-      alert('Could not download transcript. Please try again.');
+      alert(t.downloadErrorAlert);
     } finally {
       setIsDownloading(false);
     }
@@ -42,28 +44,28 @@ export default function HeaderDropdown({ onMicClick, isListening }) {
         <button 
           className="header-dropdown-item"
           onClick={handleHome}
-          aria-label="Home"
+          aria-label={t.ariaHome}
         >
-          <img alt="Home" src={imgEllipse3} />
+          <img alt={t.ariaHome} src={imgEllipse3} />
         </button>
         
         <button 
           className="header-dropdown-item header-dropdown-download"
           onClick={handleDownload}
           disabled={isDownloading}
-          aria-label="Download transcript"
+          aria-label={t.ariaDownloadTranscript}
         >
           {isDownloading ? (
             <div className="loading-spinner"></div>
           ) : (
-            <img alt="Download transcript" src={imgDownloadTranscript} />
+            <img alt={t.ariaDownloadTranscript} src={imgDownloadTranscript} />
           )}
         </button>
         
         <button 
           className={`header-dropdown-item ${isListening ? 'recording' : ''}`}
           onClick={handleMic}
-          aria-label={isListening ? 'Stop Recording' : 'Microphone'}
+          aria-label={isListening ? t.ariaStopRecording : t.ariaMicrophone}
         >
           <i className={`fas fa-microphone ${isListening ? 'recording' : ''}`}></i>
         </button>

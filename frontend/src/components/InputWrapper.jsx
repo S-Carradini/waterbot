@@ -1,5 +1,6 @@
 import React, { useState, useRef, useEffect } from 'react';
 import RecordingModal from './RecordingModal';
+import { uiText } from '../i18n/uiText';
 
 const speechLangCode = (lang) => (lang === 'es' ? 'es-ES' : 'en-US');
 const SILENCE_TIMEOUT = 2000; // Stop recording after 2 seconds of silence (adjust as needed)
@@ -267,7 +268,7 @@ const InputWrapper = React.forwardRef(function InputWrapper({ onSendMessage, isL
           <input
             type="text"
             className="text-input"
-            placeholder={language === 'es' ? 'Escribe tu pregunta aquí' : 'Type your question here'}
+            placeholder={(uiText[language] || uiText.en).inputPlaceholder}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
             onKeyPress={handleKeyPress}

@@ -227,8 +227,8 @@ p .h6 {
     background-size: cover;
   }
   .waterdrop3 {
-    width: 5.8125rem;
-    height: 6.8125rem;
+    width: 4.25rem;
+    height: 4.25rem;
     content: url(../images/WaterDrop3.png);
     background-repeat: no-repeat;
     background-size: cover;
@@ -319,8 +319,8 @@ p .h6 {
   background-size: cover;
 }
 .waterdrop3 {
-  width: 5.8125rem;
-  height: 6.8125rem;
+  width: 4.25rem;
+  height: 4.25rem;
   content: url(../images/WaterDrop3.png);
   background-repeat: no-repeat;
   background-size: cover;
@@ -430,8 +430,8 @@ waterdrop5 {
   flex-shrink: 0;
 }
 .waterdrop3 {
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 4.25rem;
+  height: 4.25rem;
   flex-shrink: 0;
 }
 .waterdrop4 {

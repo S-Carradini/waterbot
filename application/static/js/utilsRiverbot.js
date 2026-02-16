@@ -351,7 +351,6 @@ $(document).ready(function () {
       $("#feedback-" + messageID).css({
         display: "none",
       });
-      debugger;
       $(".card.data-messageid-" + messageID).append(
         thankYouFeedback(messageID)
       );

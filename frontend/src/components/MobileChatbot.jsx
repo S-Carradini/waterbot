@@ -7,36 +7,11 @@ import MobileOnlyGuard from './MobileOnlyGuard';
 import { sendChatMessage, getDetailedResponse, getActionItems, getSources, submitRating, translateMessages } from '../services/api';
 import imgPolygon2 from '../assets/polygon-2.png';
 import { useMobileDetection } from '../hooks/useMobileDetection';
-
-const DEFAULT_ANSWER_TEXT = {
-  en: `For those engaging in vigorous exercise or spending extended time outdoors, drinks with added electrolytes can help replace minerals lost through sweat.
-
-Choosing a hydration drink depends on your activity level and personal needs, but water is always a healthy and reliable choice.
-
-I would love to tell you more! Just click the buttons below or ask a follow-up question.`,
-  es: `Para quienes realizan ejercicio intenso o pasan mucho tiempo al aire libre, las bebidas con electrolitos ayudan a reponer los minerales perdidos con el sudor.
-
-Elegir una bebida hidratante depende de tu nivel de actividad y tus necesidades personales, pero el agua siempre es una opción saludable y confiable.
-
-¡Me encantaría contarte más! Solo haz clic en los botones de abajo o haz una pregunta de seguimiento.`,
-};
-
-const ACTION_BUTTON_LABELS = {
-  en: {
-    'tell-me-more': 'Tell Me More',
-    'next-steps': 'Next Steps',
-    sources: 'Sources',
-  },
-  es: {
-    'tell-me-more': 'Cuéntame más',
-    'next-steps': 'Próximos pasos',
-    sources: 'Fuentes',
-  },
-};
+import { uiText, getActionLabel } from '../i18n/uiText';
 
 const buildDefaultMessage = (language) => ({
   type: 'intro',
-  content: DEFAULT_ANSWER_TEXT[language],
+  content: (uiText[language] || uiText.en).defaultAnswerText,
   messageId: null,
   showActions: false,
   disableTypewriter: true,
@@ -49,6 +24,17 @@ const createBotPlaceholder = () => ({
   showActions: false,
   disableTypewriter: false,
 });
+
+const GREETING_REGEX = /\b(hi|hello|hey|hola|howdy|sup|yo|hiya|thanks|thank you|thx)\b/i;
+
+const isSourcesAllowed = (messages) => {
+  const lastUser = [...messages].reverse().find(m => m.type === 'user');
+  if (!lastUser) return false;
+  const text = String(lastUser.content || '').trim();
+  if (!text) return false;
+  if (text.length <= 6) return false;
+  return !GREETING_REGEX.test(text);
+};
 
 export default function MobileChatbot() {
   const isMobile = useMobileDetection();
@@ -134,7 +120,7 @@ export default function MobileChatbot() {
         if (updated[lastIndex]?.type === 'bot') {
           updated[lastIndex] = {
             type: 'bot',
-            content: 'Sorry, I encountered an error. Please try again.',
+            content: (uiText[language] || uiText.en).errorGeneric,
             messageId: null,
             showActions: false,
             disableTypewriter: false,
@@ -146,12 +132,21 @@ export default function MobileChatbot() {
   };
 
   const handleActionButton = async (actionType) => {
-    const actionLabels = ACTION_BUTTON_LABELS[language] || ACTION_BUTTON_LABELS.en;
-    const buttonLabel = actionLabels[actionType] || actionType;
+    const t = uiText[language] || uiText.en;
+    const buttonLabel = getActionLabel(language, actionType);
+
+    if (actionType === 'sources' && !isSourcesAllowed(messages)) {
+      setMessages(prev => [
+        ...prev,
+        { type: 'user', content: buttonLabel, isActionLabel: true, actionType },
+        { type: 'bot', content: t.sourcesWarning, messageId: null, showActions: false, disableTypewriter: true },
+      ]);
+      return;
+    }
     
     setMessages(prev => [
       ...prev,
-      { type: 'user', content: buttonLabel },
+      { type: 'user', content: buttonLabel, isActionLabel: true, actionType },
       createBotPlaceholder(),
     ]);
     
@@ -198,7 +193,7 @@ export default function MobileChatbot() {
         if (updated[lastIndex]?.type === 'bot') {
           updated[lastIndex] = {
             type: 'bot',
-            content: 'Sorry, I encountered an error. Please try again.',
+            content: (uiText[language] || uiText.en).errorGeneric,
             messageId: null,
             showActions: false,
             disableTypewriter: false,
@@ -225,27 +220,35 @@ export default function MobileChatbot() {
     );
     const textsToTranslate = botMessagesToTranslate.map(m => m.content);
 
+    // Re-label action-button user messages for new language
+    const updatedFiltered = filtered.map(msg => {
+      if (msg.type === 'user' && msg.isActionLabel && msg.actionType) {
+        return { ...msg, content: getActionLabel(nextLanguage, msg.actionType) };
+      }
+      return msg;
+    });
+
     if (textsToTranslate.length === 0) {
       setLanguage(nextLanguage);
-      setMessages([buildDefaultMessage(nextLanguage), ...filtered]);
+      setMessages([buildDefaultMessage(nextLanguage), ...updatedFiltered]);
       return;
     }
 
     try {
       const { translations } = await translateMessages(textsToTranslate, nextLanguage);
       let idx = 0;
-      const updatedFiltered = filtered.map(msg => {
+      const withTranslatedBots = updatedFiltered.map(msg => {
         if (msg.type === 'bot' && msg.content && String(msg.content).trim() && translations[idx] != null) {
           return { ...msg, content: translations[idx++] };
         }
         return msg;
       });
       setLanguage(nextLanguage);
-      setMessages([buildDefaultMessage(nextLanguage), ...updatedFiltered]);
+      setMessages([buildDefaultMessage(nextLanguage), ...withTranslatedBots]);
     } catch (err) {
       console.error('Translation failed, switching language without translating messages:', err);
       setLanguage(nextLanguage);
-      setMessages([buildDefaultMessage(nextLanguage), ...filtered]);
+      setMessages([buildDefaultMessage(nextLanguage), ...updatedFiltered]);
     }
   };
 
@@ -258,7 +261,7 @@ export default function MobileChatbot() {
   return (
     <MobileOnlyGuard>
       <div className="desktop-container mobile-chatbot-container">
-        <Header onMicClick={handleMicClick} isListening={isListening} />
+        <Header onMicClick={handleMicClick} isListening={isListening} language={language} />
 
       {/* Chat Column Container */}
       <div className="chat-column mobile-chat-column" ref={chatColumnRef}>

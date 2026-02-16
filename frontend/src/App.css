@@ -399,6 +399,126 @@
   flex: 1;
 }
 
+/* Feedback Card */
+.feedback-card-row {
+  display: flex;
+  align-items: stretch;
+  gap: 12px;
+  margin-top: 16px;
+  padding: 12px 10px;
+  background: #f6fbff;
+  border: 1px solid #c7e3ef;
+  border-radius: 14px;
+}
+
+.feedback-card-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex: 0 0 48px;
+}
+
+.feedback-icon-image {
+  width: 38px;
+  height: 38px;
+  display: block;
+  object-fit: contain;
+}
+
+.feedback-icon-image-thankyou {
+  width: 46px;
+  height: 46px;
+}
+
+.feedback-card {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.feedback-card-title {
+  font-weight: 700;
+  font-size: 18px;
+  color: #1b2a33;
+}
+
+.feedback-card-body {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.feedback-button {
+  background: #ffffff;
+  border: 2px solid #7dc8e0;
+  color: #1b2a33;
+  border-radius: 10px;
+  padding: 8px 12px;
+  font-weight: 700;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.feedback-button:hover {
+  background: #eaf7fd;
+}
+
+.feedback-button.selected {
+  background: #7dc8e0;
+  color: #0b1b22;
+}
+
+.feedback-other-button {
+  border-style: dashed;
+}
+
+.feedback-other-input {
+  width: 100%;
+  min-width: 220px;
+  border-radius: 10px;
+  border: 2px solid #c7e3ef;
+  padding: 8px 10px;
+  font-family: inherit;
+  font-size: 14px;
+  resize: vertical;
+}
+
+.feedback-other-wrapper {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.feedback-submit-button {
+  align-self: flex-start;
+  background: #1b2a33;
+  color: #ffffff;
+  border: none;
+  border-radius: 10px;
+  padding: 8px 16px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s ease;
+}
+
+.feedback-submit-button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.feedback-thankyou {
+  font-weight: 700;
+  font-size: 18px;
+  color: #1b2a33;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 46px;
+}
+
 /* Button Text */
 .button-text-tell-me-more,
 .button-text-next-steps,

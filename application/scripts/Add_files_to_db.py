@@ -14,7 +14,9 @@ from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
 
-load_dotenv(os.path.join(_application_dir, ".env"))
+# Load .env from project root (waterbot/.env) where OPENAI_API_KEY, DATABASE_URL, etc. live
+_project_root = os.path.dirname(_application_dir)
+load_dotenv(os.path.join(_project_root, ".env"))
 
 LOCALE = "en"
 
@@ -67,17 +69,23 @@ def add_document_with_metadata(store, text_splitter, file_path, splits):
 
 def get_store(application_dir):
     embeddings = OpenAIEmbeddings()
+    database_url = os.getenv("DATABASE_URL")
     db_host = os.getenv("DB_HOST")
     db_user = os.getenv("DB_USER")
     db_password = os.getenv("DB_PASSWORD")
     db_name = os.getenv("DB_NAME")
+    db_port = os.getenv("DB_PORT", "5432")
+    if database_url:
+        from managers.pgvector_store import PgVectorStore
+        print("✅ PgVector store initialized (locale=en) via DATABASE_URL")
+        return PgVectorStore(db_url=database_url, embedding_function=embeddings)
     if not all([db_host, db_user, db_password, db_name]):
-        print("❌ pgvector requires DB_HOST, DB_USER, DB_PASSWORD, DB_NAME", file=sys.stderr)
+        print("❌ pgvector requires DATABASE_URL or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME", file=sys.stderr)
         sys.exit(1)
     from managers.pgvector_store import PgVectorStore
     print("✅ PgVector store initialized (locale=en)")
     return PgVectorStore(
-        db_params={"dbname": db_name, "user": db_user, "password": db_password, "host": db_host, "port": "5432"},
+        db_params={"dbname": db_name, "user": db_user, "password": db_password, "host": db_host, "port": db_port},
         embedding_function=embeddings,
     )
 
