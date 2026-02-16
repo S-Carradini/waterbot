@@ -13,7 +13,7 @@ RUN npm ci || npm install
 COPY frontend/ ./
 
 # Build the frontend
-RUN npm run build
+RUN echo "Building React frontend..." && npm run build
 
 # Stage 2: Python application
 FROM python:3.11-slim AS app
