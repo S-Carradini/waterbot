@@ -44,11 +44,15 @@ Ask any question in the space below to start exploring Arizona's water situation
       'next-steps': 'Próximos pasos',
       sources: 'Fuentes',
     },
-    defaultAnswerText: `Para quienes realizan ejercicio intenso o pasan mucho tiempo al aire libre, las bebidas con electrolitos ayudan a reponer los minerales perdidos con el sudor.
+    defaultAnswerText: `¡Hola! ¡Soy Blue! Estoy aquí para responder tus preguntas sobre el agua en Arizona.
+¡Pregúntame lo que quieras sobre la historia del agua en nuestro estado!
+¿No sabes por dónde empezar? Puedes intentar preguntar sobre:
 
-Elegir una bebida hidratante depende de tu nivel de actividad y tus necesidades personales, pero el agua siempre es una opción saludable y confiable.
-
-¡Me encantaría contarte más! Solo haz clic en los botones de abajo o haz una pregunta de seguimiento.`,
+1. El paisaje hídrico único de Arizona: ríos, lagos, aguas subterráneas y acuíferos
+2. El papel del río Colorado en el suministro de agua de Arizona
+3. Qué te gustaría saber sobre conservar el agua en nuestro entorno desértico
+4. ¿Existen programas o iniciativas gubernamentales para abordar la sequía en Arizona?
+¡Escribe cualquier pregunta en el espacio de abajo para explorar conmigo la situación del agua en Arizona!`,
     errorGeneric: 'Lo siento, hubo un error. Por favor, inténtalo de nuevo.',
     sourcesWarning: 'Las fuentes están disponibles para preguntas informativas. Por favor, haz una pregunta específica.',
     inputPlaceholder: 'Escribe tu pregunta aquí',
