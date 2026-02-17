@@ -13,7 +13,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/museum" element={<SplashScreen />} />
-        <Route path="/waterbot" element={<App />} />
+        <Route path="/museum/chat" element={<App />} />
         <Route path="/mobile" element={<MobileChatbot />} />
       </Routes>
     </BrowserRouter>
