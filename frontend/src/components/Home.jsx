@@ -20,7 +20,7 @@ export default function Home() {
 
   const handleChatWithBlue = (e) => {
     e.preventDefault();
-    navigate('/waterbot');
+    navigate('/museum/chat');
   };
 
   return (

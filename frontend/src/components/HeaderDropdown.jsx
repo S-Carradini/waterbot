@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
 import imgEllipse3 from '../assets/home.png';
 import imgDownloadTranscript from '../assets/download-transcript.png';
 import { downloadTranscript } from '../services/api';
@@ -7,6 +8,7 @@ import { uiText } from '../i18n/uiText';
 export default function HeaderDropdown({ onMicClick, isListening, language = 'en' }) {
   const [isDownloading, setIsDownloading] = useState(false);
   const dropdownRef = useRef(null);
+  const navigate = useNavigate();
   const t = uiText[language] || uiText.en;
 
   const handleDownload = async (e) => {
@@ -27,7 +29,7 @@ export default function HeaderDropdown({ onMicClick, isListening, language = 'en
   const handleHome = (e) => {
     e.preventDefault();
     e.stopPropagation();
-    window.location.href = '/';
+    navigate('/museum');
   };
 
   const handleMic = (e) => {

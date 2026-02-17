@@ -10,11 +10,15 @@ export const uiText = {
       'next-steps': 'Next Steps',
       sources: 'Sources',
     },
-    defaultAnswerText: `For those engaging in vigorous exercise or spending extended time outdoors, drinks with added electrolytes can help replace minerals lost through sweat.
+    defaultAnswerText: `Hi! My name is Blue! I'm here to answer your questions about water in Arizona.
+Ask me anything you want about the story of water in our state!
+Not sure where to start? You can try asking questions about:
 
-Choosing a hydration drink depends on your activity level and personal needs, but water is always a healthy and reliable choice.
-
-I would love to tell you more! Just click the buttons below or ask a follow-up question.`,
+1.Arizona's unique water landscape, rivers, lakes, groundwater, and aquifers
+2.Colorado River's role in Arizona's water supply
+3.What's on your mind about conserving water in our desert environment?
+4.Are there any government programs or initiatives to address drought in Arizona?
+Ask any question in the space below to start exploring Arizona's water situation with me!`,
     errorGeneric: 'Sorry, I encountered an error. Please try again.',
     sourcesWarning: 'Sources are available for informational questions. Please ask a specific question.',
     inputPlaceholder: 'Type your question here',

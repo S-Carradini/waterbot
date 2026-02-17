@@ -15,7 +15,7 @@ export default function MobileOnlyGuard({ children }) {
     if (!isMobile && window.innerWidth > 768) {
       // Redirect desktop users to desktop version after a short delay
       const timer = setTimeout(() => {
-        navigate('/waterbot', { replace: true });
+        navigate('/museum/chat', { replace: true });
       }, 3000);
       return () => clearTimeout(timer);
     }
@@ -30,7 +30,7 @@ export default function MobileOnlyGuard({ children }) {
           <p>Redirecting you to the desktop version...</p>
           <button 
             className="mobile-only-button"
-            onClick={() => navigate('/waterbot')}
+            onClick={() => navigate('/museum/chat')}
           >
             Go to Desktop Version Now
           </button>
