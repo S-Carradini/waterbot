@@ -1395,6 +1395,22 @@
     z-index: 1000;
   }
 
+  /* Chat header title - prevent clipping on narrow viewports */
+  .header-unit .title {
+    left: 12%;
+    right: 42%;
+    min-width: 0;
+    overflow: visible;
+    font-size: clamp(16px, 4.5vw, 28px);
+    letter-spacing: 0.02em;
+  }
+
+  .header-unit .title p {
+    overflow: visible;
+    white-space: nowrap;
+    text-overflow: clip;
+  }
+
   /* Header Dropdown Menu - Adjust for mobile */
   .header-dropdown-menu {
     padding: 8px;
@@ -1673,6 +1689,13 @@
     top: 5px;
     right: 5px;
     gap: 8px;
+  }
+
+  /* Chat header title - ensure full text visible on very narrow screens */
+  .header-unit .title {
+    left: 10%;
+    right: 44%;
+    font-size: clamp(14px, 4vw, 22px);
   }
 
   /* Header Dropdown */
