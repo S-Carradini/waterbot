@@ -590,7 +590,7 @@ chatHistory.appendChild(userMessage);
         </div>
         </div>
       </div>
-      <div class="card-footer pt-0 p-8" style="padding:8px; border:0;">
+      <div id="reactions-footer-${messageID}" class="card-footer pt-0 p-8" style="display:none; padding:8px; border:0;">
       <div class="row mb-4">
         <div class="col-2"></div>
         <div class="col-10" style="padding-top: 0.5rem;">
@@ -684,6 +684,8 @@ chatHistory.appendChild(userMessage);
   chatHistory.appendChild(botMessage);
   messageInterval(botResponse, messageID, function () {
     window.responseInProgress = false;
+    const footer = document.getElementById(`reactions-footer-${messageID}`);
+    if (footer) footer.style.display = "";
     if (typeof onComplete === "function") onComplete();
   });
 }

@@ -581,7 +581,7 @@ function displayBotMessage(botResponse, messageID, onComplete) {
         </div>
         <div class="col-xs-9 col-sm-9 col-md-9 col-lg-9 col-xl-9 col-9 bot-message-body">
           <p class="m-0" id="botmessage-${messageID}"></p>
-           <div class="card-footer pt-0 p-8 footer-no-gap " style="padding:8px; border:0;">
+           <div id="reactions-footer-${messageID}" class="card-footer pt-0 p-8 footer-no-gap " style="display:none; padding:8px; border:0;">
       <div class="row mb-0">
         <div class="col-12" style="padding-top: 0.5rem;">
        
@@ -679,6 +679,8 @@ function displayBotMessage(botResponse, messageID, onComplete) {
   chatHistory.appendChild(botMessage);
   messageInterval(botResponse, messageID, function () {
     window.responseInProgress = false;
+    const footer = document.getElementById(`reactions-footer-${messageID}`);
+    if (footer) footer.style.display = "";
     if (typeof onComplete === "function") onComplete();
   });
   scrollToBottom();
