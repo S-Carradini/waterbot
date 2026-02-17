@@ -20,12 +20,12 @@
     /* Allow input wrapper to be visible */
     position: relative;
   }
-  
+
   /* Ensure no parent clips the input */
-  .desktop-container > * {
+  .desktop-container>* {
     position: relative;
   }
-  
+
   /* Ensure input wrapper can escape container bounds */
   .input-wrapper {
     position: fixed !important;
@@ -168,7 +168,7 @@
   color: #7dc8e0;
   font-size: clamp(32px, 3.33vw, 64px);
   letter-spacing: 0.64px;
-  text-shadow: 
+  text-shadow:
     -2px -2px 0 white,
     2px -2px 0 white,
     -2px 2px 0 white,
@@ -186,12 +186,14 @@
   position: absolute;
   top: 17.36%;
   right: 0;
-  bottom: 15%; /* Adjusted to leave space above input-wrapper (starts at 87.21%) */
+  bottom: 15%;
+  /* Adjusted to leave space above input-wrapper (starts at 87.21%) */
   left: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 10px 2.36% 20px 2.36%; /* Reduced bottom padding since we have more space from bottom value */
+  padding: 10px 2.36% 20px 2.36%;
+  /* Reduced bottom padding since we have more space from bottom value */
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -205,21 +207,24 @@
   flex-shrink: 0;
   align-self: flex-start;
   max-width: 60%;
-  min-width: 0; /* Allow shrink so content-card respects bounds with long URLs */
+  min-width: 0;
+  /* Allow shrink so content-card respects bounds with long URLs */
 }
 
 /* Content Card 1 - System Chat Bubble */
 .content-card-1 {
   position: relative;
   flex: 0 1 auto;
-  min-width: 0; /* Allow flex shrink below content size so long URLs wrap */
+  min-width: 0;
+  /* Allow flex shrink below content size so long URLs wrap */
   max-width: 100%;
   background-color: white;
   border-radius: 30px;
   padding: 20px;
   display: flex;
   flex-direction: column;
-  gap: 15px; /* Added gap between answer text and actions row for better spacing */
+  gap: 15px;
+  /* Added gap between answer text and actions row for better spacing */
   overflow: visible;
   width: auto;
   height: auto;
@@ -227,7 +232,8 @@
 
 /* Ensure minimum height is enforced - more specific selector */
 .character-chat-row .content-card-1 {
-  min-height: 150px !important; /* Fixed minimum height to prevent awkward polygon positioning with short responses */
+  min-height: 150px !important;
+  /* Fixed minimum height to prevent awkward polygon positioning with short responses */
 }
 
 
@@ -272,9 +278,11 @@
 }
 
 .question-text p {
-  line-height: 35px; /* Increased to prevent overlap with 31px font-size, keeping it tight */
+  line-height: 35px;
+  /* Increased to prevent overlap with 31px font-size, keeping it tight */
   margin: 0;
-  margin-bottom: 0; /* Remove extra margin since line-height handles spacing */
+  margin-bottom: 0;
+  /* Remove extra margin since line-height handles spacing */
 }
 
 /* Answer Text */
@@ -286,31 +294,41 @@
   font-style: normal;
   color: black;
   font-size: 31px;
-  line-height: 32px; /* Slightly above font-size to prevent overlap, but tighter than 35px */
+  line-height: 32px;
+  /* Slightly above font-size to prevent overlap, but tighter than 35px */
   letter-spacing: -0.8px;
-  overflow-wrap: break-word; /* Wrap long URLs and prevent overflow */
+  overflow-wrap: break-word;
+  /* Wrap long URLs and prevent overflow */
   word-break: break-word;
   overflow: visible;
   z-index: 1;
-  margin-bottom: 5px; /* Added margin for better spacing */
-  padding-left: 4px; /* Add padding to prevent first word from being cut off due to negative letter-spacing */
-  padding-right: 4px; /* Add padding on right as well for consistency */
+  margin-bottom: 5px;
+  /* Added margin for better spacing */
+  padding-left: 4px;
+  /* Add padding to prevent first word from being cut off due to negative letter-spacing */
+  padding-right: 4px;
+  /* Add padding on right as well for consistency */
 }
 
 .answer-text p {
-  line-height: 40px; /* Increased for better readability, esp. source lists with links */
+  line-height: 40px;
+  /* Increased for better readability, esp. source lists with links */
   white-space: pre-wrap;
   overflow-wrap: break-word;
   word-break: break-word;
   margin: 0;
-  margin-bottom: 12px; /* Spacing between paragraphs */
+  margin-bottom: 12px;
+  /* Spacing between paragraphs */
   padding: 0;
-  min-height: 50px; /* Ensure paragraph has minimum height even when empty during typewriter effect */
-  text-indent: 0; /* Ensure no text indentation */
+  min-height: 50px;
+  /* Ensure paragraph has minimum height even when empty during typewriter effect */
+  text-indent: 0;
+  /* Ensure no text indentation */
 }
 
 .answer-text p:last-child {
-  margin-bottom: 0; /* No margin after last paragraph */
+  margin-bottom: 0;
+  /* No margin after last paragraph */
 }
 
 /* Thumbs Buttons Container */
@@ -349,7 +367,8 @@
   display: flex;
   align-items: center;
   gap: 15px;
-  padding-top: 5px; /* Added padding for better spacing */
+  padding-top: 5px;
+  /* Added padding for better spacing */
   margin-top: 0;
   margin-bottom: 0;
   padding-bottom: 0;
@@ -569,8 +588,10 @@
   align-items: center;
   gap: 15px;
   overflow: visible;
-  z-index: 1001; /* Above modal backdrop (z-index: 999) */
-  isolation: isolate; /* Create new stacking context to prevent backdrop blur from affecting children */
+  z-index: 1001;
+  /* Above modal backdrop (z-index: 999) */
+  isolation: isolate;
+  /* Create new stacking context to prevent backdrop blur from affecting children */
   /* Ensure minimum height matches language toggle */
   min-height: 70px;
   box-sizing: border-box;
@@ -580,7 +601,8 @@
 .mic-button-header-container {
   position: fixed !important;
   top: 3.1% !important;
-  right: calc(1.81% + 243px) !important; /* Position after download/home buttons */
+  right: calc(1.81% + 243px) !important;
+  /* Position after download/home buttons */
   z-index: 100 !important;
 }
 
@@ -610,7 +632,8 @@
   box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
   border-radius: 43px;
   overflow: hidden;
-  z-index: 1001; /* Same as input-wrapper, will be blurred */
+  z-index: 1001;
+  /* Same as input-wrapper, will be blurred */
 }
 
 .language-toggle-switch:disabled {
@@ -626,7 +649,8 @@
   height: 70px;
   min-height: 70px;
   max-height: 70px;
-  z-index: -1; /* Behind toggle content */
+  z-index: -1;
+  /* Behind toggle content */
 }
 
 .language-toggle-slider {
@@ -697,13 +721,20 @@
   border-radius: 16px;
   padding: 0 20px;
   gap: 15px;
-  height: 70px; /* Match language toggle height exactly */
-  min-height: 70px; /* Match language toggle min-height */
-  max-height: 70px; /* Match language toggle max-height */
-  box-sizing: border-box; /* Include padding in height calculation */
-  z-index: 1002; /* Above input-wrapper z-index */
-  isolation: isolate; /* Create new stacking context */
-  backdrop-filter: none; /* Ensure no blur on input */
+  height: 70px;
+  /* Match language toggle height exactly */
+  min-height: 70px;
+  /* Match language toggle min-height */
+  max-height: 70px;
+  /* Match language toggle max-height */
+  box-sizing: border-box;
+  /* Include padding in height calculation */
+  z-index: 1002;
+  /* Above input-wrapper z-index */
+  isolation: isolate;
+  /* Create new stacking context */
+  backdrop-filter: none;
+  /* Ensure no blur on input */
 }
 
 /* Text Input */
@@ -873,10 +904,13 @@
 }
 
 @keyframes recordingPulse {
-  0%, 100% {
+
+  0%,
+  100% {
     transform: scale(1);
     box-shadow: 0 0 0 0 rgba(140, 29, 64, 0.7);
   }
+
   50% {
     transform: scale(1.05);
     box-shadow: 0 0 0 10px rgba(140, 29, 64, 0);
@@ -889,6 +923,7 @@
     opacity: 0.8;
     border-width: 2px;
   }
+
   100% {
     transform: translate(-50%, -50%) scale(2.5);
     opacity: 0;
@@ -902,6 +937,7 @@
     opacity: 0.6;
     border-width: 2px;
   }
+
   100% {
     transform: translate(-50%, -50%) scale(2.2);
     opacity: 0;
@@ -915,6 +951,7 @@
     opacity: 0.4;
     border-width: 2px;
   }
+
   100% {
     transform: translate(-50%, -50%) scale(1.9);
     opacity: 0;
@@ -997,13 +1034,16 @@
 .header-dropdown-menu {
   position: relative;
   background: white;
-  border-radius: 50px; /* Pill shape */
+  border-radius: 50px;
+  /* Pill shape */
   box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  padding: 18px; /* Increased by 50% from 12px */
+  padding: 18px;
+  /* Increased by 50% from 12px */
   z-index: 102;
   display: flex;
   flex-direction: column;
-  gap: 12px; /* Increased by 50% from 8px */
+  gap: 12px;
+  /* Increased by 50% from 8px */
   overflow: hidden;
   align-items: center;
 }
@@ -1013,6 +1053,7 @@
     opacity: 0;
     transform: translateY(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateY(0);
@@ -1024,13 +1065,19 @@
   align-items: center;
   justify-content: center;
   padding: 0;
-  width: 72px; /* Increased by 50% from 48px */
-  height: 72px; /* Increased by 50% from 48px */
-  min-width: 72px; /* Increased by 50% from 48px */
-  min-height: 72px; /* Increased by 50% from 48px */
-  background: #8c1d40; /* Red circle background */
+  width: 72px;
+  /* Increased by 50% from 48px */
+  height: 72px;
+  /* Increased by 50% from 48px */
+  min-width: 72px;
+  /* Increased by 50% from 48px */
+  min-height: 72px;
+  /* Increased by 50% from 48px */
+  background: #8c1d40;
+  /* Red circle background */
   border: none;
-  border-radius: 50%; /* Circular icon buttons */
+  border-radius: 50%;
+  /* Circular icon buttons */
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
@@ -1042,15 +1089,19 @@
 }
 
 .header-dropdown-item img {
-  width: 48px; /* Increased by 50% from 32px */
-  height: 48px; /* Increased by 50% from 32px */
+  width: 48px;
+  /* Increased by 50% from 32px */
+  height: 48px;
+  /* Increased by 50% from 32px */
   object-fit: contain;
   flex-shrink: 0;
 }
 
 .header-dropdown-download img {
-  width: 70px; /* Maximum size to fit in 72px button */
-  height: 70px; /* Maximum size to fit in 72px button */
+  width: 70px;
+  /* Maximum size to fit in 72px button */
+  height: 70px;
+  /* Maximum size to fit in 72px button */
 }
 
 .header-dropdown-item i {
@@ -1065,7 +1116,8 @@
 }
 
 .header-dropdown-item.recording {
-  background-color: #6b1630; /* Darker red when recording */
+  background-color: #6b1630;
+  /* Darker red when recording */
   color: white;
 }
 
@@ -1074,23 +1126,33 @@
 }
 
 .header-dropdown-item.recording:hover {
-  background-color: #6b1630; /* Keep same color, no hover change */
+  background-color: #6b1630;
+  /* Keep same color, no hover change */
 }
 
 
 .loading-spinner {
-  width: 36px; /* Increased by 50% from 24px */
-  height: 36px; /* Increased by 50% from 24px */
-  border: 4px solid #f3f3f3; /* Increased by 50% from 3px */
-  border-top: 4px solid #8c1d40; /* Increased by 50% from 3px */
+  width: 36px;
+  /* Increased by 50% from 24px */
+  height: 36px;
+  /* Increased by 50% from 24px */
+  border: 4px solid #f3f3f3;
+  /* Increased by 50% from 3px */
+  border-top: 4px solid #8c1d40;
+  /* Increased by 50% from 3px */
   border-radius: 50%;
   animation: spin 1s linear infinite;
   flex-shrink: 0;
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .download-transcript-container {
@@ -1219,8 +1281,13 @@
 }
 
 @keyframes spin {
-  0% { transform: rotate(0deg); }
-  100% { transform: rotate(360deg); }
+  0% {
+    transform: rotate(0deg);
+  }
+
+  100% {
+    transform: rotate(360deg);
+  }
 }
 
 .loading-message span,
@@ -1295,10 +1362,16 @@
     position: relative;
     overflow-x: hidden;
   }
+
+  /* Issue 3 fix: Ensure chat column is scrollable on tablet */
+  .chat-column {
+    overflow-y: auto;
+  }
 }
 
 /* Tablet and below (768px and smaller) */
 @media (max-width: 768px) {
+
   /* Desktop Container */
   .desktop-container {
     min-height: 100vh;
@@ -1312,44 +1385,45 @@
     min-height: 100vh;
   }
 
-  /* Header Buttons Container - Stack vertically on mobile */
+  /* Header Buttons Container - Horizontal row on mobile, tucked into header */
   .header-buttons-container {
     position: fixed;
-    top: 10px;
-    right: 10px;
-    flex-direction: column;
-    gap: 10px;
+    top: 8px;
+    right: 8px;
+    flex-direction: row;
+    gap: 6px;
     z-index: 1000;
   }
 
   /* Header Dropdown Menu - Adjust for mobile */
   .header-dropdown-menu {
-    padding: 12px;
-    gap: 8px;
-    border-radius: 30px;
+    padding: 8px;
+    gap: 6px;
+    border-radius: 24px;
+    flex-direction: row;
   }
 
   .header-dropdown-item {
-    width: 56px;
-    height: 56px;
-    min-width: 56px;
-    min-height: 56px;
+    width: 40px;
+    height: 40px;
+    min-width: 40px;
+    min-height: 40px;
   }
 
   .header-dropdown-item img {
-    width: 36px;
-    height: 36px;
+    width: 26px;
+    height: 26px;
   }
 
   .header-dropdown-download img {
-    width: 50px;
-    height: 50px;
+    width: 36px;
+    height: 36px;
   }
 
   .header-dropdown-item i {
-    width: 36px;
-    height: 36px;
-    font-size: 26px;
+    width: 26px;
+    height: 26px;
+    font-size: 18px;
   }
 
   .loading-spinner {
@@ -1372,7 +1446,8 @@
     background-color: #7dc8e0 !important;
     border-top: 1px solid rgba(0, 0, 0, 0.1) !important;
     box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.1) !important;
-    z-index: 10000 !important; /* Very high z-index to ensure it's always on top */
+    z-index: 10000 !important;
+    /* Very high z-index to ensure it's always on top */
     margin: 0 !important;
     box-sizing: border-box !important;
     /* Safe area for mobile notches */
@@ -1455,9 +1530,31 @@
 
   /* Chat Column - Adjust for mobile */
   .chat-column {
+    top: 12% !important;
+    /* Push below header area on mobile */
     padding: 10px !important;
-    padding-bottom: 120px !important; /* Extra space for input wrapper */
+    padding-bottom: 120px !important;
+    /* Extra space for input wrapper */
     margin-bottom: 0 !important;
+  }
+
+  /* Character Chat Row - Fix text stacking on mobile */
+  .character-chat-row {
+    max-width: 100%;
+    gap: 10px;
+    flex-wrap: wrap;
+  }
+
+  /* Hide blue character on mobile to give full width to chat bubble */
+  .character-chat-row .blue-character {
+    display: none;
+  }
+
+  /* Content card takes full width on mobile */
+  .character-chat-row .content-card-1 {
+    max-width: 100%;
+    width: 100%;
+    min-height: auto;
   }
 
   /* User Query - Full width on mobile */
@@ -1558,16 +1655,19 @@
 
   /* Polygon tails - Hide or scale down on mobile */
   .user-query .polygon-2-container {
-    display: none; /* Hide chat tails on mobile for cleaner look */
+    display: none;
+    /* Hide chat tails on mobile for cleaner look */
   }
 
   .content-card-1 .polygon-1-container {
-    display: none; /* Hide chat tails on mobile for cleaner look */
+    display: none;
+    /* Hide chat tails on mobile for cleaner look */
   }
 }
 
 /* Small mobile devices (480px and smaller) */
 @media (max-width: 480px) {
+
   /* Header Buttons Container - Even smaller */
   .header-buttons-container {
     top: 5px;
@@ -1786,6 +1886,7 @@
 
 /* Touch-friendly targets (minimum 44x44px for accessibility) */
 @media (max-width: 768px) {
+
   button,
   .header-dropdown-item,
   .mic-icon-button,
@@ -1799,4 +1900,3 @@
     min-height: 44px;
   }
 }
-
