@@ -159,6 +159,7 @@
 
 /* ASU Logo */
 .home-asu-logo {
+  display: block;
   position: absolute;
   top: 2.54%;
   right: 85.6%;

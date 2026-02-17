@@ -20,7 +20,7 @@ const createBotPlaceholder = () => ({
   content: '',
   messageId: null,
   showActions: false,
-  disableTypewriter: false,
+  disableTypewriter: true, // avoid typewriter on empty/stale content (e.g. Sources before answer ready)
 });
 
 const GREETING_REGEX = /\b(hi|hello|hey|hola|howdy|sup|yo|hiya|thanks|thank you|thx)\b/i;
@@ -163,16 +163,18 @@ export default function App() {
           return;
       }
 
-      // Update with actual response immediately
+      // Update with actual response immediately (defensive: support both sources HTML and NO_SOURCES_MESSAGE)
       setIsLoading(false);
+      const content = response?.resp != null ? response.resp : t.errorGeneric;
+      const msgID = response?.msgID != null ? response.msgID : null;
       setMessages(prev => {
         const updated = [...prev];
         const lastIndex = updated.length - 1;
         if (updated[lastIndex]?.type === 'bot') {
           updated[lastIndex] = {
             type: 'bot',
-            content: response.resp,
-            messageId: response.msgID,
+            content,
+            messageId: msgID,
             showActions: true,
             disableTypewriter: false,
           };
@@ -270,7 +272,7 @@ export default function App() {
                 answerText={message.content}
                 messageId={message.messageId}
                 showActions={message.showActions}
-                disableActions={index === messages.length - 1 && (isLoading || isTyping)}
+                disableActions={isLoading || (index === messages.length - 1 && isTyping)}
                 onActionButton={handleActionButton}
                 onRating={handleRating}
                 isLoading={isLoading && index === messages.length - 1 && message.type === 'bot' && (!message.content || (typeof message.content === 'string' && message.content.trim() === ''))}

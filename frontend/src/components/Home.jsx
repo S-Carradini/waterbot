@@ -47,9 +47,17 @@ export default function Home() {
       <div className="home-header-bar" data-node-id="1:38" />
 
       {/* ASU Logo */}
-      <div className="home-asu-logo" data-name="ASU_SunBurst_1_RGB_MaroonGold_600ppi 1" data-node-id="1:39">
+      <a
+        href="https://asu.edu"
+        target="_blank"
+        rel="noopener noreferrer"
+        className="home-asu-logo"
+        aria-label="Arizona State University"
+        data-name="ASU_SunBurst_1_RGB_MaroonGold_600ppi 1"
+        data-node-id="1:39"
+      >
         <img alt="" src={imgAsuSunBurst} />
-      </div>
+      </a>
 
       {/* Title */}
       <div className="home-title" data-node-id="106:316">
