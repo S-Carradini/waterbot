@@ -1298,6 +1298,21 @@ async def waterbot(request: Request):
     """Serve the waterbot chat page (Jinja template)"""
     return templates.TemplateResponse("index.html", {"request": request})
 
+@app.get("/aboutwaterbot", response_class=HTMLResponse)
+async def about_waterbot(request: Request):
+    """Serve the about Waterbot page (Jinja template)"""
+    return templates.TemplateResponse("aboutWaterbot.html", {"request": request})
+
+@app.get("/Spanish_Translation_2.0.1.html", response_class=HTMLResponse)
+async def spanish_translation(request: Request):
+    """Serve the Spanish translation page (Jinja template)"""
+    return templates.TemplateResponse("spanish.html", {"request": request})
+
+@app.get("/riverbot", response_class=HTMLResponse)
+async def riverbot_page(request: Request):
+    """Serve the riverbot page (Jinja template)"""
+    return templates.TemplateResponse("riverbot.html", {"request": request})
+
 # React SPA at /museum
 @app.get("/museum", response_class=HTMLResponse)
 @app.get("/museum/", response_class=HTMLResponse)

@@ -198,7 +198,6 @@
 
 /* Character and Chat Bubble Row */
 .character-chat-row {
-  
   position: relative;
   display: flex;
   align-items: flex-start;
@@ -206,12 +205,15 @@
   flex-shrink: 0;
   align-self: flex-start;
   max-width: 60%;
+  min-width: 0; /* Allow shrink so content-card respects bounds with long URLs */
 }
 
 /* Content Card 1 - System Chat Bubble */
 .content-card-1 {
   position: relative;
   flex: 0 1 auto;
+  min-width: 0; /* Allow flex shrink below content size so long URLs wrap */
+  max-width: 100%;
   background-color: white;
   border-radius: 30px;
   padding: 20px;
@@ -286,6 +288,8 @@
   font-size: 31px;
   line-height: 32px; /* Slightly above font-size to prevent overlap, but tighter than 35px */
   letter-spacing: -0.8px;
+  overflow-wrap: break-word; /* Wrap long URLs and prevent overflow */
+  word-break: break-word;
   overflow: visible;
   z-index: 1;
   margin-bottom: 5px; /* Added margin for better spacing */
@@ -294,8 +298,10 @@
 }
 
 .answer-text p {
-  line-height: 32px; /* Slightly above font-size to prevent overlap, but tighter than 35px */
+  line-height: 40px; /* Increased for better readability, esp. source lists with links */
   white-space: pre-wrap;
+  overflow-wrap: break-word;
+  word-break: break-word;
   margin: 0;
   margin-bottom: 12px; /* Spacing between paragraphs */
   padding: 0;
