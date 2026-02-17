@@ -131,7 +131,7 @@ export default function ChatBubble({
   }, [isTyping, isTypewriterEnabled, onTypingChange]);
 
   const handleThumbsUp = () => {
-    if (messageId && !ratingSubmitted) {
+    if (messageId != null && !ratingSubmitted) {
       setSelectedReaction(1);
       setRatingSubmitted(true);
       setFeedbackSelection(null);
@@ -141,7 +141,7 @@ export default function ChatBubble({
   };
 
   const handleThumbsDown = () => {
-    if (messageId && !ratingSubmitted) {
+    if (messageId != null && !ratingSubmitted) {
       setSelectedReaction(0);
       setRatingSubmitted(true);
       onRating?.(messageId, 0);
@@ -153,7 +153,7 @@ export default function ChatBubble({
     if (value !== 'other') {
       setFeedbackOtherText('');
     }
-    if (value !== 'other' && messageId) {
+    if (value !== 'other' && messageId != null) {
       const t = uiText[language] || uiText.en;
       const commentMap = {
         'factually-incorrect': t.factuallyIncorrect,
@@ -167,7 +167,7 @@ export default function ChatBubble({
 
   const handleOtherSubmit = () => {
     const trimmed = feedbackOtherText.trim();
-    if (!trimmed || !messageId) return;
+    if (!trimmed || messageId == null) return;
     onRating?.(messageId, 0, trimmed);
     setFeedbackSubmitted(true);
   };
