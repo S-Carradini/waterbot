@@ -43,6 +43,12 @@ class DynamoDBManager():
                         rating=None, 
                         comment=None ):
         
+        # Validate that messages_table is set
+        if not self.messages_table:
+            error_msg = "MESSAGES_TABLE environment variable is not set"
+            print(f"Error writing message: {error_msg}")
+            raise ValueError(error_msg)
+        
         # clean of any injected HTML
         comment=await self.sanitize_html(comment)
 
@@ -69,6 +75,12 @@ class DynamoDBManager():
         )
 
     async def update_rating_fields(self, session_uuid, message_id, reaction, userComment):
+        # Validate that messages_table is set
+        if not self.messages_table:
+            error_msg = "MESSAGES_TABLE environment variable is not set"
+            print(f"Error updating rating fields: {error_msg}")
+            raise ValueError(error_msg)
+        
         messages_table = self.client.Table(self.messages_table)
         message_id=str(message_id )
 

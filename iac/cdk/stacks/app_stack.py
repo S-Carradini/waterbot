@@ -325,9 +325,9 @@ class AppStack(Stack):
         # Create a task definition for the Fargate service
         task_definition = ecs.FargateTaskDefinition(
             self, "WaterbotTaskDefinition",
-            memory_limit_mib=512,
-            cpu=256
-        )
+            memory_limit_mib=4096,
+            cpu=2048
+            )
         # Grant the task permission to log to CloudWatch
         task_definition.add_to_task_role_policy(
             iam.PolicyStatement(

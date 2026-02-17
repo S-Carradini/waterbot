@@ -113,6 +113,35 @@ def handler(event, context):
         cursor.execute(create_table_query)
         print("Tables and indexes created successfully")
         
+        # Enable pgvector extension for RAG vector store
+        cursor.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+        print("pgvector extension enabled")
+        
+        # Create rag_chunks table for pgvector (replaces ChromaDB)
+        rag_chunks_query = """
+        CREATE TABLE IF NOT EXISTS rag_chunks (
+            id TEXT PRIMARY KEY,
+            doc_id TEXT,
+            chunk_index INT,
+            content TEXT NOT NULL,
+            embedding vector(1536),
+            metadata JSONB,
+            content_hash TEXT,
+            locale TEXT NOT NULL,
+            created_at TIMESTAMPTZ DEFAULT now()
+        );
+        
+        CREATE INDEX IF NOT EXISTS rag_chunks_embedding_idx
+        ON rag_chunks USING ivfflat (embedding vector_cosine_ops)
+        WITH (lists = 100);
+        
+        CREATE INDEX IF NOT EXISTS idx_rag_chunks_doc_id ON rag_chunks (doc_id);
+        CREATE INDEX IF NOT EXISTS idx_rag_chunks_metadata ON rag_chunks USING GIN (metadata);
+        CREATE INDEX IF NOT EXISTS idx_rag_chunks_locale ON rag_chunks (locale);
+        """
+        cursor.execute(rag_chunks_query)
+        print("rag_chunks table and indexes created successfully")
+        
         # Verify the table was created
         cursor.execute("""
             SELECT COUNT(*) 
@@ -150,8 +179,8 @@ def handler(event, context):
             'PhysicalResourceId': 'db-init-resource',
             'Data': {
                 'Message': 'Database initialized successfully',
-                'TablesCreated': 'messages',
-                'ColumnsInclude': 'id, session_uuid, msg_id, user_query, response_content, source, chatbot_type, created_at',
+                'TablesCreated': 'messages, rag_chunks',
+                'ColumnsInclude': 'messages + rag_chunks (id, doc_id, chunk_index, content, embedding, metadata, content_hash, locale, created_at)',
                 'Status': 'SUCCESS'
             }
         }

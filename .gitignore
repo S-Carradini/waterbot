@@ -176,6 +176,12 @@ cython_debug/
 
 push_to_ecr.sh
 application/newData/
-docs/chroma/chroma.sqlite3
+application/retrieved_documents.txt
+# Legacy ChromaDB (replaced by pgvector)
+docs/chroma/
 application/ADWR Blogs/
-application/AMWUA_Blog_Posts/
+application/AMWUA_Blog_Posts/.env
+
+# Playwright test artifacts
+frontend/playwright-report/
+frontend/test-results/

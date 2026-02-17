@@ -13,21 +13,37 @@ from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException
 from fastapi import Request, Form
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi import WebSocket
+from fastapi.middleware.cors import CORSMiddleware  # ✅ ADDED: CORS middleware import
 
 from managers.memory_manager import MemoryManager
 from managers.dynamodb_manager import DynamoDBManager
-from managers.chroma_manager import ChromaManager
+from managers.rag_manager import RAGManager
+from sources_verifier import should_show_sources
+from managers.pgvector_store import PgVectorStore
 from managers.s3_manager import S3Manager
 
-from adapters.claude import BedrockClaudeAdapter
 from adapters.openai import OpenAIAdapter
+try:
+    # Optional dependency: this imports `langchain_aws`, which may not be installed/compatible
+    # in local/dev environments that only use the OpenAI adapter.
+    from adapters.claude import BedrockClaudeAdapter
+except Exception as e:
+    BedrockClaudeAdapter = None  # type: ignore[assignment]
+    logging.warning("BedrockClaudeAdapter unavailable (skipping): %s", e)
 
-from amazon_transcribe.client import TranscribeStreamingClient
-from amazon_transcribe.handlers import TranscriptResultStreamHandler
-from amazon_transcribe.model import TranscriptEvent
+try:
+    # Optional dependency (only needed for the `/transcribe` websocket endpoint)
+    from amazon_transcribe.client import TranscribeStreamingClient
+    from amazon_transcribe.handlers import TranscriptResultStreamHandler
+    from amazon_transcribe.model import TranscriptEvent
+except Exception as e:
+    TranscribeStreamingClient = None  # type: ignore[assignment]
+    TranscriptResultStreamHandler = None  # type: ignore[assignment]
+    TranscriptEvent = None  # type: ignore[assignment]
+    logging.warning("Amazon Transcribe dependencies unavailable (skipping): %s", e)
 from starlette.middleware.sessions import SessionMiddleware
 from starlette.websockets import WebSocketState
 from langdetect import detect, DetectorFactory
@@ -39,18 +55,18 @@ from dotenv import load_dotenv
 import os
 import json
 import datetime
+import pathlib
 from starlette.middleware.base import BaseHTTPMiddleware
 
 ### Postgres
 import psycopg2
 from psycopg2.extras import execute_values, DictCursor
-import logging
 
 # Configure logging
 logging.basicConfig(
-    level=logging.INFO,
-    format='%(asctime)s - %(levelname)s - %(message)s',
-    handlers=[logging.StreamHandler()]  # ✅ Log to stdout (CloudWatch)
+    filename='app.log',  # Log to a file named app.log
+    level=logging.INFO,  # Log all INFO level messages and above
+    format='%(asctime)s - %(levelname)s - %(message)s'  # Include timestamp, log level, and message
 )
 
 # Ensure reproducibility by setting the seed
@@ -64,6 +80,20 @@ def detect_language(text):
     except Exception as e:
         logging.error(f"Language detection failed: {str(e)}")
         return None
+
+def resolve_language(preferred_language: str | None, detected_language: str | None) -> str:
+    normalized_preference = (preferred_language or "").lower()
+    if normalized_preference in ("en", "es"):
+        return normalized_preference
+    if detected_language == 'es':
+        return 'es'
+    return 'en'
+
+def determine_prompt_language(chat_language: str, preferred_language: str | None) -> str:
+    normalized_preference = (preferred_language or "").lower()
+    if normalized_preference in ("en", "es"):
+        return normalized_preference
+    return chat_language
 
 # Set the cookie name to match the one configured in the CDK
 COOKIE_NAME = "USER_SESSION"  # Changed from WATERBOT
@@ -90,88 +120,167 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         
         # Set the application cookie in the response headers
-        # secure=True for production (HTTPS), False for local development (HTTP)
-        is_local = request.url.hostname in ["localhost", "127.0.0.1"]
-        
         response.set_cookie(
             key=COOKIE_NAME,
             value=session_value,
             max_age=7200,  # 2 hours
             path="/",      # ✅ Valid for all paths
-            httponly=False,  # ✅ False locally to allow JS to read for debugging
-            secure=not is_local,   # ✅ True in AWS (HTTPS), False locally (HTTP)
-            samesite="None" if not is_local else "Lax" # ✅ None for production, Lax for local
+            httponly=True,
+            secure=True,   # ✅ Required for HTTPS through CloudFront
+            samesite="none"  # ✅ CHANGED from "Lax" to "none" for cross-origin requests
         )
         print(f"🍪 Set cookie {COOKIE_NAME} = {session_value}")
         
         return response
 
-class MyEventHandler(TranscriptResultStreamHandler):
-    def __init__(self, output_stream, websocket):
-        super().__init__(output_stream)
-        self.websocket = websocket
-        logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-        
-        self.base_url = f"http://{websocket.base_url.hostname}:{websocket.base_url.port if websocket.base_url.port else ''}"
-        
-        print("printing the base url inside event handler: ", self.base_url)
-        self.api_endpoints = {
-            "tell me more": str(self.base_url) + "/chat_detailed_api",
-            "next steps": str(self.base_url) +"/chat_actionItems_api",
-            "sources": str(self.base_url) + "/chat_sources_api",
-        }
-        self.transcribed_text = None
-        self.designated_action = None
+if TranscriptResultStreamHandler is not None and TranscriptEvent is not None:
+    class MyEventHandler(TranscriptResultStreamHandler):
+        def __init__(self, output_stream, websocket):
+            super().__init__(output_stream)
+            self.websocket = websocket
+            logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
 
-    async def handle_transcript_event(self, transcript_event: TranscriptEvent):
-        results = transcript_event.transcript.results
-        for result in results:
-            if not result.is_partial:
-                for alt in result.alternatives:
-                    logging.info(f"Handling full transcript: {alt.transcript}")
-                    api_url = self.determine_api_url(alt.transcript.strip().lower())
-                    # print(api_url)
-                    self.transcribed_text = alt.transcript
-                    self.designated_action = api_url
-                    form_data = {'user_query': alt.transcript}
-                    try:
-                        async with httpx.AsyncClient() as client:
-                            response = await client.post(api_url, data=form_data)
-                            response.raise_for_status()  # This will raise an exception for HTTP error responses
-                            await self.send_responses(alt.transcript, response)
-                    except (httpx.HTTPError, httpx.RequestError) as e:
-                        logging.error(f"Failed to post to chat API: {e}")
-                        await self.websocket.send_json({'type': 'error', 'details': str(e)})
+            self.base_url = f"http://{websocket.base_url.hostname}:{websocket.base_url.port if websocket.base_url.port else ''}"
 
-    def determine_api_url(self, transcript):
-        # Exact matches for specific requests, considering an optional period
-        for key, url in self.api_endpoints.items():
-            if transcript == key or transcript == key + '.':
-                return url
-        return str(self.base_url) + "/chat_api"  # Default API if no exact match is found
+            print("printing the base url inside event handler: ", self.base_url)
+            self.api_endpoints = {
+                "tell me more": str(self.base_url) + "/chat_detailed_api",
+                "next steps": str(self.base_url) + "/chat_actionItems_api",
+                "sources": str(self.base_url) + "/chat_sources_api",
+            }
+            self.transcribed_text = None
+            self.designated_action = None
 
-    async def send_responses(self, user_transcript, api_response):
-        await self.websocket.send_json({
-            'type': 'user',
-            'transcript': user_transcript
-        })
-        logging.info("Sent user message to client.")
-        api_response_data = api_response.json()
-        await self.websocket.send_json({
-            'type': 'bot',
-            'response': api_response_data['resp'],
-            'messageID': api_response_data['msgID']
-        })
-        logging.info("Sent bot response to client.")
+        async def handle_transcript_event(self, transcript_event: TranscriptEvent):
+            results = transcript_event.transcript.results
+            for result in results:
+                if not result.is_partial:
+                    for alt in result.alternatives:
+                        logging.info(f"Handling full transcript: {alt.transcript}")
+                        api_url = self.determine_api_url(alt.transcript.strip().lower())
+                        self.transcribed_text = alt.transcript
+                        self.designated_action = api_url
+                        form_data = {'user_query': alt.transcript}
+                        try:
+                            async with httpx.AsyncClient() as client:
+                                response = await client.post(api_url, data=form_data)
+                                response.raise_for_status()  # This will raise an exception for HTTP error responses
+                                await self.send_responses(alt.transcript, response)
+                        except (httpx.HTTPError, httpx.RequestError) as e:
+                            logging.error(f"Failed to post to chat API: {e}")
+                            await self.websocket.send_json({'type': 'error', 'details': str(e)})
 
+        def determine_api_url(self, transcript):
+            # Exact matches for specific requests, considering an optional period
+            for key, url in self.api_endpoints.items():
+                if transcript == key or transcript == key + '.':
+                    return url
+            return str(self.base_url) + "/chat_api"  # Default API if no exact match is found
+
+        async def send_responses(self, user_transcript, api_response):
+            await self.websocket.send_json({
+                'type': 'user',
+                'transcript': user_transcript
+            })
+            logging.info("Sent user message to client.")
+            api_response_data = api_response.json()
+            await self.websocket.send_json({
+                'type': 'bot',
+                'response': api_response_data['resp'],
+                'messageID': api_response_data['msgID']
+            })
+            logging.info("Sent bot response to client.")
+else:
+    MyEventHandler = None  # type: ignore[assignment]
 
 # Take environment variables from .env
 load_dotenv(override=True)  
 
 # FastaAPI startup
 app = FastAPI()
+
+
+@app.on_event("startup")
+def startup_ensure_db():
+    """Ensure messages and rag_chunks tables exist when using PostgreSQL (e.g. Railway/Render without db_init Lambda)."""
+    _ensure_messages_table()
+    _ensure_rag_chunks_table()
+
+
+# ✅ ADDED: CORS Middleware - MUST be added before other middleware
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=[
+        "https://waterbot-2qo4tjmdo-shankerram3s-projects.vercel.app",
+        "https://*.vercel.app",  # Allow all Vercel preview deployments
+        "http://localhost:5173",  # Vite default port for local development
+        "http://localhost:3000",  # Alternative local port
+        "http://localhost:8000",  # Local backend for testing
+    ],
+    allow_credentials=True,  # ✅ CRITICAL: Sets Access-Control-Allow-Credentials: true
+    allow_methods=["GET", "POST", "OPTIONS"],  # Allow required HTTP methods
+    allow_headers=["Content-Type", "Authorization", "Accept"],  # Allow required headers
+    expose_headers=["Set-Cookie"],  # Expose Set-Cookie header to frontend
+)
+
 security = HTTPBasic()
-templates = Jinja2Templates(directory='templates')
+# Jinja templates (splash screen, waterbot chat, etc.) - path relative to this file
+_templates_dir = pathlib.Path(__file__).parent / "templates"
+templates = Jinja2Templates(directory=str(_templates_dir))
+# Mount static files from the React frontend build
+# Get the path to the frontend dist directory
+# In Docker container: /app/frontend/dist (since WORKDIR is /app and main.py is at /app/main.py)
+# In local dev: ../frontend/dist (relative to application directory)
+
+# Try multiple possible paths
+possible_paths = [
+    pathlib.Path(__file__).parent / "frontend" / "dist",  # /app/frontend/dist in container
+    pathlib.Path(__file__).parent.parent / "frontend" / "dist",  # ../frontend/dist in local dev
+    pathlib.Path("/app") / "frontend" / "dist",  # Explicit container path
+]
+
+frontend_dist_path = None
+for path in possible_paths:
+    resolved_path = path.resolve()  # Convert to absolute path
+    assets_check = resolved_path / "assets"
+    logging.info(f"Checking path: {resolved_path}, exists: {resolved_path.exists()}, assets exists: {assets_check.exists()}")
+    if resolved_path.exists() and assets_check.exists():
+        frontend_dist_path = resolved_path
+        logging.info(f"Found frontend dist directory at: {frontend_dist_path} (absolute: {frontend_dist_path.resolve()})")
+        break
+
+# Only mount assets if the directory exists
+if frontend_dist_path:
+    assets_path = frontend_dist_path / "assets"
+    assets_path_str = str(assets_path.resolve())  # Get absolute path as string
+    
+    # Double-check the directory exists before mounting
+    if not pathlib.Path(assets_path_str).exists():
+        logging.error(f"Assets directory does not exist at {assets_path_str}. Cannot mount.")
+        frontend_dist_path = None
+    else:
+        try:
+            # Verify it's actually a directory
+            if not pathlib.Path(assets_path_str).is_dir():
+                logging.error(f"Assets path exists but is not a directory: {assets_path_str}")
+                frontend_dist_path = None
+            else:
+                app.mount("/assets", StaticFiles(directory=assets_path_str), name="assets")
+                logging.info(f"Mounted React assets from: {assets_path_str}")
+                # Also mount public images copied by Vite from frontend/public/images → frontend/dist/images
+                images_path = frontend_dist_path / "images"
+                if images_path.exists() and images_path.is_dir():
+                    try:
+                        app.mount("/images", StaticFiles(directory=str(images_path.resolve())), name="images")
+                        logging.info(f"Mounted public images from: {images_path.resolve()}")
+                    except Exception as e:
+                        logging.error(f"Failed to mount images directory at {images_path.resolve()}: {e}")
+        except Exception as e:
+            logging.error(f"Failed to mount assets directory at {assets_path_str}: {e}")
+            frontend_dist_path = None
+else:
+    logging.warning(f"Frontend dist directory not found. Tried: {[str(p.resolve()) for p in possible_paths]}. React frontend will not be served.")
+
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Middleware management
@@ -183,108 +292,155 @@ MESSAGES_TABLE=os.getenv("MESSAGES_TABLE")
 TRANSCRIPT_BUCKET_NAME=os.getenv("TRANSCRIPT_BUCKET_NAME")
 
 # adapter choices
-ADAPTERS = {
-    "claude.haiku":BedrockClaudeAdapter("anthropic.claude-3-haiku-20240307-v1:0"),
-    "claude.":BedrockClaudeAdapter("anthropic.claude-3-sonnet-20240229-v1:0"),
-    "openai-gpt4.1":OpenAIAdapter("gpt-4.1")
+ADAPTERS: dict[str, object] = {
+    "openai-gpt4.1": OpenAIAdapter("gpt-4.1"),
 }
+if BedrockClaudeAdapter is not None:
+    ADAPTERS.update(
+        {
+            "claude.haiku": BedrockClaudeAdapter("anthropic.claude-3-haiku-20240307-v1:0"),
+            "claude.": BedrockClaudeAdapter("anthropic.claude-3-sonnet-20240229-v1:0"),
+        }
+    )
+else:
+    logging.warning("Claude/Bedrock adapters disabled (dependency missing/incompatible).")
 
 # Set adapter choice
-# llm_adapter=ADAPTERS["claude.haiku"]
-llm_adapter=ADAPTERS["openai-gpt4.1"]
-
-
+llm_adapter = ADAPTERS["openai-gpt4.1"]
 
 embeddings = llm_adapter.get_embeddings()
-
-
 
 # Manager classes
 memory = MemoryManager()  # Assuming you have a MemoryManager class
 datastore = DynamoDBManager(messages_table=MESSAGES_TABLE)
-knowledge_base = ChromaManager(persist_directory="docs/chroma/", embedding_function=embeddings)
-knowledge_base_spanish = ChromaManager(persist_directory="docs/chroma/spanish", embedding_function=embeddings)
 s3_manager = S3Manager(bucket_name=TRANSCRIPT_BUCKET_NAME)
 
-@app.get("/", response_class=HTMLResponse)
-async def home(request: Request,):
-    # hostname = socket.gethostname()
-    # ip_address = socket.gethostbyname(hostname)
-
-    context = {
-        "request": request,
-        # "hostname": hostname,
-        # "ip_address": ip_address
-    }
-
-    return templates.TemplateResponse("splashScreen.html", context )
-
-@app.get("/waterbot", response_class=HTMLResponse)
-async def home(request: Request,):
-    # hostname = socket.gethostname()
-    # ip_address = socket.gethostbyname(hostname)
-
-    context = {
-        "request": request,
-        # "hostname": hostname,
-        # "ip_address": ip_address
-    }
-
-    return templates.TemplateResponse("index.html", context )
-# for waterBot html
-
-@app.get("/aboutwaterbot", response_class=HTMLResponse)
-async def home(request: Request,):
-    # hostname = socket.gethostname()
-    # ip_address = socket.gethostbyname(hostname)
-
-    context = {
-        "request": request,
-        # "hostname": hostname,
-        # "ip_address": ip_address
-    }
-
-    return templates.TemplateResponse("aboutWaterbot.html", context )
-
-@app.get("/Spanish_Translation_2.0.1.html", response_class=HTMLResponse)
-async def home(request: Request,):
-    # hostname = socket.gethostname()
-    # ip_address = socket.gethostbyname(hostname)
-
-    context = {
-        "request": request,
-        # "hostname": hostname,
-        # "ip_address": ip_address
-    }
-
-    return templates.TemplateResponse("spanish.html", context )
-
-@app.get("/riverbot", response_class=HTMLResponse)
-async def riverbot(request: Request,):
-    
-    context = {
-        "request": request,
-    }
-    return templates.TemplateResponse("riverbot.html", context)
-
-
-
-
-# Database connection variables
+# Database connection: DATABASE_URL (e.g. Railway) or DB_HOST/DB_USER/DB_PASSWORD/DB_NAME
+DATABASE_URL = os.getenv("DATABASE_URL")
 db_host = os.getenv("DB_HOST")
 db_user = os.getenv("DB_USER")
 db_password = os.getenv("DB_PASSWORD")
 db_name = os.getenv("DB_NAME")
+db_port = os.getenv("DB_PORT", "5432")
 
-# Database connection parameters
+POSTGRES_ENABLED = bool(DATABASE_URL) or all([db_host, db_user, db_password, db_name])
+
 DB_PARAMS = {
     "dbname": db_name,
     "user": db_user,
     "password": db_password,
     "host": db_host,
-    "port": "5432"
+    "port": db_port,
 }
 
+
+def _pg_connect():
+    """Return a PostgreSQL connection (for messages table). Use for both psycopg2 paths."""
+    if DATABASE_URL:
+        return psycopg2.connect(DATABASE_URL)
+    return psycopg2.connect(**DB_PARAMS)
+
+
+def _ensure_messages_table():
+    """Create messages table and indexes if they don't exist (e.g. Railway/Render without db_init Lambda)."""
+    if not POSTGRES_ENABLED:
+        return
+    try:
+        conn = _pg_connect()
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS messages (
+                id SERIAL PRIMARY KEY,
+                session_uuid VARCHAR(255) NOT NULL,
+                msg_id VARCHAR(255) NOT NULL,
+                user_query TEXT NOT NULL,
+                response_content TEXT NOT NULL,
+                source JSONB,
+                chatbot_type VARCHAR(50) DEFAULT 'waterbot',
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            );
+        """)
+        for idx in (
+            "CREATE INDEX IF NOT EXISTS idx_session_uuid ON messages(session_uuid);",
+            "CREATE INDEX IF NOT EXISTS idx_created_at ON messages(created_at);",
+            "CREATE INDEX IF NOT EXISTS idx_msg_id ON messages(msg_id);",
+            "CREATE INDEX IF NOT EXISTS idx_session_created ON messages(session_uuid, created_at);",
+            "CREATE INDEX IF NOT EXISTS idx_chatbot_type ON messages(chatbot_type);",
+        ):
+            cur.execute(idx)
+        cur.close()
+        conn.close()
+        logging.info("Messages table ready.")
+    except Exception as e:
+        logging.warning("Could not ensure messages table (non-fatal): %s", e)
+
+
+def _ensure_rag_chunks_table():
+    """Create pgvector extension and rag_chunks table if they don't exist (e.g. local/Railway without db_init Lambda)."""
+    if not POSTGRES_ENABLED:
+        return
+    try:
+        conn = _pg_connect()
+        conn.autocommit = True
+        cur = conn.cursor()
+        cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
+        logging.info("pgvector extension enabled (or already present).")
+        cur.execute("""
+            CREATE TABLE IF NOT EXISTS rag_chunks (
+                id TEXT PRIMARY KEY,
+                doc_id TEXT,
+                chunk_index INT,
+                content TEXT NOT NULL,
+                embedding vector(1536),
+                metadata JSONB,
+                content_hash TEXT,
+                locale TEXT NOT NULL,
+                created_at TIMESTAMPTZ DEFAULT now()
+            );
+        """)
+        for idx in (
+            "CREATE INDEX IF NOT EXISTS idx_rag_chunks_doc_id ON rag_chunks (doc_id);",
+            "CREATE INDEX IF NOT EXISTS idx_rag_chunks_metadata ON rag_chunks USING GIN (metadata);",
+            "CREATE INDEX IF NOT EXISTS idx_rag_chunks_locale ON rag_chunks (locale);",
+        ):
+            try:
+                cur.execute(idx)
+            except Exception as idx_e:
+                logging.warning("Could not create RAG index (non-fatal): %s", idx_e)
+        try:
+            cur.execute("""
+                CREATE INDEX IF NOT EXISTS rag_chunks_embedding_idx
+                ON rag_chunks USING ivfflat (embedding vector_cosine_ops)
+                WITH (lists = 100);
+            """)
+        except Exception as ivf_e:
+            logging.warning("Could not create ivfflat index (table may be empty): %s", ivf_e)
+        cur.close()
+        conn.close()
+        logging.info("rag_chunks table ready.")
+    except Exception as e:
+        logging.warning("Could not ensure rag_chunks table (non-fatal): %s", e)
+
+
+# RAG vector store: pgvector (PostgreSQL). Postgres is required for RAG.
+def get_vector_store():
+    if not POSTGRES_ENABLED:
+        raise ValueError(
+            "PostgreSQL (DATABASE_URL or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) is required for the RAG vector store."
+        )
+    if DATABASE_URL:
+        return PgVectorStore(db_url=DATABASE_URL, embedding_function=embeddings)
+    return PgVectorStore(db_params=DB_PARAMS, embedding_function=embeddings)
+
+
+# Ensure rag_chunks table exists before creating RAG manager (table is created at startup, but we also run it here for import-time init)
+_ensure_rag_chunks_table()
+try:
+    knowledge_base = RAGManager(get_vector_store())
+except Exception as e:
+    knowledge_base = None
+    logging.warning("RAG disabled: %s", e)
 
 # Authentication function
 def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
@@ -297,18 +453,20 @@ def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
 # Secure endpoint
 @app.get("/messages")
 def get_messages(user: str = Depends(authenticate)):  # Requires authentication
-    """Read all messages from the PostgreSQL database"""
+    """Read the messages from the PostgreSQL database"""
+    if not POSTGRES_ENABLED:
+        return json.dumps([])
     try:
-        conn = psycopg2.connect(**DB_PARAMS)
+        conn = _pg_connect()
         cursor = conn.cursor(cursor_factory=DictCursor)
-        cursor.execute("SELECT * FROM messages ORDER BY created_at DESC;")
+        cursor.execute("SELECT * FROM messages ORDER BY created_at DESC LIMIT 100;")
         messages = cursor.fetchall()
         cursor.close()
         conn.close()
 
         # Convert datetime objects to strings
         def convert_datetime_to_str(obj):
-            if isinstance(obj, datetime.datetime):
+            if isinstance(obj, datetime):
                 return obj.isoformat()  # Convert datetime to ISO format string
             return obj
 
@@ -318,113 +476,60 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
             msg_dict = dict(msg)
             serializable_messages.append({k: convert_datetime_to_str(v) for k, v in msg_dict.items()})
 
-        return serializable_messages
+        return json.dumps(serializable_messages)
     except Exception as e:
         logging.error("Database Error: %s", e, exc_info=True)
 
-@app.get("/feedback")
-def get_feedback(user: str = Depends(authenticate)):  # Requires authentication
-    """Read all messages with feedback (reactions/comments) from DynamoDB"""
-    try:
-        import boto3
-        from boto3.dynamodb.conditions import Attr
-        
-        # Get DynamoDB table
-        dynamodb = boto3.resource('dynamodb', region_name='us-east-1')
-        table = dynamodb.Table(MESSAGES_TABLE)
-        
-        # Scan the entire table - NO LIMITS, gets ALL data
-        response = table.scan()
-        items = response.get('Items', [])
-        
-        # Handle pagination to get ALL items (DynamoDB returns max 1MB per scan)
-        scan_count = 1
-        while 'LastEvaluatedKey' in response:
-            response = table.scan(ExclusiveStartKey=response['LastEvaluatedKey'])
-            items.extend(response.get('Items', []))
-            scan_count += 1
-        
-        logging.info(f"DynamoDB scan complete: {len(items)} total items retrieved in {scan_count} scans")
-        
-        # Convert to readable format - only 4 columns in DynamoDB
-        messages = []
-        for item in items:
-            message = {
-                'sessionId': item.get('sessionId'),
-                'msgId': item.get('msgId'),
-                'reaction': item.get('reaction'),
-                'userComment': item.get('userComment')
-            }
-            messages.append(message)
-        
-        # Sort by msgId (since no timestamp available)
-        messages.sort(key=lambda x: x.get('msgId') or '', reverse=True)
-        
-        return messages
-    except Exception as e:
-        logging.error("DynamoDB Error: %s", e, exc_info=True)
-        raise HTTPException(status_code=500, detail=f"Error fetching feedback: {str(e)}")
+def log_message(session_uuid, msg_id, user_query, response_content, source):
+    """Insert a message into the PostgreSQL database. No-op if DB is not configured or connection fails."""
+    if not POSTGRES_ENABLED:
+        return
+    source_json = json.dumps(source)  # Convert source (list/dict) to a JSON string
+    msg_id_str = str(msg_id)  # Ensure msg_id is a string
+    query = """
+        INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s);
+    """
+    args = (session_uuid, msg_id_str, user_query, response_content, source_json, datetime.datetime.utcnow())
 
-def log_message(session_uuid, msg_id, user_query, response_content, source, chatbot_type="waterbot"):
-    """Insert a message into the PostgreSQL database."""
-    print("=" * 60)
-    print(f"🔵 log_message() called")
-    print(f"   Session UUID: {session_uuid}")
-    print(f"   Message ID: {msg_id}")
-    print(f"   Chatbot Type: {chatbot_type}")  # ✅ NEW
-    print(f"   DB_HOST: {db_host}")
-    print(f"   DB_NAME: {db_name}")
-    print(f"   DB_USER: {db_user}")
-    print(f"   DB_PASSWORD: {'***SET***' if db_password else '❌ NOT SET'}")
-    print("=" * 60)
-    
-    try:
-        source_json = json.dumps(source)
-        msg_id_str = str(msg_id)
-
-        print(f"🔵 Attempting PostgreSQL connection...")
-        conn = psycopg2.connect(**DB_PARAMS)
-        print(f"✅ PostgreSQL connection successful!")
-        
-        cursor = conn.cursor()
-
-        # ✅ UPDATED QUERY - Added chatbot_type
-        query = """
-        INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, chatbot_type, created_at) 
-        VALUES (%s, %s, %s, %s, %s, %s, %s);
-        """
-        
-        print(f"🔵 Executing INSERT INTO messages...")
-        cursor.execute(query, (
-            session_uuid, 
-            msg_id_str, 
-            user_query, 
-            response_content, 
-            source_json, 
-            chatbot_type,  # ✅ NEW
-            datetime.datetime.utcnow()
-        ))
-
-        conn.commit()
-        print(f"✅ INSERT successful - data committed to PostgreSQL! (chatbot_type: {chatbot_type})")
-        cursor.close()
-        conn.close()
-        print(f"✅ Database connection closed")
-        logging.info(f"Message logged successfully in PostgreSQL for {chatbot_type}.")
-
-    except Exception as e:
-        print(f"=" * 60)
-        print(f"❌ DATABASE ERROR!")
-        print(f"   Error type: {type(e).__name__}")
-        print(f"   Error message: {str(e)}")
-        print(f"=" * 60)
-        logging.error("Database Error: %s", e, exc_info=True)
+    for attempt in range(2):
+        try:
+            conn = _pg_connect()
+            cursor = conn.cursor()
+            cursor.execute(query, args)
+            conn.commit()
+            cursor.close()
+            conn.close()
+            logging.info("Message logged successfully in PostgreSQL.")
+            return
+        except psycopg2.OperationalError as e:
+            logging.warning("PostgreSQL unavailable (message not logged): %s", e)
+            return
+        except psycopg2.ProgrammingError as e:
+            if getattr(e, "pgcode", None) == "42P01" and attempt == 0:  # undefined_table
+                logging.info("Messages table missing, creating it and retrying.")
+                _ensure_messages_table()
+            else:
+                logging.error("Database Error: %s", e, exc_info=True)
+                return
+        except Exception as e:
+            logging.error("Database Error: %s", e, exc_info=True)
+            return
 
 @app.websocket("/transcribe")
 async def transcribe(websocket: WebSocket):
     await websocket.accept()
-    # print("Headers received during handshake:", websocket.request_headers)
-    # print("Response headers sent:", websocket.response_headers)
+
+    # This endpoint is optional. If amazon-transcribe (and its native deps like `awscrt`) are not installed,
+    # keep the rest of the app running and return a clear error for this endpoint only.
+    if TranscribeStreamingClient is None or MyEventHandler is None:
+        await websocket.send_json({
+            "type": "error",
+            "details": "Transcribe dependencies are not installed/compatible in this environment."
+        })
+        await websocket.close()
+        return
+
     client = TranscribeStreamingClient(region="us-east-1")
     stream = await client.start_stream_transcription(
         language_code="en-US",
@@ -436,13 +541,11 @@ async def transcribe(websocket: WebSocket):
         try:
             while True:
                 data = await websocket.receive()
-                # print("In receive audio fn:",data)
                 if data.get("text") == '{"event":"close"}':
                     print("Closing WebSocket connection")
                     await stream.input_stream.end_stream()
                     break
                 elif data.get("bytes"):
-                    # Send the audio data to the Amazon Transcribe service
                     await stream.input_stream.send_audio_event(audio_chunk=data.get("bytes"))
         except Exception as e:
             print("WebSocket disconnected unexpectedly (receive audio after while)", str(e))
@@ -461,10 +564,8 @@ async def transcribe(websocket: WebSocket):
 
 @app.post("/session-transcript")
 async def session_transcript_post(request: Request):
-    # Get the session UUID from the cookie
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
-    # ADD THIS DEBUG BLOCK
     print("=" * 60)
     print(f"📥 TRANSCRIPT REQUEST")
     print(f"Cookie value: {request.cookies.get(COOKIE_NAME)}")
@@ -472,7 +573,6 @@ async def session_transcript_post(request: Request):
     print(f"Final session_uuid: {session_uuid}")
     print(f"All sessions: {list(memory.sessions.keys())}")
 
-    # Get all session history
     session_history = await memory.get_session_history_all(session_uuid)
     print(f"This session has {len(session_history)} messages")
 
@@ -481,33 +581,23 @@ async def session_transcript_post(request: Request):
         print(f"Last message: {session_history[-1] if session_history else 'None'}")
     print("=" * 60)
 
-    # Handle missing or invalid session data gracefully
     if not session_history or not isinstance(session_history, list):
         return {"message": "No chat history found for this session."}
 
-    # Generate a unique filename for the S3 object
     filename = f"{session_uuid}_{datetime.datetime.now().strftime('%Y-%m-%d_%H-%M-%S')}.txt"
-    object_key = f"session-transcript/{filename}"
-    
-    # Convert session history to plain text format
     session_text = ""
     for entry in session_history:
         if isinstance(entry, dict) and "role" in entry and "content" in entry:
             session_text += f"Role: {entry['role']}\nContent: {entry['content']}\n\n"
 
-    # Upload the session history to S3 as plain text
-    # print(session_text)  # Print for debugging (optional)
-    # print(TRANSCRIPT_BUCKET_NAME)  # Print for debugging (optional)
-    await s3_manager.upload(key=object_key, body=session_text)
+    if TRANSCRIPT_BUCKET_NAME:
+        object_key = f"session-transcript/{filename}"
+        await s3_manager.upload(key=object_key, body=session_text)
+        url = await s3_manager.generate_presigned(key=object_key)
+        return {"presigned_url": url}
+    # No S3 bucket configured: return transcript inline so frontend can still trigger download
+    return {"presigned_url": None, "transcript": session_text, "filename": filename}
 
-    # Generate a presigned URL for the S3 object
-    url = await s3_manager.generate_presigned(key=object_key)
-
-    return {'presigned_url': url}
-
-
-
-# Route to handle ratings
 @app.post('/submit_rating_api')
 async def submit_rating_api_post(
         request: Request,
@@ -515,28 +605,111 @@ async def submit_rating_api_post(
         reaction: str = Form(None, description="Optional reaction to the message"),
         userComment: str = Form(None, description="Optional user comment")
     ):
+    try:
+        if not MESSAGES_TABLE:
+            # DynamoDB not configured: accept feedback but don't persist; UI still works
+            return {"status": "success"}
+        session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
+        counter_uuid = await memory.get_message_count_uuid(session_uuid)
+        message_uuid_combo = counter_uuid + "." + message_id
+        await datastore.update_rating_fields(
+            session_uuid=session_uuid,
+            message_id=message_uuid_combo,
+            reaction=reaction,
+            userComment=userComment
+        )
+        return {"status": "success"}
+    except ValueError as e:
+        raise HTTPException(status_code=500, detail=str(e))
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error updating rating: {str(e)}")
 
-    session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
+# Max texts and chars for translate to avoid timeouts/cost
+TRANSLATE_MAX_TEXTS = 20
+TRANSLATE_MAX_TOTAL_CHARS = 50_000
 
-    counter_uuid=await memory.get_message_count_uuid(session_uuid)
-    message_uuid_combo=counter_uuid+"."+message_id
-    await datastore.update_rating_fields(
-        session_uuid=session_uuid,
-        message_id=message_uuid_combo,
-        reaction=reaction,
-        userComment=userComment
+
+async def _translate_one(text: str, target_lang: str) -> str:
+    """Translate a single text via LLM. Returns translated string."""
+    lang_name = "Spanish" if target_lang == "es" else "English"
+    system = (
+        "You are a translator. Translate the following to "
+        + lang_name
+        + ". Output only the translation, no preamble or explanation. "
+        "Preserve line breaks and HTML-like tags (e.g. <br>) as in the original."
     )
-    
+    messages = [
+        {"role": "system", "content": system},
+        {"role": "user", "content": text},
+    ]
+    llm_body = json.dumps({"messages": messages, "temperature": 0.3})
+    out = await llm_adapter.generate_response(llm_body=llm_body)
+    return out or ""
 
-# Riverbot-specific sources API
+
+@app.post("/translate")
+async def translate_post(request: Request):
+    """Translate a list of texts to the target language. Used when user switches UI language."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="Invalid JSON body")
+    texts = body.get("texts")
+    target_lang = body.get("target_lang")
+    if not isinstance(texts, list) or not target_lang or target_lang not in ("es", "en"):
+        raise HTTPException(
+            status_code=400,
+            detail="Body must include 'texts' (array of strings) and 'target_lang' ('es' or 'en').",
+        )
+    if len(texts) > TRANSLATE_MAX_TEXTS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"At most {TRANSLATE_MAX_TEXTS} texts allowed.",
+        )
+    total_chars = sum(len(t) for t in texts if isinstance(t, str))
+    if total_chars > TRANSLATE_MAX_TOTAL_CHARS:
+        raise HTTPException(
+            status_code=400,
+            detail=f"Total length of texts exceeds {TRANSLATE_MAX_TOTAL_CHARS} characters.",
+        )
+    # Filter to non-empty strings and translate in parallel
+    to_translate = [t for t in texts if isinstance(t, str) and t.strip()]
+    if not to_translate:
+        return {"translations": list(texts)}
+    try:
+        translations = await asyncio.gather(
+            *[_translate_one(t, target_lang) for t in to_translate]
+        )
+    except Exception as e:
+        logging.warning("Translate LLM failed: %s", e)
+        raise HTTPException(status_code=503, detail="Translation service unavailable.")
+    # Map back: preserve order; empty/non-string slots get original
+    out = []
+    idx = 0
+    for t in texts:
+        if isinstance(t, str) and t.strip():
+            out.append(translations[idx] if idx < len(translations) else t)
+            idx += 1
+        else:
+            out.append(t if isinstance(t, str) else "")
+    return {"translations": out}
+
+
+NO_SOURCES_MESSAGE = {"en": "Sources are not available for this reply.", "es": "Las fuentes no están disponibles para esta respuesta."}
+
+
 @app.post('/riverbot_chat_sources_api')
 async def riverbot_chat_sources_post(request: Request, background_tasks:BackgroundTasks):
-    
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
+    user_question = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-2)
+    bot_response = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-1)
+    show_sources = await should_show_sources(user_question or "", bot_response or "", sources or [])
+    if not show_sources:
+        lang = "es" if detect_language(user_query or user_question or "") == "es" else "en"
+        return {"resp": NO_SOURCES_MESSAGE[lang], "msgID": await memory.get_message_count(session_uuid)}
     language = detect_language(user_query)
 
     memory_payload={
@@ -545,10 +718,9 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
     }
     
     formatted_source_list=await memory.format_sources_as_html(source_list=sources)
-
-    generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}Provide me sources.{custom_tags.tags["SOURCE_REQUEST"][1]}'
+    instruction_text = "Proporcióname las fuentes." if language == 'es' else "Provide me sources."
+    generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}{instruction_text}{custom_tags.tags["SOURCE_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
-
     bot_response=formatted_source_list
 
     await memory.add_message_to_session( 
@@ -563,14 +735,12 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
     )
     await memory.increment_message_count(session_uuid)
 
-    # We do not include sources as this message is the actual sources; no AI generation involved.
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=bot_response,
-        source=[],
-        chatbot_type="riverbot"
+        source=[] 
     )
 
     return {
@@ -578,16 +748,55 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
         "msgID": await memory.get_message_count(session_uuid)
     }
 
-# User wants to see sources of previous message
 @app.post('/chat_sources_api')
-async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
-
+async def chat_sources_post(
+    request: Request,
+    background_tasks:BackgroundTasks,
+    language_preference: Annotated[str | None, Form()] = None
+):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
-    language = detect_language(user_query)
+    user_question = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-2)
+    bot_response_content = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-1)
+    show_sources = await should_show_sources(user_question or "", bot_response_content or "", sources or [])
+    if not show_sources:
+        detected_language = detect_language(user_query or user_question or "")
+        language = resolve_language(language_preference, detected_language)
+        lang = "es" if language == "es" else "en"
+        return {"resp": NO_SOURCES_MESSAGE[lang], "msgID": await memory.get_message_count(session_uuid)}
+    detected_language = detect_language(user_query)
+    language = resolve_language(language_preference, detected_language)
+    response_language = determine_prompt_language(language, language_preference)
+    logging.info(
+        "[LANG][chat_api] preference=%s detected=%s kb_language=%s prompt_language=%s",
+        language_preference,
+        detected_language,
+        language,
+        response_language
+    )
+    logging.info(
+        "[LANG][chat_detailed_api] preference=%s detected=%s kb_language=%s prompt_language=%s",
+        language_preference,
+        detected_language,
+        language,
+        response_language
+    )
+    logging.info(
+        "[LANG][chat_actionItems_api] preference=%s detected=%s kb_language=%s prompt_language=%s",
+        language_preference,
+        detected_language,
+        language,
+        response_language
+    )
+    logging.info(
+        "[LANG][chat_sources_api] preference=%s detected=%s kb_language=%s prompt_language=%s",
+        language_preference,
+        detected_language,
+        language,
+        response_language
+    )
 
     memory_payload={
         "documents":docs,
@@ -595,10 +804,9 @@ async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
     }
     
     formatted_source_list=await memory.format_sources_as_html(source_list=sources)
-
-    generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}Provide me sources.{custom_tags.tags["SOURCE_REQUEST"][1]}'
+    instruction_text = "Proporcióname las fuentes." if language == 'es' else "Provide me sources."
+    generated_user_query = f'{custom_tags.tags["SOURCE_REQUEST"][0]}{instruction_text}{custom_tags.tags["SOURCE_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
-
     bot_response=formatted_source_list
 
     await memory.add_message_to_session( 
@@ -613,28 +821,22 @@ async def chat_sources_post(request: Request, background_tasks:BackgroundTasks):
     )
     await memory.increment_message_count(session_uuid)
 
-    # We do not include sources as this message is the actual sources; no AI generation involved.
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=bot_response,
-        source=[],
-        chatbot_type="waterbot" 
+        source=[] 
     )
 
     return {
         "resp":bot_response,
         "msgID": await memory.get_message_count(session_uuid)
     }
-    
 
-# Riverbot-specific action items API
 @app.post('/riverbot_chat_actionItems_api')
 async def riverbot_chat_action_items_api_post(request: Request, background_tasks:BackgroundTasks):
-  
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
 
@@ -647,13 +849,10 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
     
     language = detect_language(user_query)
-    
-    if language == 'es':
-        # print("Inside spanish chromaDB")
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})     
-    else:
-        # print("Inside english chromaDB")
-        doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
+
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
+    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
 
     llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
@@ -678,8 +877,7 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=response_content,
-        source=sources,
-        chatbot_type="riverbot"
+        source=sources
     )
 
     return {
@@ -687,12 +885,13 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
         "msgID": await memory.increment_message_count(session_uuid)
     }
 
-# Route to handle next steps interactions
 @app.post('/chat_actionItems_api')
-async def chat_action_items_api_post(request: Request, background_tasks:BackgroundTasks):
-
+async def chat_action_items_api_post(
+    request: Request,
+    background_tasks:BackgroundTasks,
+    language_preference: Annotated[str | None, Form()] = None
+):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
 
@@ -701,23 +900,28 @@ async def chat_action_items_api_post(request: Request, background_tasks:Backgrou
         "sources":sources
     }
 
-
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
     
-    language = detect_language(user_query)
+    detected_language = detect_language(user_query)
+    language = resolve_language(language_preference, detected_language)
     
-    if language == 'es':
-        # print("Inside spanish chromaDB")
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})     
-    else:
-        # print("Inside english chromaDB")
-        doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
+    response_language = determine_prompt_language(language, language_preference)
 
-    llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
+    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
+
+    llm_body=await llm_adapter.get_llm_nextsteps_body(
+        kb_data=doc_content_str,
+        user_query=user_query,
+        bot_response=bot_response,
+        language=response_language
+    )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
-    generated_user_query = f'{custom_tags.tags["NEXTSTEPS_REQUEST"][0]}Provide me the action items{custom_tags.tags["NEXTSTEPS_REQUEST"][1]}'
+    instruction_text = "Proporcióname los pasos a seguir" if response_language == 'es' else "Provide me the action items"
+    generated_user_query = f'{custom_tags.tags["NEXTSTEPS_REQUEST"][0]}{instruction_text}{custom_tags.tags["NEXTSTEPS_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
 
     await memory.add_message_to_session( 
@@ -737,22 +941,17 @@ async def chat_action_items_api_post(request: Request, background_tasks:Backgrou
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=response_content,
-        source=sources,
-        chatbot_type="waterbot"
+        source=sources
     )
-
 
     return {
         "resp":response_content,
         "msgID": await memory.increment_message_count(session_uuid)
     }
 
-# Riverbot-specific detailed API
 @app.post('/riverbot_chat_detailed_api')
 async def riverbot_chat_detailed_api_post(request: Request, background_tasks:BackgroundTasks):
-   
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
 
@@ -766,12 +965,9 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
     
     language = detect_language(user_query)
 
-    if language == 'es':
-        # print("Inside spanish chromaDB")
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})
-    else:
-        # print("Inside enlgish chromaDB")
-        doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
+    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
 
     llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
@@ -796,8 +992,7 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=response_content,
-        source=sources,
-        chatbot_type="riverbot"
+        source=sources
     )
 
     return {
@@ -805,11 +1000,13 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
         "msgID": await memory.get_message_count(session_uuid)
     }
 
-# Route to handle next steps interactions
 @app.post('/chat_detailed_api')
-async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTasks):
+async def chat_detailed_api_post(
+    request: Request,
+    background_tasks:BackgroundTasks,
+    language_preference: Annotated[str | None, Form()] = None
+):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-
     docs=await memory.get_latest_memory( session_id=session_uuid, read="documents")
     sources=await memory.get_latest_memory( session_id=session_uuid, read="sources")
 
@@ -821,19 +1018,25 @@ async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTa
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
     
-    language = detect_language(user_query)
+    detected_language = detect_language(user_query)
+    language = resolve_language(language_preference, detected_language)
 
-    if language == 'es':
-        # print("Inside spanish chromaDB")
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string({"documents":docs})
-    else:
-        # print("Inside enlgish chromaDB")
-        doc_content_str = await knowledge_base.knowledge_to_string({"documents":docs})
+    response_language = determine_prompt_language(language, language_preference)
 
-    llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
+    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
+
+    llm_body=await llm_adapter.get_llm_detailed_body(
+        kb_data=doc_content_str,
+        user_query=user_query,
+        bot_response=bot_response,
+        language=response_language
+    )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
-    generated_user_query = f'{custom_tags.tags["MOREDETAIL_REQUEST"][0]}Provide me a more detailed response.{custom_tags.tags["MOREDETAIL_REQUEST"][1]}'
+    detail_instruction = "Dame una respuesta más detallada." if response_language == 'es' else "Provide me a more detailed response."
+    generated_user_query = f'{custom_tags.tags["MOREDETAIL_REQUEST"][0]}{detail_instruction}{custom_tags.tags["MOREDETAIL_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
 
     await memory.add_message_to_session( 
@@ -848,30 +1051,29 @@ async def chat_detailed_api_post(request: Request, background_tasks:BackgroundTa
     )
     await memory.increment_message_count(session_uuid)
 
-
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=response_content,
-        source=sources,
-        chatbot_type="waterbot"
+        source=sources
     )
-
 
     return {
         "resp":response_content,
         "msgID": await memory.get_message_count(session_uuid)
     }
 
-# Route to handle chat interactions
 @app.post('/chat_api')
-async def chat_api_post(request: Request, user_query: Annotated[str, Form()], background_tasks:BackgroundTasks ):
+async def chat_api_post(
+    request: Request,
+    user_query: Annotated[str, Form()],
+    background_tasks: BackgroundTasks,
+    language_preference: Annotated[str | None, Form()] = None
+):
     user_query=user_query
-
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
-    # ADD THIS DEBUG BLOCK
     print("=" * 60)
     print(f"📨 CHAT REQUEST RECEIVED")
     print(f"User query: {user_query[:50]}...")
@@ -898,7 +1100,6 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         print(intent_result)
         print("ERROR", str(e))
 
-
     if( moderation_result or (prompt_injection or unrelated_topic)):
         response_content= "I am sorry, your request is inappropriate and I cannot answer it." if moderation_result else not_handled
 
@@ -912,8 +1113,7 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
             msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
             user_query=generated_user_query, 
             response_content=response_content,
-            source=[],
-            chatbot_type="waterbot"
+            source=[]
         )
 
         return {
@@ -927,24 +1127,29 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         source_list=[]
     )
     
-    language = detect_language(user_query)
+    detected_language = detect_language(user_query)
+    language = resolve_language(language_preference, detected_language)
+    response_language = determine_prompt_language(language, language_preference)
+
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL (DATABASE_URL or DB_*) with pgvector.")
+    docs = await knowledge_base.ann_search(user_query, locale=language)
+    doc_content_str = await knowledge_base.knowledge_to_string(docs)
+    logging.info(f"🔍 RAG Search ({language}): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
     
-    if language == 'es':
-        docs = await knowledge_base_spanish.ann_search(user_query)
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
+    if docs.get('sources'):
+        logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
     else:
-         docs = await knowledge_base.ann_search(user_query)
-         doc_content_str = await knowledge_base.knowledge_to_string(docs)
+        logging.warning("⚠️  No sources found in RAG search - vector store may be empty")
     
-    # Use default system prompt for index.html
-    logging.info("Using default system prompt for index.html")
+    logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
     
     llm_body = await llm_adapter.get_llm_body( 
         chat_history=await memory.get_session_history_all(session_uuid), 
         kb_data=doc_content_str,
         temperature=.5,
         max_tokens=500,
-        endpoint_type="default" )
+        endpoint_type="spanish" if response_language == 'es' else "default" )
 
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
@@ -955,14 +1160,12 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
     )
 
     await memory.increment_message_count(session_uuid)
-    # Log the message to postgres
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=user_query, 
         response_content=response_content,
-        source=docs["sources"],
-        chatbot_type="waterbot"
+        source=docs["sources"]
     )
 
     return {
@@ -970,12 +1173,9 @@ async def chat_api_post(request: Request, user_query: Annotated[str, Form()], ba
         "msgID": await memory.get_message_count(session_uuid)
     }
 
-# Route to handle riverbot chat interactions
 @app.post('/riverbot_chat_api')
 async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Form()], background_tasks:BackgroundTasks ):
-    
     user_query=user_query
-
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
 
     await memory.create_session(session_uuid)
@@ -1008,8 +1208,7 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
             msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
             user_query=generated_user_query, 
             response_content=response_content,
-            source=[],
-            chatbot_type="riverbot"
+            source=[]
         )
 
         return {
@@ -1024,17 +1223,20 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
     )
     
     language = detect_language(user_query)
+
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL (DATABASE_URL or DB_*) with pgvector.")
+    docs = await knowledge_base.ann_search(user_query, locale=language)
+    doc_content_str = await knowledge_base.knowledge_to_string(docs)
+    logging.info(f"🔍 RAG Search ({language}): Found {len(docs.get('documents', []))} documents, {len(docs.get('sources', []))} sources")
     
-    if language == 'es':
-        # print("Inside spanish chromaDB")
-        docs = await knowledge_base_spanish.ann_search(user_query)
-        doc_content_str = await knowledge_base_spanish.knowledge_to_string(docs)
+    if docs.get('sources'):
+        logging.info(f"📚 Sources: {[s.get('filename', 'unknown') for s in docs['sources']]}")
     else:
-        #  print("Inside english chromaDB")
-         docs = await knowledge_base.ann_search(user_query)
-         doc_content_str = await knowledge_base.knowledge_to_string(docs)
+        logging.warning("⚠️  No sources found in RAG search - vector store may be empty")
     
-    # Use riverbot system prompt
+    logging.info(f"📄 Knowledge base content length: {len(doc_content_str)} characters")
+    
     logging.info("Using riverbot system prompt")
     
     llm_body = await llm_adapter.get_llm_body( 
@@ -1053,14 +1255,12 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
     )
 
     await memory.increment_message_count(session_uuid)
-    # Log the message to postgres
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=user_query, 
         response_content=response_content,
-        source=docs["sources"],
-        chatbot_type="riverbot"
+        source=docs["sources"]
     )
 
     return {
@@ -1068,5 +1268,96 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
         "msgID": await memory.get_message_count(session_uuid)
     }
 
+# Serve React frontend static files (favicons)
+@app.get("/favicon.ico")
+async def favicon():
+    if not frontend_dist_path:
+        raise HTTPException(status_code=404)
+    favicon_path = frontend_dist_path / "favicon.ico"
+    if favicon_path.exists():
+        return FileResponse(str(favicon_path))
+    raise HTTPException(status_code=404)
+
+@app.get("/favicon-196x196.png")
+async def favicon_png():
+    if not frontend_dist_path:
+        raise HTTPException(status_code=404)
+    favicon_path = frontend_dist_path / "favicon-196x196.png"
+    if favicon_path.exists():
+        return FileResponse(str(favicon_path))
+    raise HTTPException(status_code=404)
+
+# Root and /waterbot: serve Jinja templates (splash screen, chat UI)
+@app.get("/", response_class=HTMLResponse)
+async def root(request: Request):
+    """Serve the splash screen (Jinja template)"""
+    return templates.TemplateResponse("splashScreen.html", {"request": request})
+
+@app.get("/waterbot", response_class=HTMLResponse)
+async def waterbot(request: Request):
+    """Serve the waterbot chat page (Jinja template)"""
+    return templates.TemplateResponse("index.html", {"request": request})
+
+@app.get("/aboutwaterbot", response_class=HTMLResponse)
+async def about_waterbot(request: Request):
+    """Serve the about Waterbot page (Jinja template)"""
+    return templates.TemplateResponse("aboutWaterbot.html", {"request": request})
+
+@app.get("/Spanish_Translation_2.0.1.html", response_class=HTMLResponse)
+async def spanish_translation(request: Request):
+    """Serve the Spanish translation page (Jinja template)"""
+    return templates.TemplateResponse("spanish.html", {"request": request})
+
+@app.get("/riverbot", response_class=HTMLResponse)
+async def riverbot_page(request: Request):
+    """Serve the riverbot page (Jinja template)"""
+    return templates.TemplateResponse("riverbot.html", {"request": request})
+
+# React SPA at /museum
+@app.get("/museum", response_class=HTMLResponse)
+@app.get("/museum/", response_class=HTMLResponse)
+async def museum_root():
+    """Serve the React app's index.html for /museum"""
+    if not frontend_dist_path:
+        raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+    index_path = frontend_dist_path / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+
+# Serve React frontend - catch-all for /museum SPA routing (e.g. /museum/foo)
+# This must be defined AFTER all API routes
+@app.get("/museum/{full_path:path}", response_class=HTMLResponse)
+async def serve_react_app(full_path: str, request: Request):
+    """
+    Catch-all for React SPA at /museum (e.g. /museum/foo for client-side routing).
+    Serves index.html for all /museum/* paths except API-like paths.
+    """
+    # Skip empty path (root is handled by root() function)
+    if not full_path or full_path == "":
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Check if this is an API route - if so, let it 404 (should have been handled by specific routes)
+    # This is a safety check in case the route wasn't defined above
+    if (full_path.startswith("chat_") or 
+        full_path.startswith("riverbot_chat_") or
+        full_path.startswith("submit_rating") or
+        full_path.startswith("session-transcript") or
+        full_path.startswith("transcribe") or
+        full_path.startswith("messages") or
+        full_path.startswith("static/") or
+        full_path.startswith("assets/")):
+        raise HTTPException(status_code=404, detail="Not found")
+    
+    # Serve React app's index.html for all other routes (SPA routing)
+    if not frontend_dist_path:
+        raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+    index_path = frontend_dist_path / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    else:
+        raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+
 if __name__ == "__main__":
     uvicorn.run(app, host='0.0.0.0', port=8000)
+

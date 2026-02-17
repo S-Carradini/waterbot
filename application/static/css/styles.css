@@ -226,8 +226,8 @@ html {
   }
 
   .waterdrop3 {
-    width: 5.8125rem;
-    height: 6.8125rem;
+    width: 4.25rem;
+    height: 4.25rem;
     content: url(../images/WaterDrop3.png);
     background-repeat: no-repeat;
     background-size: cover;
@@ -312,41 +312,50 @@ html {
   width: 100%;
 }
 
+.welcome-message .row.justify-content-start,
+.card.left.bot-message .row.justify-content-start {
+  align-items: center;
+}
+
+.card.left.bot-message .waterdrop1 {
+  margin-top: 12px;
+}
+
 .waterdrop1 {
-  width: 5.8125rem;
-  height: 6.8125rem;
+  width: 4rem;
+  height: 4.25rem;
   content: url(../images/WaterDrop1.png);
   background-repeat: no-repeat;
   background-size: cover;
 }
 
 .waterdrop2 {
-  width: 5.8125rem;
-  height: 6.8125rem;
+  width: 4rem;
+  height: 4.25rem;
   content: url(../images/WaterDrop2.png);
   background-repeat: no-repeat;
   background-size: cover;
 }
 
 .waterdrop3 {
-  width: 5.8125rem;
-  height: 6.8125rem;
+  width: 4.25rem;
+  height: 4.25rem;
   content: url(../images/WaterDrop3.png);
   background-repeat: no-repeat;
   background-size: cover;
 }
 
 .waterdrop4 {
-  width: 5.8125rem;
-  height: 6.8125rem;
+  width: 4.25rem;
+  height: 4.25rem;
   content: url(../images/WaterDrop4.png);
   background-repeat: no-repeat;
   background-size: cover;
 }
 
 .waterdrop5 {
-  width: 4.8125rem;
-  height: 5.8125rem;
+  width: 4.25rem;
+  height: 4.25rem;
   content: url(../images/WaterDrop5.png);
   background-repeat: no-repeat;
   background-size: cover;
@@ -461,12 +470,11 @@ a {
   gap: 0.5rem;
   height: calc(100vh - 310px);
   overflow-y: auto;
-  overflow-x: hidden;
+  overflow-x: auto;
   flex-shrink: 0;
-  padding-bottom: 10px;
+  padding: 24px 32px 24px 32px;
   max-width: 100%;
   margin-left: 0;
-  padding-top: 16px;
 }
 
 .card-footer {
@@ -479,7 +487,10 @@ a {
   position: relative;
   border: transparent;
   background-color: transparent;
+  overflow: visible;
 }
+
+
 
 .reactions {
   display: block;
@@ -502,20 +513,20 @@ a {
 .waterdrop1,
 .waterdrop2,
 waterdrop5 {
-  width: 3.625rem;
+  width: 4rem;
   height: 4.25rem;
   flex-shrink: 0;
 }
 
 .waterdrop3 {
-  width: 3.25rem;
-  height: 3.25rem;
+  width: 4.25rem;
+  height: 4.25rem;
   flex-shrink: 0;
 }
 
 .waterdrop4 {
-  width: 8.25rem;
-  height: 8.25rem;
+  width: 4.25rem;
+  height: 4.25rem;
   flex-shrink: 0;
 }
 
@@ -546,6 +557,7 @@ waterdrop5 {
   padding: 1rem;
   border-radius: 35px 35px 35px 0px;
   background: #eee;
+  box-shadow: 1px 3px 8px 0px rgb(11 11 10 / 96%), 5px 5px 6px 0px rgb(13 12 12 / 36%) !important;
 
   white-space: normal;
   overflow-wrap: anywhere;
@@ -555,7 +567,7 @@ waterdrop5 {
 }
 
 .message-body {
-  
+
 }
 
 .nav-items .nav-download {
@@ -589,6 +601,7 @@ waterdrop5 {
   background-attachment: fixed;
   color: #1f1d1d;
   border-radius: 20px 20px 0px 20px;
+  box-shadow: -3px 3px 3px rgb(22 20 20 / 14%), -4px 3px 0px 1px rgb(34 33 33 / 34%) !important;
   height: fit-content;
   width: fit-content;
   padding: 1rem 1rem;
@@ -628,6 +641,63 @@ waterdrop5 {
   text-align: center;
   vertical-align: middle;
   padding: 8px;
+}
+
+/* tyfeedback card - same styling as bot-message-body (bubble look); align left edge with bot message bubble */
+[id^="tyfeedback-"].card-footer {
+  background: transparent;
+  border: none;
+  display: flex;
+  padding: 0;
+  width: fit-content;
+}
+[id^="tyfeedback-"] .row.tyfeedback-inner-row {
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  --bs-gutter-x: 0;
+}
+[id^="tyfeedback-"] .tyfeedback-waterdrop-col {
+  flex-shrink: 0;
+  padding-right: 0;
+}
+[id^="tyfeedback-"] .tyfeedback-waterdrop-col img.waterdrop3 {
+  display: block;
+  object-fit: contain;
+}
+[id^="tyfeedback-"] .col-xs-9.bot-message-body,
+[id^="tyfeedback-"] .col-sm-9.bot-message-body,
+[id^="tyfeedback-"] .col-md-9.bot-message-body,
+[id^="tyfeedback-"] .col-lg-9.bot-message-body,
+[id^="tyfeedback-"] .col-xl-9.bot-message-body,
+[id^="tyfeedback-"] .col-9.bot-message-body {
+  width: 800px;
+  max-width: 95vw;
+  display: block;
+  padding: 1rem;
+  border-radius: 35px 35px 35px 0px;
+  background: #eee;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.14), 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  margin-left: 0;
+  padding-bottom: 5px;
+}
+
+/* Feedback card row - spacing from message above */
+.feedback-card-row {
+  margin-top: 1.5rem !important;
+}
+
+/* Feedback card inner container - matches bot message background */
+.feedback-card-inner {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #eee !important;
+}
+
+.feedback-card-inner .card-body {
+  background: #eee !important;
 }
 
 .feedback-button,

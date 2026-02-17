@@ -351,7 +351,6 @@ $(document).ready(function () {
       $("#feedback-" + messageID).css({
         display: "none",
       });
-      debugger;
       $(".card.data-messageid-" + messageID).append(
         thankYouFeedback(messageID)
       );
@@ -388,7 +387,7 @@ $(document).ready(function () {
           <div class="card-body">
             <div class="row">
              <div class="chat-row">
-                <img class="waterdrop2" />
+                <img class="waterdrop1" />
               
             <div class="col-md-10 align-items-center" style="display:inline-flex;">
             <div class="loader"></div> &nbsp; <span class="text-primary">Generating response...</span>

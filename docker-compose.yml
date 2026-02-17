@@ -9,8 +9,8 @@ services:
       - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}   # Pass AWS secret access key from environment
       - TRANSCRIPT_BUCKET_NAME=${TRANSCRIPT_BUCKET_NAME}
       - MESSAGES_TABLE=${MESSAGES_TABLE}
-    volumes:
-      - ./application:/app  # Mount the application code for live updates
+    # No volumes: use image as built. Frontend is built in the Dockerfile (npm run build);
+    # no host npm run build or dist mount required.
     ports:
       - "8000:8000"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]

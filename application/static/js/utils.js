@@ -230,15 +230,15 @@ $(document).ready(function () {
 
   function thankYouFeedback(messageID) {
     return `
-    <div id="tyfeedback-${messageID}" class="card-footer" style="border-top:0;">
-    <div class="row">
-      <div class="col-2">
-      <img class="waterdrop5" />
+    <div id="tyfeedback-${messageID}" class="card-footer tyfeedback-row" style="border-top:0;">
+    <div class="row justify-content-start tyfeedback-inner-row">
+      <div class="col-auto d-flex align-items-start justify-content-center tyfeedback-waterdrop-col">
+        <img class="waterdrop3" alt="" />
       </div>
-      <div class="col-10 bot-message-body" style="align-content: center;">
+      <div class="col-xs-9 col-sm-9 col-md-9 col-lg-9 col-xl-9 col-9 bot-message-body" style="align-content: center;">
         <span class="feedback-${messageID}" data-messageid="${messageID}">Thanks for your feedback. We will use your feedback to improve the Water Chatbot.</span>     
       </div>
-      </div>
+    </div>
     </div>`;
   }
  
@@ -255,7 +255,6 @@ $(document).ready(function () {
       $("#feedback-" + messageID).css({
         display: "none",
       });
-      debugger;
       $(".card.data-messageid-" + messageID).append(
         thankYouFeedback(messageID)
       );
@@ -314,9 +313,12 @@ $(document).ready(function () {
 
   // Function to send user queries to the backend and receive responses
   function sendUserQuery(e) {
-    const userQuery = document.getElementById("user_query").value;
     e.preventDefault();
-
+    // Prevent sending while a response is being generated
+    if ($("#user_query").prop("disabled")) {
+      return;
+    }
+    const userQuery = document.getElementById("user_query").value;
     if (userQuery.trim() === "") {
       return; // Don't send empty queries
     }
@@ -328,6 +330,7 @@ $(document).ready(function () {
     displayLoadingAnimation();
     $("#user_query").prop("disabled", true);
     $("#submit-button").prop("disabled", true);
+    $("#mic-button").addClass("loading-disabled").css({ "pointer-events": "none", "opacity": "0.6" });
 
     //Scroll to bottom script
     scrollToBottom();
@@ -346,22 +349,21 @@ $(document).ready(function () {
     })
       .then((response) => response.json())
       .then((botResponse) => {
-        // Display the bot's response in the chat
-        displayBotMessage(botResponse.resp, botResponse.msgID);
-        //typewriter(botResponse);
-
-        //Removing loading animation
         removeLoadingAnimation();
-        $("#user_query").prop("disabled", false);
-        $("#submit-button").prop("disabled", false);
-        //Scroll to bottom function
-        scrollToBottom();
+        // Display the bot's response; unlock inputs only after typewriter effect completes
+        displayBotMessage(botResponse.resp, botResponse.msgID, function () {
+          $("#user_query").prop("disabled", false);
+          $("#submit-button").prop("disabled", false);
+          $("#mic-button").removeClass("loading-disabled").css({ "pointer-events": "", "opacity": "" });
+          scrollToBottom();
+        });
       })
       .catch((error) => {
         console.error("Error:", error);
         removeLoadingAnimation();
         $("#user_query").prop("disabled", false);
         $("#submit-button").prop("disabled", false);
+        $("#mic-button").removeClass("loading-disabled").css({ "pointer-events": "", "opacity": "" });
         scrollToBottom();
       });
 
@@ -426,6 +428,9 @@ $(document).ready(function () {
     console.log("Calling API: " + apiUrl);
     $(".followup-buttons").hide();
     displayLoadingAnimation();
+    $("#user_query").prop("disabled", true);
+    $("#submit-button").prop("disabled", true);
+    $("#mic-button").addClass("loading-disabled").css({ "pointer-events": "none", "opacity": "0.6" });
     scrollToBottom();
     fetch(apiUrl, {
       method: "POST",
@@ -433,17 +438,20 @@ $(document).ready(function () {
     })
       .then((response) => response.json())
       .then((botResponse) => {
-        displayBotMessage(botResponse.resp, botResponse.msgID);
         removeLoadingAnimation();
-        $("#user_query").prop("disabled", false);
-        $("#submit-button").prop("disabled", false);
-        scrollToBottom();
+        displayBotMessage(botResponse.resp, botResponse.msgID, function () {
+          $("#user_query").prop("disabled", false);
+          $("#submit-button").prop("disabled", false);
+          $("#mic-button").removeClass("loading-disabled").css({ "pointer-events": "", "opacity": "" });
+          scrollToBottom();
+        });
       })
       .catch((error) => {
         console.error("Error:", error);
         removeLoadingAnimation();
         $("#user_query").prop("disabled", false);
         $("#submit-button").prop("disabled", false);
+        $("#mic-button").removeClass("loading-disabled").css({ "pointer-events": "", "opacity": "" });
         scrollToBottom();
       });
   }
@@ -485,7 +493,7 @@ function removeThumbsDown(messageid) {
   );
 }
 
-function messageInterval(botResponse, messageID) {
+function messageInterval(botResponse, messageID, onComplete) {
   const $el = $(".card-body").find("#botmessage-" + messageID);
   const speed = 20; // ms - faster for character by character
   $el.html(""); // Clear previous content
@@ -494,12 +502,18 @@ function messageInterval(botResponse, messageID) {
   const parts = botResponse.split(/(<[^>]*>)/g).filter(Boolean);
   let partIndex = 0;
   let charIndex = 0;
-  let currentText = "";
+
+  function finish() {
+    if (typeof onComplete === "function") {
+      onComplete();
+    }
+  }
 
   // Display each character sequentially.
   const interval = setInterval(() => {
     if (partIndex >= parts.length) {
-      clearInterval(interval); // Stop once all parts are processed
+      clearInterval(interval);
+      finish();
       return;
     }
 
@@ -510,21 +524,19 @@ function messageInterval(botResponse, messageID) {
       $el.append(currentPart);
       partIndex++;
       charIndex = 0;
-      scrollToBottom()
+      scrollToBottom();
     } else {
       // If it's text content, add character by character
       if (charIndex < currentPart.length) {
         $el.append(currentPart[charIndex]);
         charIndex++;
-        scrollToBottom()
+        scrollToBottom();
       } else {
-        // Move to next part
         partIndex++;
         charIndex = 0;
       }
     }
   }, speed);
-
 }
 
 // Function to display a user message in the chat interface
@@ -548,7 +560,8 @@ function displayUserMessage(userQuery) {
 }
 
 // Function to display a bot message in the chat interface
-function displayBotMessage(botResponse, messageID) {
+// onComplete: optional callback invoked when the typewriter effect finishes
+function displayBotMessage(botResponse, messageID, onComplete) {
   const chatHistory = document.getElementById("chatbot-prompt");
   const botMessage = document.createElement("div");
   botMessage.classList.add("card", "left");
@@ -593,10 +606,12 @@ function displayBotMessage(botResponse, messageID) {
         </div>
         </div>
       </div>
-      <div id="feedback-${messageID}" class="row" style="display:none;">
-        <div class="col-2"></div>
-        <div class="col-10">
-          <div class="row" style="border: 1px solid #ccc;border-radius: 4px">
+      <div id="feedback-${messageID}" class="row justify-content-start feedback-card-row" style="display:none;">
+        <div class="col-auto d-flex flex-wrap align-items-end justify-content-center">
+          <img class="waterdrop1" style="visibility:hidden;pointer-events:none;" alt="" />
+        </div>
+        <div class="col-xs-9 col-sm-9 col-md-9 col-lg-9 col-xl-9 col-9">
+          <div class="row feedback-card-inner">
                 <div class="col-3" style="align-self: center;">
                     <img class="waterdrop4">
                 </div>
@@ -659,7 +674,7 @@ function displayBotMessage(botResponse, messageID) {
       </div>
     `;
   chatHistory.appendChild(botMessage);
-  messageInterval(botResponse, messageID);
+  messageInterval(botResponse, messageID, onComplete);
   scrollToBottom();
 }
 
