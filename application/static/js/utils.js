@@ -406,6 +406,7 @@ $(document).ready(function () {
   });
 
   $(document).on("click", ".followup-buttons", function () {
+    if (window.responseInProgress) return;
     var buttonId = $(this).attr("id");
     switch (buttonId) {
       case "shortButton":
@@ -448,6 +449,7 @@ $(document).ready(function () {
       })
       .catch((error) => {
         console.error("Error:", error);
+        window.responseInProgress = false;
         removeLoadingAnimation();
         $("#user_query").prop("disabled", false);
         $("#submit-button").prop("disabled", false);
@@ -562,6 +564,7 @@ function displayUserMessage(userQuery) {
 // Function to display a bot message in the chat interface
 // onComplete: optional callback invoked when the typewriter effect finishes
 function displayBotMessage(botResponse, messageID, onComplete) {
+  window.responseInProgress = true;
   const chatHistory = document.getElementById("chatbot-prompt");
   const botMessage = document.createElement("div");
   botMessage.classList.add("card", "left");
@@ -674,7 +677,10 @@ function displayBotMessage(botResponse, messageID, onComplete) {
       </div>
     `;
   chatHistory.appendChild(botMessage);
-  messageInterval(botResponse, messageID, onComplete);
+  messageInterval(botResponse, messageID, function () {
+    window.responseInProgress = false;
+    if (typeof onComplete === "function") onComplete();
+  });
   scrollToBottom();
 }
 

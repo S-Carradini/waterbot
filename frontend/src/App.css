@@ -398,6 +398,14 @@
   opacity: 0.8;
 }
 
+.button-tell-me-more:disabled,
+.button-next-steps:disabled,
+.button-sources:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  pointer-events: none;
+}
+
 /* Action Buttons Container */
 .buttons-container {
   display: flex;

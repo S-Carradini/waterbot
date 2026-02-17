@@ -387,19 +387,17 @@ function showReactions(message) {
       })
       .then(response => response.json())
       .then(botResponse => {
-        // Display the bot's response in the chat
-        displayBotMessage(botResponse.resp, botResponse.msgID);
-        //typewriter(botResponse);
-
-        //Removing loading animation
-        removeLoadingAnimation();
-        $("#user_query").prop('disabled', false);
-        $("#submit-button").prop('disabled', false);
-        //Scroll to bottom function
-        scrollToBottom();
+        // Display the bot's response in the chat; re-enable inputs after typewriter completes
+        displayBotMessage(botResponse.resp, botResponse.msgID, function () {
+          removeLoadingAnimation();
+          $("#user_query").prop('disabled', false);
+          $("#submit-button").prop('disabled', false);
+          scrollToBottom();
+        });
       })
       .catch(error => {
         console.error('Error:', error);
+        window.responseInProgress = false;
         removeLoadingAnimation();
         $("#user_query").prop('disabled', false);
         $("#submit-button").prop('disabled', false);
@@ -448,6 +446,7 @@ function showReactions(message) {
 
 
   $(document).on('click', '.followup-buttons', function () {
+    if (window.responseInProgress) return;
     var buttonId = $(this).attr('id');
     switch (buttonId) {
       case 'shortButton':
@@ -477,15 +476,16 @@ function showReactions(message) {
       })
       .then(response => response.json())
       .then(botResponse => {
-        displayBotMessage(botResponse.resp, botResponse.msgID);
-        removeLoadingAnimation();
-        $("#user_query").prop('disabled', false);
-        $("#submit-button").prop('disabled', false);
-        scrollToBottom();
-
+        displayBotMessage(botResponse.resp, botResponse.msgID, function () {
+          removeLoadingAnimation();
+          $("#user_query").prop('disabled', false);
+          $("#submit-button").prop('disabled', false);
+          scrollToBottom();
+        });
       })
       .catch(error => {
         console.error('Error:', error);
+        window.responseInProgress = false;
         removeLoadingAnimation();
         $("#user_query").prop('disabled', false);
         $("#submit-button").prop('disabled', false);
@@ -527,18 +527,24 @@ function removeThumbsDown(messageid) {
   $("a[data-messageid='" + messageid + "'][data-reaction=1]").removeClass("reaction");
 }
 
-function messageInterval(botResponse, messageID) {
+function messageInterval(botResponse, messageID, onComplete) {
   var $el = $(".card-body").find("#botmessage-" + messageID);
   var text = botResponse;
-  speed = 100; //ms
+  var speed = 100; //ms
   $el.text("");
 
-  var wordArray = text.split(' '),
-    i = 0;
+  var wordArray = text.split(' ');
+  var i = 0;
 
-  INV = setInterval(function () {
+  function finish() {
+    if (typeof onComplete === "function") onComplete();
+  }
+
+  var INV = setInterval(function () {
     if (i >= wordArray.length - 1) {
       clearInterval(INV);
+      finish();
+      return;
     }
     $el.append(wordArray[i] + ' ');
     i++;
@@ -566,7 +572,9 @@ chatHistory.appendChild(userMessage);
 }
 
  // Function to display a bot message in the chat interface
- function displayBotMessage(botResponse, messageID) {
+ // onComplete: optional callback invoked when the typewriter effect finishes
+ function displayBotMessage(botResponse, messageID, onComplete) {
+  window.responseInProgress = true;
   const chatHistory = document.getElementById('chatbot-prompt');
   const botMessage = document.createElement('div');
   botMessage.classList.add('card', 'left');
@@ -674,5 +682,8 @@ chatHistory.appendChild(userMessage);
       </div>
     `;
   chatHistory.appendChild(botMessage);
-  messageInterval(botResponse, messageID)
+  messageInterval(botResponse, messageID, function () {
+    window.responseInProgress = false;
+    if (typeof onComplete === "function") onComplete();
+  });
 }

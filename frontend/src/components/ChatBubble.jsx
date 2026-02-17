@@ -10,6 +10,7 @@ export default function ChatBubble({
   answerText,
   messageId,
   showActions = true,
+  disableActions = false,
   onActionButton,
   onRating,
   isLoading = false,
@@ -172,9 +173,8 @@ export default function ChatBubble({
   };
 
   const handleActionClick = (actionType) => {
-    if (onActionButton) {
-      onActionButton(actionType);
-    }
+    if (disableActions || !onActionButton) return;
+    onActionButton(actionType);
   };
 
   // Parse HTML content for typewriter effect
@@ -219,8 +219,8 @@ export default function ChatBubble({
           </div>
         )}
 
-        {/* Thumbs and Action Buttons Row - Only show after typing is complete */}
-        {showActions && messageId != null && (!isTypewriterEnabled || !isTyping) && (
+        {/* Thumbs and Action Buttons Row - disabled while response is loading or typing */}
+        {showActions && messageId != null && (
           <div className="actions-row">
             {/* Thumbs Up and Down Buttons */}
             {messageId != null && (
@@ -242,23 +242,29 @@ export default function ChatBubble({
               </div>
             )}
 
-            {/* Action Buttons */}
+            {/* Action Buttons - disabled until response has completed */}
             <div className="buttons-container">
               <button 
                 className="button-tell-me-more"
                 onClick={() => handleActionClick('tell-me-more')}
+                disabled={disableActions}
+                aria-disabled={disableActions}
               >
                 <span className="button-text-tell-me-more">{buttonLabels['tell-me-more']}</span>
               </button>
               <button 
                 className="button-next-steps"
                 onClick={() => handleActionClick('next-steps')}
+                disabled={disableActions}
+                aria-disabled={disableActions}
               >
                 <span className="button-text-next-steps">{buttonLabels['next-steps']}</span>
               </button>
               <button 
                 className="button-sources"
                 onClick={() => handleActionClick('sources')}
+                disabled={disableActions}
+                aria-disabled={disableActions}
               >
                 <span className="button-text-sources">{buttonLabels['sources']}</span>
               </button>

@@ -275,6 +275,7 @@ export default function MobileChatbot() {
                 answerText={message.content}
                 messageId={message.messageId}
                 showActions={message.showActions}
+                disableActions={index === messages.length - 1 && (isLoading || isTyping)}
                 onActionButton={handleActionButton}
                 onRating={handleRating}
                 isLoading={isLoading && index === messages.length - 1 && message.type === 'bot' && (!message.content || (typeof message.content === 'string' && message.content.trim() === ''))}
