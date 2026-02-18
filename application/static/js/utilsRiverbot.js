@@ -443,9 +443,9 @@ $(document).ready(function () {
     })
       .then((response) => response.json())
       .then((botResponse) => {
+        removeLoadingAnimation();
         // Display the bot's response in the chat; re-enable inputs after typewriter completes
         displayBotMessage(botResponse.resp, botResponse.msgID, function () {
-          removeLoadingAnimation();
           $("#user_query").prop("disabled", false);
           $("#submit-button").prop("disabled", false);
           scrollToBottom();
@@ -536,8 +536,8 @@ $(document).ready(function () {
         return response.json();
       })
       .then((botResponse) => {
+        removeLoadingAnimation();
         displayBotMessage(botResponse.resp, botResponse.msgID, function () {
-          removeLoadingAnimation();
           $("#user_query").prop("disabled", false);
           $("#submit-button").prop("disabled", false);
           scrollToBottom();
