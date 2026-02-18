@@ -709,6 +709,7 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
     show_sources = await should_show_sources(user_question or "", bot_response or "", sources or [])
     if not show_sources:
         lang = "es" if detect_language(user_query or user_question or "") == "es" else "en"
+        await memory.increment_message_count(session_uuid)
         return {"resp": NO_SOURCES_MESSAGE[lang], "msgID": await memory.get_message_count(session_uuid)}
     language = detect_language(user_query)
 
@@ -765,6 +766,7 @@ async def chat_sources_post(
         detected_language = detect_language(user_query or user_question or "")
         language = resolve_language(language_preference, detected_language)
         lang = "es" if language == "es" else "en"
+        await memory.increment_message_count(session_uuid)
         return {"resp": NO_SOURCES_MESSAGE[lang], "msgID": await memory.get_message_count(session_uuid)}
     detected_language = detect_language(user_query)
     language = resolve_language(language_preference, detected_language)
