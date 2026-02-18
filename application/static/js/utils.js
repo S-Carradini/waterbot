@@ -71,24 +71,44 @@ $(document).ready(function () {
       window.location.href = '/waterbot';
     });
   
-  // JavaScript to animate open/close on hover
+  // JavaScript to animate open/close on hover and click (for touch / discoverability)
   const navContainer = document.querySelector(".top-right-icon");
   const navItems = document.getElementById("nav-items");
 
   // height value equals icon height + margins and gaps (64*3 + 8*4)
   const openHeight = "170px";
 
-  navContainer.addEventListener("mouseenter", () => {
-    navItems.style.height = openHeight;
-    navItems.style.opacity = "1";
-    console.log("mouseenter");
-  });
+  function isNavOpen() {
+    return navItems && parseFloat(navItems.style.height) > 0;
+  }
 
-  navContainer.addEventListener("mouseleave", () => {
-    navItems.style.height = "0";
-    navItems.style.opacity = "0";
-    console.log("mouseleave");
-  });
+  function openNav() {
+    if (navItems) {
+      navItems.style.height = openHeight;
+      navItems.style.opacity = "1";
+    }
+  }
+
+  function closeNav() {
+    if (navItems) {
+      navItems.style.height = "0";
+      navItems.style.opacity = "0";
+    }
+  }
+
+  navContainer.addEventListener("mouseenter", openNav);
+  navContainer.addEventListener("mouseleave", closeNav);
+
+  // Click on icon (image) toggles menu so download/home are reachable without hover
+  const iconImg = navContainer && navContainer.querySelector(".icon-img");
+  if (iconImg) {
+    iconImg.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (isNavOpen()) closeNav();
+      else openNav();
+    });
+  }
 
   function showReactions(message) {
     $(message).find(".reactions").show();
