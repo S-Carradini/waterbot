@@ -138,8 +138,14 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
             "secure": is_https,
             "samesite": "none" if is_https else "lax",
         }
+        # Only set an explicit domain when it matches the current request host.
+        # If we force a mismatched domain (e.g., COOKIE_DOMAIN=.azwaterbot.org
+        # while testing on an EC2 public DNS/IP), browsers drop the cookie.
         if COOKIE_DOMAIN:
-            cookie_kwargs["domain"] = COOKIE_DOMAIN
+            req_host = request.url.hostname or ""
+            domain_match = req_host.endswith(COOKIE_DOMAIN.lstrip("."))
+            if domain_match:
+                cookie_kwargs["domain"] = COOKIE_DOMAIN
         response.set_cookie(**cookie_kwargs)
         print(f"🍪 Set cookie {COOKIE_NAME} = {session_value}")
         
