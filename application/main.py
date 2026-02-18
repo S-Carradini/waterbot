@@ -121,15 +121,22 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         
         response = await call_next(request)
         
-        # Set the application cookie in the response headers
+        # Determine whether the request was over HTTPS (including when SSL
+        # is terminated upstream and signalled via X-Forwarded-Proto).
+        is_https = request.url.scheme == "https" or request.headers.get("x-forwarded-proto", "").lower() == "https"
+
+        # Set the application cookie in the response headers. Browsers drop
+        # Secure cookies on plain HTTP, so we only set Secure/None when we
+        # know the request is HTTPS; otherwise fall back to lax for local/EC2
+        # HTTP so the session sticks and sources work.
         cookie_kwargs = {
             "key": COOKIE_NAME,
             "value": session_value,
             "max_age": 7200,  # 2 hours
             "path": "/",
             "httponly": True,
-            "secure": True,   # Required for HTTPS through CloudFront
-            "samesite": "none",  # For cross-origin credentialed requests
+            "secure": is_https,
+            "samesite": "none" if is_https else "lax",
         }
         if COOKIE_DOMAIN:
             cookie_kwargs["domain"] = COOKIE_DOMAIN
@@ -1369,4 +1376,3 @@ async def serve_react_app(full_path: str, request: Request):
 
 if __name__ == "__main__":
     uvicorn.run(app, host='0.0.0.0', port=8000)
-
