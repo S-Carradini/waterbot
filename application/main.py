@@ -97,6 +97,8 @@ def determine_prompt_language(chat_language: str, preferred_language: str | None
 
 # Set the cookie name to match the one configured in the CDK
 COOKIE_NAME = "USER_SESSION"  # Changed from WATERBOT
+# Optional: set COOKIE_DOMAIN (e.g. ".azwaterbot.org") when frontend and API use different subdomains
+COOKIE_DOMAIN = os.getenv("COOKIE_DOMAIN") or None
 
 class SetCookieMiddleware(BaseHTTPMiddleware):
     def __init__(self, app):
@@ -120,15 +122,18 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         response = await call_next(request)
         
         # Set the application cookie in the response headers
-        response.set_cookie(
-            key=COOKIE_NAME,
-            value=session_value,
-            max_age=7200,  # 2 hours
-            path="/",      # ✅ Valid for all paths
-            httponly=True,
-            secure=True,   # ✅ Required for HTTPS through CloudFront
-            samesite="none"  # ✅ CHANGED from "Lax" to "none" for cross-origin requests
-        )
+        cookie_kwargs = {
+            "key": COOKIE_NAME,
+            "value": session_value,
+            "max_age": 7200,  # 2 hours
+            "path": "/",
+            "httponly": True,
+            "secure": True,   # Required for HTTPS through CloudFront
+            "samesite": "none",  # For cross-origin credentialed requests
+        }
+        if COOKIE_DOMAIN:
+            cookie_kwargs["domain"] = COOKIE_DOMAIN
+        response.set_cookie(**cookie_kwargs)
         print(f"🍪 Set cookie {COOKIE_NAME} = {session_value}")
         
         return response
@@ -211,6 +216,8 @@ def startup_ensure_db():
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
+        "https://azwaterbot.org",
+        "https://djl31v9y2vbwy.cloudfront.net",
         "https://waterbot-2qo4tjmdo-shankerram3s-projects.vercel.app",
         "https://*.vercel.app",  # Allow all Vercel preview deployments
         "http://localhost:5173",  # Vite default port for local development
