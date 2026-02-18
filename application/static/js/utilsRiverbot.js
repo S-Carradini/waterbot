@@ -708,10 +708,10 @@ function displayBotMessage(botResponse, messageID, onComplete) {
         </a>
         </div>
       </div>
-      <div id="feedback-${uniqueDomId}" class="row" style="display:none;">
+      <div id="feedback-${uniqueDomId}" class="row feedback-card-row" style="display:none;">
         <div class="col-2"></div>
         <div class="col-10">
-          <div class="row" style="border: 1px solid #ccc;border-radius: 4px">
+          <div class="row feedback-card-inner">
                 <div class="col-3" style="align-self: center;">
                     <img class="waterdrop4">
                 </div>

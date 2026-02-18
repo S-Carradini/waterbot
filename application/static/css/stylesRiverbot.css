@@ -558,6 +558,17 @@ waterdrop5 {
   }
 }
 
+/* Feedback card inner container - white background */
+.feedback-card-inner {
+  border: 1px solid #ccc;
+  border-radius: 4px;
+  background: #ffffff !important;
+}
+
+.feedback-card-inner .card-body {
+  background: #ffffff !important;
+}
+
 .feedback-button,
 .feedback-other-button,
 .modal-feedback-button {
