@@ -14,9 +14,9 @@ $(document).ready(function () {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
   
-  document
-    .querySelector(".nav-download")
-    .addEventListener("click", async (e) => {
+  const navDownload = document.querySelector(".nav-download");
+  if (navDownload) {
+    navDownload.addEventListener("click", async (e) => {
       e.preventDefault();
 
       try {
@@ -31,20 +31,37 @@ $(document).ready(function () {
 
         const data = await response.json();
 
+        if (data.message && data.message.includes("No chat history")) {
+          alert("No chat history found for this session.");
+          return;
+        }
+
         if (data.presigned_url) {
-          // Trigger file download
+          // S3 configured: trigger download via presigned URL
           const link = document.createElement("a");
           link.href = data.presigned_url;
-          link.download = "session-transcript.txt"; // suggest filename
+          link.download = data.filename || "session-transcript.txt";
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
+        } else if (data.transcript != null) {
+          // No S3: create Blob download from inline transcript
+          const blob = new Blob([data.transcript], { type: "text/plain" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = data.filename || "session-transcript.txt";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
         }
       } catch (err) {
         console.error("Error downloading transcript:", err);
         alert("Could not download transcript. Please try again.");
       }
     });
+  }
 
   // Home button - navigate to waterbot page
   document
