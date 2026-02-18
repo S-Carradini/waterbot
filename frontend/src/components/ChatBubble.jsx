@@ -10,6 +10,7 @@ export default function ChatBubble({
   answerText,
   messageId,
   showActions = true,
+  disableActions = false,
   onActionButton,
   onRating,
   isLoading = false,
@@ -130,7 +131,7 @@ export default function ChatBubble({
   }, [isTyping, isTypewriterEnabled, onTypingChange]);
 
   const handleThumbsUp = () => {
-    if (messageId && !ratingSubmitted) {
+    if (messageId != null && !ratingSubmitted) {
       setSelectedReaction(1);
       setRatingSubmitted(true);
       setFeedbackSelection(null);
@@ -140,7 +141,7 @@ export default function ChatBubble({
   };
 
   const handleThumbsDown = () => {
-    if (messageId && !ratingSubmitted) {
+    if (messageId != null && !ratingSubmitted) {
       setSelectedReaction(0);
       setRatingSubmitted(true);
       onRating?.(messageId, 0);
@@ -152,7 +153,7 @@ export default function ChatBubble({
     if (value !== 'other') {
       setFeedbackOtherText('');
     }
-    if (value !== 'other' && messageId) {
+    if (value !== 'other' && messageId != null) {
       const t = uiText[language] || uiText.en;
       const commentMap = {
         'factually-incorrect': t.factuallyIncorrect,
@@ -166,15 +167,14 @@ export default function ChatBubble({
 
   const handleOtherSubmit = () => {
     const trimmed = feedbackOtherText.trim();
-    if (!trimmed || !messageId) return;
+    if (!trimmed || messageId == null) return;
     onRating?.(messageId, 0, trimmed);
     setFeedbackSubmitted(true);
   };
 
   const handleActionClick = (actionType) => {
-    if (onActionButton) {
-      onActionButton(actionType);
-    }
+    if (disableActions || !onActionButton) return;
+    onActionButton(actionType);
   };
 
   // Parse HTML content for typewriter effect
@@ -219,8 +219,8 @@ export default function ChatBubble({
           </div>
         )}
 
-        {/* Thumbs and Action Buttons Row - Only show after typing is complete */}
-        {showActions && messageId != null && (!isTypewriterEnabled || !isTyping) && (
+        {/* Thumbs and Action Buttons Row - disabled while response is loading or typing */}
+        {showActions && messageId != null && (
           <div className="actions-row">
             {/* Thumbs Up and Down Buttons */}
             {messageId != null && (
@@ -242,23 +242,29 @@ export default function ChatBubble({
               </div>
             )}
 
-            {/* Action Buttons */}
+            {/* Action Buttons - disabled until response has completed */}
             <div className="buttons-container">
               <button 
                 className="button-tell-me-more"
                 onClick={() => handleActionClick('tell-me-more')}
+                disabled={disableActions}
+                aria-disabled={disableActions}
               >
                 <span className="button-text-tell-me-more">{buttonLabels['tell-me-more']}</span>
               </button>
               <button 
                 className="button-next-steps"
                 onClick={() => handleActionClick('next-steps')}
+                disabled={disableActions}
+                aria-disabled={disableActions}
               >
                 <span className="button-text-next-steps">{buttonLabels['next-steps']}</span>
               </button>
               <button 
                 className="button-sources"
                 onClick={() => handleActionClick('sources')}
+                disabled={disableActions}
+                aria-disabled={disableActions}
               >
                 <span className="button-text-sources">{buttonLabels['sources']}</span>
               </button>

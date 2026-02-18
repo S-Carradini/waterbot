@@ -14,10 +14,11 @@ export const uiText = {
 Ask me anything you want about the story of water in our state!
 Not sure where to start? You can try asking questions about:
 
-1.Arizona's unique water landscape, rivers, lakes, groundwater, and aquifers
-2.Colorado River's role in Arizona's water supply
-3.What's on your mind about conserving water in our desert environment?
-4.Are there any government programs or initiatives to address drought in Arizona?
+1. Arizona's unique water landscape, rivers, lakes, groundwater, and aquifers
+2. Colorado River's role in Arizona's water supply
+3. What's on your mind about conserving water in our desert environment?
+4. Are there any government programs or initiatives to address drought in Arizona?
+
 Ask any question in the space below to start exploring Arizona's water situation with me!`,
     errorGeneric: 'Sorry, I encountered an error. Please try again.',
     sourcesWarning: 'Sources are available for informational questions. Please ask a specific question.',
@@ -52,6 +53,7 @@ Ask any question in the space below to start exploring Arizona's water situation
 2. El papel del río Colorado en el suministro de agua de Arizona
 3. Qué te gustaría saber sobre conservar el agua en nuestro entorno desértico
 4. ¿Existen programas o iniciativas gubernamentales para abordar la sequía en Arizona?
+
 ¡Escribe cualquier pregunta en el espacio de abajo para explorar conmigo la situación del agua en Arizona!`,
     errorGeneric: 'Lo siento, hubo un error. Por favor, inténtalo de nuevo.',
     sourcesWarning: 'Las fuentes están disponibles para preguntas informativas. Por favor, haz una pregunta específica.',

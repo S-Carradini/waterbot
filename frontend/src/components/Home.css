@@ -145,6 +145,11 @@
   object-fit: contain;
 }
 
+/* Header row wrapper - no positioning on desktop so children stay relative to .home-inner */
+.home-header-row {
+  /* Desktop: transparent wrapper; mobile styles in media query */
+}
+
 /* White header bar */
 .home-header-bar {
   position: absolute;
@@ -159,6 +164,7 @@
 
 /* ASU Logo */
 .home-asu-logo {
+  display: block;
   position: absolute;
   top: 2.54%;
   right: 85.6%;
@@ -381,21 +387,36 @@
     padding: 10px;
   }
 
-  /* Header Bar - Adjust for mobile */
-  .home-header-bar {
+  /* Header row - flex row so logo, title, and info icon sit in one bar on mobile */
+  .home-header-row {
     position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
     width: 100%;
-    height: auto;
+    min-height: 60px;
+    padding: 0 10px;
+    margin-bottom: 10px;
+    border-radius: 20px;
+  }
+
+  /* Header Bar - background for the flex row on mobile */
+  .home-header-bar {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
     min-height: 60px;
     border-radius: 20px;
-    margin-bottom: 10px;
+    margin-bottom: 0;
     top: auto;
     right: auto;
     bottom: auto;
     left: auto;
+    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
   }
 
-  /* ASU Logo - Smaller on mobile */
+  /* ASU Logo - Smaller on mobile, in flow */
   .home-asu-logo {
     position: relative;
     width: 80px;
@@ -405,30 +426,38 @@
     bottom: auto;
     left: auto;
     margin: 5px 10px;
+    flex-shrink: 0;
+    z-index: 1;
   }
 
-  /* Title - Already has responsive styles, but ensure it works */
+  /* Title - center in remaining space */
   .home-title {
     position: relative;
-    width: 100%;
+    width: auto;
+    flex: 1;
+    min-width: 0;
     height: auto;
     top: auto;
     right: auto;
     bottom: auto;
     left: auto;
-    padding: 10px;
+    padding: 10px 6px;
     margin: 5px 0;
+    justify-content: center;
+    z-index: 1;
   }
 
-  /* Info Icon - Adjust position */
+  /* Info Icon - in flow at end of header row */
   .home-info-icon {
-    position: absolute;
-    top: 10px;
-    right: 10px;
-    width: 50px;
-    height: 50px;
+    position: relative;
+    top: auto;
+    right: auto;
     bottom: auto;
     left: auto;
+    width: 50px;
+    height: 50px;
+    flex-shrink: 0;
+    z-index: 1;
   }
 
   .home-info-icon-text {
@@ -515,8 +544,6 @@
   .home-info-icon {
     width: 40px;
     height: 40px;
-    top: 8px;
-    right: 8px;
   }
 
   .home-info-icon-text {

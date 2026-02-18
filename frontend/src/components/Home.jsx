@@ -43,23 +43,34 @@ export default function Home() {
         <img alt="" src={imgOriginalBlue} />
       </div>
 
-      {/* White header bar */}
-      <div className="home-header-bar" data-node-id="1:38" />
+      {/* Header row: bar, logo, title, info icon - wrapped for mobile flex layout */}
+      <div className="home-header-row">
+        {/* White header bar (background on mobile) */}
+        <div className="home-header-bar" data-node-id="1:38" />
 
-      {/* ASU Logo */}
-      <div className="home-asu-logo" data-name="ASU_SunBurst_1_RGB_MaroonGold_600ppi 1" data-node-id="1:39">
-        <img alt="" src={imgAsuSunBurst} />
-      </div>
+        {/* ASU Logo */}
+        <a
+          href="https://asu.edu"
+          target="_blank"
+          rel="noopener noreferrer"
+          className="home-asu-logo"
+          aria-label="Arizona State University"
+          data-name="ASU_SunBurst_1_RGB_MaroonGold_600ppi 1"
+          data-node-id="1:39"
+        >
+          <img alt="" src={imgAsuSunBurst} />
+        </a>
 
-      {/* Title */}
-      <div className="home-title" data-node-id="106:316">
-        <p>Chat With Blue</p>
-      </div>
+        {/* Title */}
+        <div className="home-title" data-node-id="106:316">
+          <p>Chat With Blue</p>
+        </div>
 
-      {/* Info icon */}
-      <div className="home-info-icon" data-node-id="6:276">
-        <img alt="" src={imgGroup11142} />
-        <p className="home-info-icon-text" data-node-id="6:280">i</p>
+        {/* Info icon */}
+        <div className="home-info-icon" data-node-id="6:276">
+          <img alt="" src={imgGroup11142} />
+          <p className="home-info-icon-text" data-node-id="6:280">i</p>
+        </div>
       </div>
       </div>
       

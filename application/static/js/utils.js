@@ -14,9 +14,9 @@ $(document).ready(function () {
     return new bootstrap.Tooltip(tooltipTriggerEl);
   });
   
-  document
-    .querySelector(".nav-download")
-    .addEventListener("click", async (e) => {
+  const navDownload = document.querySelector(".nav-download");
+  if (navDownload) {
+    navDownload.addEventListener("click", async (e) => {
       e.preventDefault();
 
       try {
@@ -31,20 +31,37 @@ $(document).ready(function () {
 
         const data = await response.json();
 
+        if (data.message && data.message.includes("No chat history")) {
+          alert("No chat history found for this session.");
+          return;
+        }
+
         if (data.presigned_url) {
-          // Trigger file download
+          // S3 configured: trigger download via presigned URL
           const link = document.createElement("a");
           link.href = data.presigned_url;
-          link.download = "session-transcript.txt"; // suggest filename
+          link.download = data.filename || "session-transcript.txt";
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
+        } else if (data.transcript != null) {
+          // No S3: create Blob download from inline transcript
+          const blob = new Blob([data.transcript], { type: "text/plain" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = data.filename || "session-transcript.txt";
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
         }
       } catch (err) {
         console.error("Error downloading transcript:", err);
         alert("Could not download transcript. Please try again.");
       }
     });
+  }
 
   // Home button - navigate to waterbot page
   document
@@ -54,24 +71,44 @@ $(document).ready(function () {
       window.location.href = '/waterbot';
     });
   
-  // JavaScript to animate open/close on hover
+  // JavaScript to animate open/close on hover and click (for touch / discoverability)
   const navContainer = document.querySelector(".top-right-icon");
   const navItems = document.getElementById("nav-items");
 
   // height value equals icon height + margins and gaps (64*3 + 8*4)
   const openHeight = "170px";
 
-  navContainer.addEventListener("mouseenter", () => {
-    navItems.style.height = openHeight;
-    navItems.style.opacity = "1";
-    console.log("mouseenter");
-  });
+  function isNavOpen() {
+    return navItems && parseFloat(navItems.style.height) > 0;
+  }
 
-  navContainer.addEventListener("mouseleave", () => {
-    navItems.style.height = "0";
-    navItems.style.opacity = "0";
-    console.log("mouseleave");
-  });
+  function openNav() {
+    if (navItems) {
+      navItems.style.height = openHeight;
+      navItems.style.opacity = "1";
+    }
+  }
+
+  function closeNav() {
+    if (navItems) {
+      navItems.style.height = "0";
+      navItems.style.opacity = "0";
+    }
+  }
+
+  navContainer.addEventListener("mouseenter", openNav);
+  navContainer.addEventListener("mouseleave", closeNav);
+
+  // Click on icon (image) toggles menu so download/home are reachable without hover
+  const iconImg = navContainer && navContainer.querySelector(".icon-img");
+  if (iconImg) {
+    iconImg.addEventListener("click", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      if (isNavOpen()) closeNav();
+      else openNav();
+    });
+  }
 
   function showReactions(message) {
     $(message).find(".reactions").show();
@@ -85,18 +122,23 @@ $(document).ready(function () {
     $(".toast").toast("show");
   }
 
+  function getUniqueDomIdFromCard($element) {
+    return $element.closest(".card.bot-message").attr("data-unique-dom-id") || $element.attr("data-messageid");
+  }
+
   function submitReaction($clickedReaction) {
     const reactionValue = $clickedReaction.data("reaction");
     console.log("Sending reaction: " + reactionValue);
     const messageID = $clickedReaction.attr("data-messageid");
+    const domId = getUniqueDomIdFromCard($clickedReaction);
 
     if (reactionValue == 0) {
-      $("#modal-" + messageID)
+      $("#modal-" + domId)
         .find(".modal-header >i")
         .removeClass("bi bi-hand-thumbs-up")
         .addClass("bi bi-hand-thumbs-down");
 
-      $("#feedback-" + messageID).css({
+      $("#feedback-" + domId).css({
         display: "flex",
       });
     }
@@ -124,15 +166,12 @@ $(document).ready(function () {
 
   function submitComment($clickedReaction) {
     const reactionValue = $clickedReaction.data("reaction");
-    const messageID = $clickedReaction
+    const $modalFooter = $clickedReaction.closest(".modal-footer");
+    const messageID = $modalFooter.find("button.comment").attr("data-messageid");
+    const domId = getUniqueDomIdFromCard($clickedReaction) || messageID;
+    var commentInput = $modalFooter
       .parent()
-      .parent()
-      .find("button.comment")
-      .attr("data-messageid");
-    var commentInput = $clickedReaction
-      .parent()
-      .parent()
-      .find("#userComment-" + messageID)
+      .find("#userComment-" + domId)
       .val();
     var selectedFeedback = $(
       document.querySelector(".modal-feedback-button.selected")
@@ -213,13 +252,13 @@ $(document).ready(function () {
         }
 
         //Close the modal popup
-        $("#modal-" + messageID).modal("toggle");
-        $(".card.data-messageid-" + messageID).append(
-          thankYouFeedback(messageID)
+        $("#modal-" + domId).modal("toggle");
+        $clickedReaction.closest(".card.bot-message").append(
+          thankYouFeedback(messageID, domId)
         );
         scrollToBottom();
 
-        $("#feedback-" + messageID).css({
+        $("#feedback-" + domId).css({
           display: "none",
         });
 
@@ -228,9 +267,10 @@ $(document).ready(function () {
       });
   }
 
-  function thankYouFeedback(messageID) {
+  function thankYouFeedback(messageID, domId) {
+    const idSuffix = domId != null ? domId : messageID;
     return `
-    <div id="tyfeedback-${messageID}" class="card-footer tyfeedback-row" style="border-top:0;">
+    <div id="tyfeedback-${idSuffix}" class="card-footer tyfeedback-row" style="border-top:0;">
     <div class="row justify-content-start tyfeedback-inner-row">
       <div class="col-auto d-flex align-items-start justify-content-center tyfeedback-waterdrop-col">
         <img class="waterdrop3" alt="" />
@@ -250,13 +290,14 @@ $(document).ready(function () {
   $(document).on("click", ".feedback-button", function () {
     $(this).addClass("selected");
     var messageID = $(this).attr("data-messageid");
+    var domId = getUniqueDomIdFromCard($(this)) || messageID;
     var commentInput = $(".feedback-button.selected").attr("data-comment");
     if (document.querySelector(".feedback-button") != null) {
-      $("#feedback-" + messageID).css({
+      $("#feedback-" + domId).css({
         display: "none",
       });
-      $(".card.data-messageid-" + messageID).append(
-        thankYouFeedback(messageID)
+      $(this).closest(".card.bot-message").append(
+        thankYouFeedback(messageID, domId)
       );
 
       fetch("/submit_rating_api", {
@@ -396,16 +437,17 @@ $(document).ready(function () {
   // Bind click event to submit the reaction for all elements with the class 'reactions'
   $(document).on("click", ".reaction", function () {
     submitReaction($(this));
-    const messageID = $(this).attr("data-messageid");
+    const domId = getUniqueDomIdFromCard($(this));
     const reactionId = $(this).attr("data-reaction");
-    // $("#modal-" + messageID).find("button.comment").attr("data-reaction", reactionId);
-    if (reactionId == 1)
-      $("#feedback-" + messageID).css({
+    // $("#modal-" + domId).find("button.comment").attr("data-reaction", reactionId);
+    if (reactionId == 1 && domId)
+      $("#feedback-" + domId).css({
         display: "none",
       });
   });
 
   $(document).on("click", ".followup-buttons", function () {
+    if (window.responseInProgress) return;
     var buttonId = $(this).attr("id");
     switch (buttonId) {
       case "shortButton":
@@ -448,6 +490,7 @@ $(document).ready(function () {
       })
       .catch((error) => {
         console.error("Error:", error);
+        window.responseInProgress = false;
         removeLoadingAnimation();
         $("#user_query").prop("disabled", false);
         $("#submit-button").prop("disabled", false);
@@ -562,6 +605,9 @@ function displayUserMessage(userQuery) {
 // Function to display a bot message in the chat interface
 // onComplete: optional callback invoked when the typewriter effect finishes
 function displayBotMessage(botResponse, messageID, onComplete) {
+  window.responseInProgress = true;
+  window._botMessageDomCounter = (window._botMessageDomCounter || 0) + 1;
+  const uniqueDomId = messageID + "-" + window._botMessageDomCounter;
   const chatHistory = document.getElementById("chatbot-prompt");
   const botMessage = document.createElement("div");
   botMessage.classList.add("card", "left");
@@ -577,15 +623,15 @@ function displayBotMessage(botResponse, messageID, onComplete) {
           <img class="waterdrop1" />
         </div>
         <div class="col-xs-9 col-sm-9 col-md-9 col-lg-9 col-xl-9 col-9 bot-message-body">
-          <p class="m-0" id="botmessage-${messageID}"></p>
-           <div class="card-footer pt-0 p-8 footer-no-gap " style="padding:8px; border:0;">
+          <p class="m-0" id="botmessage-${uniqueDomId}"></p>
+           <div id="reactions-footer-${uniqueDomId}" class="card-footer pt-0 p-8 footer-no-gap " style="display:none; padding:8px; border:0;">
       <div class="row mb-0">
         <div class="col-12" style="padding-top: 0.5rem;">
        
         <a class="reaction" title="I like the response" data-messageid=${messageID} data-reaction="1"><i class="bi bi-hand-thumbs-up fa-0.75x"></i></a> 
         <a class="reaction" data-toggle="tooltip" data-placement="top" title="Could be better" data-messageid=${messageID} data-reaction="0"><i class="bi bi-hand-thumbs-down fa-0.75x"></i></a>
         
-        <!--  <span class="reaction" data-toggle="tooltip" data-placement="top" title="Could be better" data-bs-toggle="modal" data-messageid=${messageID} data-bs-target="#modal-${messageID}" data-reaction="0"><i class="bi bi-hand-thumbs-down fa-0.75x"></i></span> -->
+        <!--  <span class="reaction" data-toggle="tooltip" data-placement="top" title="Could be better" data-bs-toggle="modal" data-messageid=${messageID} data-bs-target="#modal-${uniqueDomId}" data-reaction="0"><i class="bi bi-hand-thumbs-down fa-0.75x"></i></span> -->
         <!-- <button type="button" class = "btn btn-sm followup-buttons fw-bold" id="shortButton">
           Short
         </button>  -->
@@ -606,7 +652,7 @@ function displayBotMessage(botResponse, messageID, onComplete) {
         </div>
         </div>
       </div>
-      <div id="feedback-${messageID}" class="row justify-content-start feedback-card-row" style="display:none;">
+      <div id="feedback-${uniqueDomId}" class="row justify-content-start feedback-card-row" style="display:none;">
         <div class="col-auto d-flex flex-wrap align-items-end justify-content-center">
           <img class="waterdrop1" style="visibility:hidden;pointer-events:none;" alt="" />
         </div>
@@ -628,7 +674,7 @@ function displayBotMessage(botResponse, messageID, onComplete) {
                   <button type="button" class="btn btn-sm feedback-button fw-bold mb-2" data-comment="Refused to answer" data-messageid=${messageID} id="btnRefusedToAnswer">
                     Refused to answer
                   </button>
-                  <button type="button" class="btn btn-sm feedback-other-button fw-bold mb-2" data-bs-toggle="modal" data-messageid=${messageID} data-bs-target="#modal-${messageID}" data-comment="Other" id="btnOther">
+                  <button type="button" class="btn btn-sm feedback-other-button fw-bold mb-2" data-bs-toggle="modal" data-messageid=${messageID} data-bs-target="#modal-${uniqueDomId}" data-comment="Other" id="btnOther">
                     Other
                   </button>
                   </div>
@@ -638,7 +684,7 @@ function displayBotMessage(botResponse, messageID, onComplete) {
       </div>
     </div>
       <!-- Modal -->
-      <div class="modal fade" id="modal-${messageID}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+      <div class="modal fade" id="modal-${uniqueDomId}" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
         <div class="modal-dialog modal-dialog-centered">
           <div class="modal-content">
             <div class="modal-header">
@@ -663,18 +709,24 @@ function displayBotMessage(botResponse, messageID, onComplete) {
                   <button type="button" class="btn btn-sm modal-feedback-button fw-bold mb-2" data-messageid=${messageID} data-comment="Other" id="btnOther">
                     Other
                   </button>
-                  <textarea placeholder="Provide additional feedback" class="userComment form-control" data-feedback="" id ="userComment-${messageID}"></textarea>
+                  <textarea placeholder="Provide additional feedback" class="userComment form-control" data-feedback="" id ="userComment-${uniqueDomId}"></textarea>
                 
             </div>
-            <div id="footer-${messageID}" class="modal-footer" data-messageid=${messageID} >
+            <div id="footer-${uniqueDomId}" class="modal-footer" data-messageid=${messageID} >
               <button class="comment btn btn-primary btn-new-chat" data-messageid=${messageID} data-user-comment-target=".userComment">Submit</button>                
             </div>
           </div>
         </div>
       </div>
     `;
+  botMessage.setAttribute("data-unique-dom-id", uniqueDomId);
   chatHistory.appendChild(botMessage);
-  messageInterval(botResponse, messageID, onComplete);
+  messageInterval(botResponse, uniqueDomId, function () {
+    window.responseInProgress = false;
+    const footer = document.getElementById("reactions-footer-" + uniqueDomId);
+    if (footer) footer.style.display = "";
+    if (typeof onComplete === "function") onComplete();
+  });
   scrollToBottom();
 }
 
