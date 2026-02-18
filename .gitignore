@@ -185,3 +185,6 @@ application/AMWUA_Blog_Posts/.env
 # Playwright test artifacts
 frontend/playwright-report/
 frontend/test-results/
+
+# Deploy workflow (optional / environment-specific)
+.github/workflows/deploy-aws.yml
