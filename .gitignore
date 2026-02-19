@@ -189,3 +189,7 @@ frontend/test-results/
 
 # Deploy workflow (optional / environment-specific)
 .github/workflows/deploy-aws.yml
+
+# Local IDE/tool config (may contain secrets)
+.claude/
+.playwright-mcp/
