@@ -1,8 +1,6 @@
 name: Deploy waterbot-dev (ECS Fargate)
 
 on:
-  push:
-    branches: [main]
   workflow_dispatch:
 
 concurrency:
