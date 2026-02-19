@@ -403,11 +403,11 @@ def _ensure_messages_table():
 
 
 def _ensure_rag_chunks_table():
-    """Create pgvector extension and rag_chunks table if they don't exist (e.g. local/Railway without db_init Lambda)."""
-    if not POSTGRES_ENABLED:
+    """Create pgvector extension and rag_chunks table if they don't exist (e.g. local/Railway without db_init Lambda). Uses RAG DB (DATABASE_URL or DB_*)."""
+    if not RAG_POSTGRES_ENABLED:
         return
     try:
-        conn = _pg_connect()
+        conn = _rag_pg_connect()
         conn.autocommit = True
         cur = conn.cursor()
         cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
@@ -455,9 +455,9 @@ def get_vector_store_or_kb():
         logging.info("Using Bedrock Knowledge Base %s (region=%s)", AWS_KB_ID, AWS_REGION)
         return BedrockKnowledgeBase(kb_id=AWS_KB_ID, model_arn=AWS_KB_MODEL_ARN, region=AWS_REGION)
 
-    if not POSTGRES_ENABLED:
+    if not RAG_POSTGRES_ENABLED:
         raise ValueError(
-            "PostgreSQL (DATABASE_URL or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) is required for the RAG vector store."
+            "RAG requires PostgreSQL: set DATABASE_URL (RAG-only) or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME."
         )
     if DATABASE_URL:
         return PgVectorStore(db_url=DATABASE_URL, embedding_function=embeddings)

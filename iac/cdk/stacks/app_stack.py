@@ -49,9 +49,6 @@ class AppStack(Stack):
         if not basic_auth_secret:
             raise ValueError("BASIC_AUTH_SECRET environment variable is not set -- base64 encode of uname:pw")
 
-        database_url_value = os.environ.get("DATABASE_URL")  # Optional: pgvector RAG store connection string
-
-
         dynamo_messages = dynamodb.Table(self,"cdk-waterbot-messages",
             partition_key=dynamodb.Attribute(name="sessionId", type=dynamodb.AttributeType.STRING),
             sort_key=dynamodb.Attribute(name="msgId", type=dynamodb.AttributeType.STRING),
@@ -323,17 +320,6 @@ class AppStack(Stack):
             secret_string_value=SecretValue.unsafe_plain_text(secret_value)
         )
 
-        # Optional: DATABASE_URL for pgvector RAG store (external PostgreSQL with embeddings)
-        # If set at CDK deploy time, the connection string is stored in Secrets Manager and
-        # injected into the container so the app uses it instead of the CDK-provisioned RDS.
-        database_url_secret = None
-        if database_url_value:
-            database_url_secret = secretsmanager.Secret(
-                self, "DatabaseURL",
-                description="DATABASE_URL for pgvector RAG store",
-                secret_string_value=SecretValue.unsafe_plain_text(database_url_value)
-            )
-
         prefix_for_container_logs="waterbot"+ ("-" + context_value if context_value else "")
         # Create a task definition for the Fargate service
         task_definition = ecs.FargateTaskDefinition(
@@ -358,6 +344,17 @@ class AppStack(Stack):
             iam.PolicyStatement(
                 actions=["bedrock:InvokeModel"],
                 resources=["*"],  # Replace with appropriate resource ARNs
+            )
+        )
+
+        # Grant the task permission to query the Bedrock Knowledge Base
+        task_definition.add_to_task_role_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "bedrock:Retrieve",
+                    "bedrock:RetrieveAndGenerate",
+                ],
+                resources=["arn:aws:bedrock:us-west-2:590183827936:knowledge-base/Z2NHZ8JMMQ"],
             )
         )
 
@@ -411,7 +408,10 @@ class AppStack(Stack):
                 # PostgreSQL connection details (NEW) ✅
                 "DB_HOST": db_instance.db_instance_endpoint_address,
                 "DB_NAME": "waterbot_db",
-                "DB_USER": "waterbot_admin"  # Username from secret
+                "DB_USER": "waterbot_admin",  # Username from secret
+                # Bedrock Knowledge Base for RAG
+                "AWS_KB_ID": "Z2NHZ8JMMQ",
+                "AWS_REGION": "us-west-2",
             },
             secrets={
                 "OPENAI_API_KEY": ecs.Secret.from_secrets_manager(secret),
@@ -420,9 +420,6 @@ class AppStack(Stack):
                     db_credentials_secret,
                     field="password"
                 ),
-                # External pgvector RAG database (optional)
-                **({"DATABASE_URL": ecs.Secret.from_secrets_manager(database_url_secret)}
-                   if database_url_secret else {}),
             },
             health_check=ecs.HealthCheck(
                 command=["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"],
