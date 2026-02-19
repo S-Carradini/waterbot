@@ -26,6 +26,7 @@ from managers.pgvector_store import PgVectorStore
 from managers.s3_manager import S3Manager
 
 from adapters.openai import OpenAIAdapter
+from adapters.bedrock_kb import BedrockKnowledgeBase
 try:
     # Optional dependency: this imports `langchain_aws`, which may not be installed/compatible
     # in local/dev environments that only use the OpenAI adapter.
@@ -328,6 +329,11 @@ else:
 # Set adapter choice
 llm_adapter = ADAPTERS["openai-gpt4.1"]
 
+# If AWS_KB_ID is set, we will route RAG to Bedrock KB instead of pgvector
+AWS_KB_ID = os.getenv("AWS_KB_ID") or os.getenv("BEDROCK_KB_ID")
+AWS_REGION = os.getenv("AWS_REGION") or "us-west-2"
+AWS_KB_MODEL_ARN = os.getenv("AWS_KB_MODEL_ARN")
+
 embeddings = llm_adapter.get_embeddings()
 
 # Manager classes
@@ -443,8 +449,12 @@ def _ensure_rag_chunks_table():
         logging.warning("Could not ensure rag_chunks table (non-fatal): %s", e)
 
 
-# RAG vector store: pgvector (PostgreSQL). Postgres is required for RAG.
-def get_vector_store():
+# RAG backend selection: Bedrock KB if configured, else pgvector
+def get_vector_store_or_kb():
+    if AWS_KB_ID:
+        logging.info("Using Bedrock Knowledge Base %s (region=%s)", AWS_KB_ID, AWS_REGION)
+        return BedrockKnowledgeBase(kb_id=AWS_KB_ID, model_arn=AWS_KB_MODEL_ARN, region=AWS_REGION)
+
     if not POSTGRES_ENABLED:
         raise ValueError(
             "PostgreSQL (DATABASE_URL or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) is required for the RAG vector store."
@@ -454,10 +464,13 @@ def get_vector_store():
     return PgVectorStore(db_params=DB_PARAMS, embedding_function=embeddings)
 
 
-# Ensure rag_chunks table exists before creating RAG manager (table is created at startup, but we also run it here for import-time init)
-_ensure_rag_chunks_table()
+# Ensure rag_chunks table exists only when using pgvector
+if not AWS_KB_ID:
+    _ensure_rag_chunks_table()
+
 try:
-    knowledge_base = RAGManager(get_vector_store())
+    backend = get_vector_store_or_kb()
+    knowledge_base = RAGManager(backend) if isinstance(backend, PgVectorStore) else backend
 except Exception as e:
     knowledge_base = None
     logging.warning("RAG disabled: %s", e)
