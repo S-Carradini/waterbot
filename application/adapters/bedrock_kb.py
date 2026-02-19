@@ -12,6 +12,7 @@ app can treat it like a vector store result.
 
 import os
 import boto3
+from mappings.knowledge_sources import knowledge_sources
 
 DEFAULT_MODEL_ARN = os.getenv(
     "AWS_KB_MODEL_ARN",
@@ -74,14 +75,50 @@ class BedrockKnowledgeBase:
 
     async def ann_search(self, user_query: str, k: int = 4, locale: str = "en") -> dict:
         """
-        Adapter method to mimic VectorStoreBase. Returns {"documents": [...], "sources": [...]}
+        Retrieve raw chunks from the Knowledge Base (no generation).
+        Returns {"documents": [...], "sources": [...]} for the RAG pipeline.
+        Uses the Retrieve API so the LLM adapter handles generation with full
+        conversation history, avoiding double-invocation.
         """
-        result = await self.retrieve(user_query)
-        # Represent retrieved text as a single doc-like object
-        doc_like = type("DocLike", (), {})()
-        doc_like.page_content = result.get("text", "")
-        doc_like.metadata = {"source": "bedrock_kb", "name": "bedrock_kb"}
-        return {"documents": [doc_like], "sources": result.get("sources", [])}
+        resp = self.client.retrieve(
+            knowledgeBaseId=self.kb_id,
+            retrievalQuery={"text": user_query},
+            retrievalConfiguration={
+                "vectorSearchConfiguration": {"numberOfResults": k}
+            },
+        )
+
+        results = resp.get("retrievalResults", [])
+        documents = []
+        sources = []
+        seen_uris: set = set()
+
+        for result in results:
+            content = (result.get("content") or {}).get("text", "")
+            location = result.get("location") or {}
+            uri = ((location.get("s3Location") or {}).get("uri")
+                   or location.get("type", ""))
+
+            doc = type("DocLike", (), {})()
+            doc.page_content = content
+            doc.metadata = {
+                "source": uri,
+                "name": os.path.basename(uri) if uri else "bedrock_kb",
+            }
+            documents.append(doc)
+
+            if uri and uri not in seen_uris:
+                seen_uris.add(uri)
+                filename = os.path.basename(uri)
+                mapping = knowledge_sources.get(filename, {})
+                sources.append({
+                    "full_path": uri,
+                    "filename": filename,
+                    "url": mapping.get("url", ""),
+                    "human_readable": mapping.get("description", filename),
+                })
+
+        return {"documents": documents, "sources": sources}
 
     async def knowledge_to_string(self, docs: dict, doc_field: str = "documents") -> str:
         """
