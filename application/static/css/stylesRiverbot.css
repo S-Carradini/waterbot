@@ -623,6 +623,7 @@ waterdrop5 {
 .input-chatbot-question {
   border: 1px solid black;
   align-self: right;
+  background-color: #eee !important;
 }
 .user-icon-background {
   color: #8c1d40;
@@ -647,15 +648,19 @@ waterdrop5 {
 
 .loading-animation {
   display: none;
+  /* Align with input field - match Riverbot's input positioning */
+  margin-left: 0;
+  max-width: 90%;
 }
 
-.card.loading-animation {
-  background-color: #ffffff;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+.card.loading-animation,
+.loading-animation-card {
+  background: #eee;
+  border-radius: 35px 35px 35px 0px;
+  box-shadow: 1px 3px 8px 0px rgb(11 11 10 / 96%), 5px 5px 6px 0px rgb(13 12 12 / 36%) !important;
   width: fit-content;
   max-width: min(320px, 90%);
+  border: none;
 }
 
 /**

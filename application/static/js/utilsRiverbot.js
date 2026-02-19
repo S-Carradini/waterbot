@@ -385,28 +385,29 @@ $(document).ready(function () {
   function displayLoadingAnimation() {
     $("div.loading-animation").remove();
     const chatHistory = document.getElementById("chatbot-prompt");
-    const botMessage = document.createElement("div");
-    botMessage.classList.add("card", "loading-animation", "left");
-    botMessage.innerHTML = `
-          <div class="card-body">
-            <div class="row">
-             <div class="chat-row">
-                <img class="waterdrop1" />
-              
-            <div class="col-md-10 align-items-center" style="display:inline-flex;">
-            <div class="loader"></div> &nbsp; <span class="text-primary">Generating response...</span>
-            </div>
+    const wrapper = document.createElement("div");
+    wrapper.classList.add("loading-animation", "d-flex", "align-items-center");
+    wrapper.style.gap = "0.75rem";
+    wrapper.innerHTML = `
+      <div class="col-auto d-flex align-items-center">
+        <img class="waterdrop1" alt="" />
+      </div>
+      <div class="card loading-animation-card">
+        <div class="card-body d-flex align-items-center gap-2">
+          <div class="loader"></div>
+          <span class="text-primary">Generating response...</span>
         </div>
-      `;
-    chatHistory.appendChild(botMessage);
+      </div>
+    `;
+    chatHistory.appendChild(wrapper);
 
     //Showing loading animation before the response
     $(".loading-animation").css("display", "flex");
   }
 
   function removeLoadingAnimation() {
-    //Removing loading animation after the response
-    $(".loading-animation").css("display", "none");
+    // Remove loading animation from DOM when response arrives
+    $("div.loading-animation").remove();
   }
 
   // Function to send user queries to the backend and receive responses

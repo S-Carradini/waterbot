@@ -757,6 +757,7 @@ waterdrop5 {
 .input-chatbot-question {
   border: 1px solid black;
   align-self: right;
+  background-color: #eee !important;
 }
 
 .user-icon-background {
@@ -790,15 +791,22 @@ waterdrop5 {
 
 .loading-animation {
   display: none;
+  /* Align with input field - match text-input-container positioning */
+  /* Input container: max-width 90%, margin auto (centered), inside chatbot-prompt-container */
+  /* Loading animation: inside chatbot-prompt (padding-left: 32px) */
+  /* To align: need to offset by the centering margin minus the padding */
+  margin-left: calc(5% - 32px);
+  max-width: 90%;
 }
 
-.card.loading-animation {
-  background-color: #ffffff;
-  border-radius: 0.5rem;
-  border: 1px solid rgba(0, 0, 0, 0.08);
-  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.06);
+.card.loading-animation,
+.loading-animation-card {
+  background: #eee;
+  border-radius: 35px 35px 35px 0px;
+  box-shadow: 1px 3px 8px 0px rgb(11 11 10 / 96%), 5px 5px 6px 0px rgb(13 12 12 / 36%) !important;
   width: fit-content;
   max-width: min(320px, 90%);
+  border: none;
 }
 
 /**
