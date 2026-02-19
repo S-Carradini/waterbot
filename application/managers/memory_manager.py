@@ -106,17 +106,19 @@ class MemoryManager:
             human_readable = source.get("human_readable", "")
             url = source.get("url", "")
             if human_readable:  # Skip if human_readable is an empty string
-                if url:
-                    # Only add if we haven't seen this URL before
-                    if url not in seen_urls:
-                        html += "<br>" + str(counter)  + ". " + human_readable + "<br>" + url
-                        has_items=True
-                        counter+=1
-                        seen_urls.add(url)
-                        logging.info(f"  ✓ Added source {counter-1}: '{human_readable}' -> {url}")
-                    else:
-                        duplicate_count += 1
-                        logging.debug(f"  ⊗ Skipped duplicate URL: '{human_readable}' -> {url}")
+                dedup_key = url or human_readable
+                if dedup_key not in seen_urls:
+                    entry = "<br>" + str(counter) + ". " + human_readable
+                    if url:
+                        entry += "<br>" + url
+                    html += entry
+                    has_items = True
+                    counter += 1
+                    seen_urls.add(dedup_key)
+                    logging.info(f"  ✓ Added source {counter-1}: '{human_readable}'" + (f" -> {url}" if url else " (no URL)"))
+                else:
+                    duplicate_count += 1
+                    logging.debug(f"  ⊗ Skipped duplicate: '{human_readable}'")
 
         if duplicate_count > 0:
             logging.info(f"🔄 Deduplication: Removed {duplicate_count} duplicate source(s) with same URL")

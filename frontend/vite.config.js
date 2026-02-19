@@ -33,11 +33,6 @@ export default defineConfig({
         target: API_URL,
         changeOrigin: true,
       },
-      '/transcribe': {
-        target: API_URL,
-        changeOrigin: true,
-        ws: true, // Enable WebSocket proxying
-      },
       '/static': {
         target: API_URL,
         changeOrigin: true,
