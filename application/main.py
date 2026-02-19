@@ -2,7 +2,6 @@ import uvicorn
 import uuid
 import secrets
 import socket
-import httpx
 import logging
 
 from typing import Annotated
@@ -15,7 +14,6 @@ from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
 from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
 from fastapi.staticfiles import StaticFiles
-from fastapi import WebSocket
 from fastapi.middleware.cors import CORSMiddleware  # ✅ ADDED: CORS middleware import
 
 from managers.memory_manager import MemoryManager
@@ -27,26 +25,7 @@ from managers.s3_manager import S3Manager
 
 from adapters.openai import OpenAIAdapter
 from adapters.bedrock_kb import BedrockKnowledgeBase
-try:
-    # Optional dependency: this imports `langchain_aws`, which may not be installed/compatible
-    # in local/dev environments that only use the OpenAI adapter.
-    from adapters.claude import BedrockClaudeAdapter
-except Exception as e:
-    BedrockClaudeAdapter = None  # type: ignore[assignment]
-    logging.warning("BedrockClaudeAdapter unavailable (skipping): %s", e)
-
-try:
-    # Optional dependency (only needed for the `/transcribe` websocket endpoint)
-    from amazon_transcribe.client import TranscribeStreamingClient
-    from amazon_transcribe.handlers import TranscriptResultStreamHandler
-    from amazon_transcribe.model import TranscriptEvent
-except Exception as e:
-    TranscribeStreamingClient = None  # type: ignore[assignment]
-    TranscriptResultStreamHandler = None  # type: ignore[assignment]
-    TranscriptEvent = None  # type: ignore[assignment]
-    logging.warning("Amazon Transcribe dependencies unavailable (skipping): %s", e)
 from starlette.middleware.sessions import SessionMiddleware
-from starlette.websockets import WebSocketState
 from langdetect import detect, DetectorFactory
 
 import asyncio
@@ -152,66 +131,6 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         
         return response
 
-if TranscriptResultStreamHandler is not None and TranscriptEvent is not None:
-    class MyEventHandler(TranscriptResultStreamHandler):
-        def __init__(self, output_stream, websocket):
-            super().__init__(output_stream)
-            self.websocket = websocket
-            logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
-
-            self.base_url = f"http://{websocket.base_url.hostname}:{websocket.base_url.port if websocket.base_url.port else ''}"
-
-            print("printing the base url inside event handler: ", self.base_url)
-            self.api_endpoints = {
-                "tell me more": str(self.base_url) + "/chat_detailed_api",
-                "next steps": str(self.base_url) + "/chat_actionItems_api",
-                "sources": str(self.base_url) + "/chat_sources_api",
-            }
-            self.transcribed_text = None
-            self.designated_action = None
-
-        async def handle_transcript_event(self, transcript_event: TranscriptEvent):
-            results = transcript_event.transcript.results
-            for result in results:
-                if not result.is_partial:
-                    for alt in result.alternatives:
-                        logging.info(f"Handling full transcript: {alt.transcript}")
-                        api_url = self.determine_api_url(alt.transcript.strip().lower())
-                        self.transcribed_text = alt.transcript
-                        self.designated_action = api_url
-                        form_data = {'user_query': alt.transcript}
-                        try:
-                            async with httpx.AsyncClient() as client:
-                                response = await client.post(api_url, data=form_data)
-                                response.raise_for_status()  # This will raise an exception for HTTP error responses
-                                await self.send_responses(alt.transcript, response)
-                        except (httpx.HTTPError, httpx.RequestError) as e:
-                            logging.error(f"Failed to post to chat API: {e}")
-                            await self.websocket.send_json({'type': 'error', 'details': str(e)})
-
-        def determine_api_url(self, transcript):
-            # Exact matches for specific requests, considering an optional period
-            for key, url in self.api_endpoints.items():
-                if transcript == key or transcript == key + '.':
-                    return url
-            return str(self.base_url) + "/chat_api"  # Default API if no exact match is found
-
-        async def send_responses(self, user_transcript, api_response):
-            await self.websocket.send_json({
-                'type': 'user',
-                'transcript': user_transcript
-            })
-            logging.info("Sent user message to client.")
-            api_response_data = api_response.json()
-            await self.websocket.send_json({
-                'type': 'bot',
-                'response': api_response_data['resp'],
-                'messageID': api_response_data['msgID']
-            })
-            logging.info("Sent bot response to client.")
-else:
-    MyEventHandler = None  # type: ignore[assignment]
-
 # Take environment variables from .env
 load_dotenv(override=True)  
 
@@ -223,7 +142,8 @@ app = FastAPI()
 def startup_ensure_db():
     """Ensure messages and rag_chunks tables exist when using PostgreSQL (e.g. Railway/Render without db_init Lambda)."""
     _ensure_messages_table()
-    _ensure_rag_chunks_table()
+    if not AWS_KB_ID:
+        _ensure_rag_chunks_table()
 
 
 # ✅ ADDED: CORS Middleware - MUST be added before other middleware
@@ -316,15 +236,6 @@ TRANSCRIPT_BUCKET_NAME=os.getenv("TRANSCRIPT_BUCKET_NAME")
 ADAPTERS: dict[str, object] = {
     "openai-gpt4.1": OpenAIAdapter("gpt-4.1"),
 }
-if BedrockClaudeAdapter is not None:
-    ADAPTERS.update(
-        {
-            "claude.haiku": BedrockClaudeAdapter("anthropic.claude-3-haiku-20240307-v1:0"),
-            "claude.": BedrockClaudeAdapter("anthropic.claude-3-sonnet-20240229-v1:0"),
-        }
-    )
-else:
-    logging.warning("Claude/Bedrock adapters disabled (dependency missing/incompatible).")
 
 # Set adapter choice
 llm_adapter = ADAPTERS["openai-gpt4.1"]
@@ -404,10 +315,10 @@ def _ensure_messages_table():
 
 def _ensure_rag_chunks_table():
     """Create pgvector extension and rag_chunks table if they don't exist (e.g. local/Railway without db_init Lambda). Uses RAG DB (DATABASE_URL or DB_*)."""
-    if not RAG_POSTGRES_ENABLED:
+    if not POSTGRES_ENABLED:
         return
     try:
-        conn = _rag_pg_connect()
+        conn = _pg_connect()
         conn.autocommit = True
         cur = conn.cursor()
         cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
@@ -455,7 +366,7 @@ def get_vector_store_or_kb():
         logging.info("Using Bedrock Knowledge Base %s (region=%s)", AWS_KB_ID, AWS_REGION)
         return BedrockKnowledgeBase(kb_id=AWS_KB_ID, model_arn=AWS_KB_MODEL_ARN, region=AWS_REGION)
 
-    if not RAG_POSTGRES_ENABLED:
+    if not POSTGRES_ENABLED:
         raise ValueError(
             "RAG requires PostgreSQL: set DATABASE_URL (RAG-only) or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME."
         )
@@ -548,52 +459,6 @@ def log_message(session_uuid, msg_id, user_query, response_content, source):
         except Exception as e:
             logging.error("Database Error: %s", e, exc_info=True)
             return
-
-@app.websocket("/transcribe")
-async def transcribe(websocket: WebSocket):
-    await websocket.accept()
-
-    # This endpoint is optional. If amazon-transcribe (and its native deps like `awscrt`) are not installed,
-    # keep the rest of the app running and return a clear error for this endpoint only.
-    if TranscribeStreamingClient is None or MyEventHandler is None:
-        await websocket.send_json({
-            "type": "error",
-            "details": "Transcribe dependencies are not installed/compatible in this environment."
-        })
-        await websocket.close()
-        return
-
-    client = TranscribeStreamingClient(region="us-east-1")
-    stream = await client.start_stream_transcription(
-        language_code="en-US",
-        media_sample_rate_hz=16000,
-        media_encoding="ogg-opus",
-    )
-
-    async def receive_audio():
-        try:
-            while True:
-                data = await websocket.receive()
-                if data.get("text") == '{"event":"close"}':
-                    print("Closing WebSocket connection")
-                    await stream.input_stream.end_stream()
-                    break
-                elif data.get("bytes"):
-                    await stream.input_stream.send_audio_event(audio_chunk=data.get("bytes"))
-        except Exception as e:
-            print("WebSocket disconnected unexpectedly (receive audio after while)", str(e))
-            await stream.input_stream.end_stream()
-
-    handler = MyEventHandler(stream.output_stream, websocket)
-
-    try:
-        await asyncio.gather(receive_audio(), handler.handle_events())
-    except Exception as e:
-        print("WebSocket disconnected unexpectedly (receive audio after handler):", str(e))
-    finally:
-        print("Closing WebSocket connection")
-        await websocket.close()
-        print(websocket.headers)
 
 @app.post("/session-transcript")
 async def session_transcript_post(request: Request):
@@ -909,15 +774,15 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
 
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
-        msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
-        user_query=generated_user_query, 
+        msg_id=await memory.get_message_count_uuid_combo(session_uuid),
+        user_query=generated_user_query,
         response_content=response_content,
         source=sources
     )
 
     return {
         "resp":response_content,
-        "msgID": await memory.increment_message_count(session_uuid)
+        "msgID": await memory.get_message_count(session_uuid)
     }
 
 @app.post('/chat_actionItems_api')
@@ -973,15 +838,15 @@ async def chat_action_items_api_post(
 
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
-        msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
-        user_query=generated_user_query, 
+        msg_id=await memory.get_message_count_uuid_combo(session_uuid),
+        user_query=generated_user_query,
         response_content=response_content,
         source=sources
     )
 
     return {
         "resp":response_content,
-        "msgID": await memory.increment_message_count(session_uuid)
+        "msgID": await memory.get_message_count(session_uuid)
     }
 
 @app.post('/riverbot_chat_detailed_api')
@@ -1126,6 +991,7 @@ async def chat_api_post(
     prompt_injection=1
     unrelated_topic=1
     not_handled="I am sorry, your request cannot be handled."
+    data = {}
     try:
         data = json.loads(intent_result)
         user_intent=data["user_intent"]
@@ -1145,8 +1011,8 @@ async def chat_api_post(
 
         background_tasks.add_task(log_message,
             session_uuid=session_uuid,
-            msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
-            user_query=generated_user_query, 
+            msg_id=await memory.get_message_count_uuid_combo(session_uuid),
+            user_query=generated_user_query,
             response_content=response_content,
             source=[]
         )
@@ -1156,12 +1022,12 @@ async def chat_api_post(
             "msgID": await memory.get_message_count(session_uuid)
         }
 
-    await memory.add_message_to_session( 
-        session_id=session_uuid, 
+    await memory.add_message_to_session(
+        session_id=session_uuid,
         message={"role":"user","content":user_query},
         source_list=[]
     )
-    
+
     detected_language = detect_language(user_query)
     language = resolve_language(language_preference, detected_language)
     response_language = determine_prompt_language(language, language_preference)
@@ -1221,6 +1087,7 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
     prompt_injection=1
     unrelated_topic=1
     not_handled="I am sorry, your request cannot be handled."
+    data = {}
     try:
         data = json.loads(intent_result)
         user_intent=data["user_intent"]
@@ -1240,8 +1107,8 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
 
         background_tasks.add_task(log_message,
             session_uuid=session_uuid,
-            msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
-            user_query=generated_user_query, 
+            msg_id=await memory.get_message_count_uuid_combo(session_uuid),
+            user_query=generated_user_query,
             response_content=response_content,
             source=[]
         )

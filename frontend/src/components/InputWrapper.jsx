@@ -137,12 +137,6 @@ const InputWrapper = React.forwardRef(function InputWrapper({ onSendMessage, isL
     }
 
     return () => {
-      if (recognitionRef.current) {
-        recognitionRef.current.stop();
-      }
-    };
-
-    return () => {
       // Cleanup: clear timeout and stop recognition
       if (silenceTimeoutRef.current) {
         clearTimeout(silenceTimeoutRef.current);

@@ -162,15 +162,16 @@ class OpenAIAdapter(ModelAdapter):
     async def generate_response(self,llm_body):
         llm_body = json.loads(llm_body)
 
-        response = self.client.chat.completions.create(
+        response = await asyncio.to_thread(
+            self.client.chat.completions.create,
             model=self.model_id,
             messages=llm_body["messages"],
             temperature=llm_body["temperature"],
-            stream=False  # we set stream=True
+            stream=False,
         )
 
         response_body = response.choices[0].message.content
-        
+
         response_content = re.sub(r'\n', '<br>', response_body)
 
         return response_content
