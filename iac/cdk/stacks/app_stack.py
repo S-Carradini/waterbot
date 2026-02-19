@@ -48,7 +48,6 @@ class AppStack(Stack):
         basic_auth_secret = os.environ.get("BASIC_AUTH_SECRET")
         if not basic_auth_secret:
             raise ValueError("BASIC_AUTH_SECRET environment variable is not set -- base64 encode of uname:pw")
-        
 
         dynamo_messages = dynamodb.Table(self,"cdk-waterbot-messages",
             partition_key=dynamodb.Attribute(name="sessionId", type=dynamodb.AttributeType.STRING),
@@ -348,6 +347,17 @@ class AppStack(Stack):
             )
         )
 
+        # Grant the task permission to query the Bedrock Knowledge Base
+        task_definition.add_to_task_role_policy(
+            iam.PolicyStatement(
+                actions=[
+                    "bedrock:Retrieve",
+                    "bedrock:RetrieveAndGenerate",
+                ],
+                resources=["arn:aws:bedrock:us-west-2:590183827936:knowledge-base/Z2NHZ8JMMQ"],
+            )
+        )
+
         # Grant the task permission to access the secret
         task_definition.add_to_task_role_policy(
             iam.PolicyStatement(
@@ -398,7 +408,10 @@ class AppStack(Stack):
                 # PostgreSQL connection details (NEW) ✅
                 "DB_HOST": db_instance.db_instance_endpoint_address,
                 "DB_NAME": "waterbot_db",
-                "DB_USER": "waterbot_admin"  # Username from secret
+                "DB_USER": "waterbot_admin",  # Username from secret
+                # Bedrock Knowledge Base for RAG
+                "AWS_KB_ID": "Z2NHZ8JMMQ",
+                "AWS_REGION": "us-west-2",
             },
             secrets={
                 "OPENAI_API_KEY": ecs.Secret.from_secrets_manager(secret),
@@ -406,7 +419,7 @@ class AppStack(Stack):
                 "DB_PASSWORD": ecs.Secret.from_secrets_manager(
                     db_credentials_secret,
                     field="password"
-                )
+                ),
             },
             health_check=ecs.HealthCheck(
                 command=["CMD-SHELL", "curl -f http://localhost:8000/ || exit 1"],

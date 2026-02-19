@@ -26,6 +26,7 @@ from managers.pgvector_store import PgVectorStore
 from managers.s3_manager import S3Manager
 
 from adapters.openai import OpenAIAdapter
+from adapters.bedrock_kb import BedrockKnowledgeBase
 try:
     # Optional dependency: this imports `langchain_aws`, which may not be installed/compatible
     # in local/dev environments that only use the OpenAI adapter.
@@ -138,8 +139,14 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
             "secure": is_https,
             "samesite": "none" if is_https else "lax",
         }
+        # Only set an explicit domain when it matches the current request host.
+        # If we force a mismatched domain (e.g., COOKIE_DOMAIN=.azwaterbot.org
+        # while testing on an EC2 public DNS/IP), browsers drop the cookie.
         if COOKIE_DOMAIN:
-            cookie_kwargs["domain"] = COOKIE_DOMAIN
+            req_host = request.url.hostname or ""
+            domain_match = req_host.endswith(COOKIE_DOMAIN.lstrip("."))
+            if domain_match:
+                cookie_kwargs["domain"] = COOKIE_DOMAIN
         response.set_cookie(**cookie_kwargs)
         print(f"🍪 Set cookie {COOKIE_NAME} = {session_value}")
         
@@ -322,6 +329,11 @@ else:
 # Set adapter choice
 llm_adapter = ADAPTERS["openai-gpt4.1"]
 
+# If AWS_KB_ID is set, we will route RAG to Bedrock KB instead of pgvector
+AWS_KB_ID = os.getenv("AWS_KB_ID") or os.getenv("BEDROCK_KB_ID")
+AWS_REGION = os.getenv("AWS_REGION") or "us-west-2"
+AWS_KB_MODEL_ARN = os.getenv("AWS_KB_MODEL_ARN")
+
 embeddings = llm_adapter.get_embeddings()
 
 # Manager classes
@@ -391,11 +403,11 @@ def _ensure_messages_table():
 
 
 def _ensure_rag_chunks_table():
-    """Create pgvector extension and rag_chunks table if they don't exist (e.g. local/Railway without db_init Lambda)."""
-    if not POSTGRES_ENABLED:
+    """Create pgvector extension and rag_chunks table if they don't exist (e.g. local/Railway without db_init Lambda). Uses RAG DB (DATABASE_URL or DB_*)."""
+    if not RAG_POSTGRES_ENABLED:
         return
     try:
-        conn = _pg_connect()
+        conn = _rag_pg_connect()
         conn.autocommit = True
         cur = conn.cursor()
         cur.execute("CREATE EXTENSION IF NOT EXISTS vector;")
@@ -437,21 +449,28 @@ def _ensure_rag_chunks_table():
         logging.warning("Could not ensure rag_chunks table (non-fatal): %s", e)
 
 
-# RAG vector store: pgvector (PostgreSQL). Postgres is required for RAG.
-def get_vector_store():
-    if not POSTGRES_ENABLED:
+# RAG backend selection: Bedrock KB if configured, else pgvector
+def get_vector_store_or_kb():
+    if AWS_KB_ID:
+        logging.info("Using Bedrock Knowledge Base %s (region=%s)", AWS_KB_ID, AWS_REGION)
+        return BedrockKnowledgeBase(kb_id=AWS_KB_ID, model_arn=AWS_KB_MODEL_ARN, region=AWS_REGION)
+
+    if not RAG_POSTGRES_ENABLED:
         raise ValueError(
-            "PostgreSQL (DATABASE_URL or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME) is required for the RAG vector store."
+            "RAG requires PostgreSQL: set DATABASE_URL (RAG-only) or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME."
         )
     if DATABASE_URL:
         return PgVectorStore(db_url=DATABASE_URL, embedding_function=embeddings)
     return PgVectorStore(db_params=DB_PARAMS, embedding_function=embeddings)
 
 
-# Ensure rag_chunks table exists before creating RAG manager (table is created at startup, but we also run it here for import-time init)
-_ensure_rag_chunks_table()
+# Ensure rag_chunks table exists only when using pgvector
+if not AWS_KB_ID:
+    _ensure_rag_chunks_table()
+
 try:
-    knowledge_base = RAGManager(get_vector_store())
+    backend = get_vector_store_or_kb()
+    knowledge_base = RAGManager(backend) if isinstance(backend, PgVectorStore) else backend
 except Exception as e:
     knowledge_base = None
     logging.warning("RAG disabled: %s", e)
