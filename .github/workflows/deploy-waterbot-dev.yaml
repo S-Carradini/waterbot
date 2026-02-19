@@ -57,10 +57,16 @@ jobs:
       - name: Login to Amazon ECR
         uses: aws-actions/amazon-ecr-login@v2
 
-      # 🐳 Build Docker image with clean layers
-      - name: Build Docker image (no cache)
+      # 🐳 Pull latest image for layer cache, then build
+      - name: Build Docker image (with cache)
+        env:
+          DOCKER_BUILDKIT: "1"
         run: |
-          docker build --no-cache -t waterbot:dev .
+          docker pull $ECR_IMAGE:latest || true
+          docker build \
+            --cache-from $ECR_IMAGE:latest \
+            --build-arg BUILDKIT_INLINE_CACHE=1 \
+            -t waterbot:dev .
 
       # 🏷️ Tag image for ECR
       - name: Tag image for ECR
@@ -121,7 +127,7 @@ jobs:
 
           echo "All running tasks are on digest $LATEST_DIGEST"
 
-      # 🌐 Invalidate CloudFront cache
+      # 🌐 Invalidate CloudFront cache (fire-and-forget)
       - name: Invalidate CloudFront cache
         env:
           AWS_REGION: us-east-1
@@ -132,26 +138,7 @@ jobs:
             --region "$AWS_REGION" \
             --query 'Invalidation.Id' \
             --output text)
-
-          echo "CloudFront invalidation started: $INVALIDATION_ID"
-          ATTEMPTS=0
-          MAX_ATTEMPTS=20
-          STATUS="InProgress"
-          while [ "$STATUS" != "Completed" ] && [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
-            sleep 6
-            STATUS=$(aws cloudfront get-invalidation \
-              --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-              --id "$INVALIDATION_ID" \
-              --region "$AWS_REGION" \
-              --query 'Invalidation.Status' \
-              --output text)
-            echo "Check $((ATTEMPTS+1))/$MAX_ATTEMPTS: $STATUS"
-            ATTEMPTS=$((ATTEMPTS+1))
-          done
-          if [ "$STATUS" != "Completed" ]; then
-            echo "Warning: Invalidation still $STATUS after $MAX_ATTEMPTS checks" && exit 1
-          fi
-          echo "CloudFront invalidation completed"
+          echo "CloudFront invalidation started: $INVALIDATION_ID (propagates within ~60s, not blocking)"
 
       # 🧾 Deployment summary
       - name: Write summary

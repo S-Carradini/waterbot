@@ -1,498 +1,427 @@
-# WaterBot - RAG-Powered Chatbot for Arizona Water Information
+# WaterBot — RAG-Powered Chatbot for Arizona Water Information
 
-WaterBot is a Retrieval-Augmented Generation (RAG) chatbot that provides information about water in Arizona. It features a modern React frontend and a FastAPI backend with PostgreSQL (pgvector) for vector storage, supporting both OpenAI and Claude (AWS Bedrock) LLM adapters.
+WaterBot is a Retrieval-Augmented Generation (RAG) chatbot that provides information about water in Arizona. It features a React/Vite frontend and a FastAPI backend. RAG is powered by **AWS Bedrock Knowledge Bases**; LLM responses are generated via **OpenAI GPT-4.1**. A secondary "RiverBot" persona is also supported via separate routes and templates.
+
+**Production URL:** https://azwaterbot.org
+
+---
 
 ## Features
 
-- **RAG-Powered Responses**: Answers questions using retrieval-augmented generation from a knowledge base
-- **Multi-Language Support**: English and Spanish
-- **Voice Transcription**: Real-time speech-to-text via browser Web Speech API
-- **Conversation History**: Maintains session-based chat history
-- **Source Citations**: Provides source references for answers
-- **Modern UI**: React-based frontend with responsive design
-- **Multiple LLM Support**: OpenAI GPT and AWS Bedrock Claude adapters
+- **RAG via AWS Bedrock Knowledge Base** — semantic search over Arizona water documents, no self-hosted vector DB required
+- **Multi-language** — English and Spanish, auto-detected via `langdetect` with user override
+- **Voice transcription** — real-time speech-to-text via browser Web Speech API / WebSocket
+- **Session memory** — per-user UUID cookie keeps conversation context
+- **Source citations** — every answer links back to source documents
+- **RiverBot persona** — separate chat UI and system prompt at `/riverbot`
+- **React frontend** — responsive, mobile-friendly UI with typewriter animation
+- **Legacy Jinja2 templates** — `index.html`, `riverbot.html`, `spanish.html`, `splashScreen.html` served directly by FastAPI for non-React paths
+
+---
 
 ## Architecture
 
 ### Tech Stack
 
-**Frontend:**
-- React + Vite
-- Framer Motion for animations
-- Tailwind CSS
-- Web Speech API for voice transcription
+| Layer | Technology |
+|-------|-----------|
+| Frontend | React + Vite, Framer Motion, Tailwind CSS |
+| Backend | FastAPI (Python 3.11) |
+| RAG | AWS Bedrock Knowledge Base (Retrieve API) |
+| LLM | OpenAI GPT-4.1 |
+| Session identity | UUID cookie (`USER_SESSION`) set by `SetCookieMiddleware` |
+| Message logging | PostgreSQL (`messages` table) — optional, done in background |
+| Ratings | AWS DynamoDB — optional |
+| Transcripts | AWS S3 — optional |
+| Container | Docker (multi-stage build) |
+| Hosting | AWS ECS Fargate + ALB + CloudFront |
 
-**Backend:**
-- FastAPI (Python)
-- PostgreSQL (pgvector) for RAG vector storage
-- PostgreSQL for message logging
-- DynamoDB for ratings
-- S3 for transcript storage
+### Request Flow
 
-**LLM Adapters:**
-- OpenAI GPT models
-- AWS Bedrock Claude models
+```
+Browser → UUID Cookie → FastAPI
+  → Safety checks (OpenAI moderation + intent detection)
+  → Language detection (langdetect)
+  → Bedrock KB Retrieve API (top-k chunks)
+  → Build prompt (system + KB context + chat history)
+  → OpenAI GPT-4.1
+  → Response + sources → Browser
+  → [Background] Log to PostgreSQL messages table
+```
 
-### System Architecture Diagram
+### System Architecture
 
 ```mermaid
 graph TB
-    subgraph "Client Layer"
-        A[Web Browser] --> B[FastAPI Application]
-        A --> C[WebSocket Connection]
+    subgraph "Client"
+        Browser
     end
-    
-    subgraph "Application Layer"
-        B --> D[Session Middleware]
-        D --> E[Memory Manager]
-        D --> F[Chat API Endpoints]
-        C --> G[Transcribe Handler]
-        G --> F
+
+    subgraph "AWS CloudFront + ALB"
+        CF[CloudFront\nazwaterbot.org]
+        ALB[Application Load Balancer]
     end
-    
-    subgraph "RAG Pipeline"
-        F --> H[Language Detection]
-        H --> I{Language?}
-        I --> RAG[RAG Manager]
-        RAG --> L[Vector Search]
-        L --> M[Document Retrieval]
+
+    subgraph "ECS Fargate"
+        App[FastAPI App\nmain.py]
     end
-    
-    subgraph "LLM Layer"
-        M --> N[LLM Adapter]
-        N --> O{Adapter Type}
-        O -->|OpenAI| P[OpenAI API]
-        O -->|Claude| Q[AWS Bedrock]
+
+    subgraph "AWS Services"
+        KB[Bedrock Knowledge Base\nZ2NHZ8JMMQ us-west-2]
+        RDS[RDS PostgreSQL\nmessages table]
+        DDB[DynamoDB\nratings]
+        S3[S3\ntranscripts]
     end
-    
-    subgraph "Storage Layer"
-        E --> R[In-Memory<br/>Sessions]
-        F --> S[PostgreSQL<br/>Messages]
-        F --> T[DynamoDB<br/>Ratings]
-        F --> U[S3<br/>Transcripts]
-        RAG --> V[PostgreSQL<br/>pgvector rag_chunks]
+
+    subgraph "External"
+        OAI[OpenAI GPT-4.1\nLLM + embeddings + moderation]
     end
-    
-    style F fill:#e1f5ff
-    style L fill:#fff4e1
-    style N fill:#e8f5e9
-    style V fill:#f3e5f5
+
+    Browser --> CF --> ALB --> App
+    App --> KB
+    App --> RDS
+    App --> DDB
+    App --> S3
+    App --> OAI
 ```
 
-### RAG Pipeline Detailed Flow
+### RAG Pipeline
 
 ```mermaid
 flowchart TD
-    Start([User Query]) --> SafetyCheck[Safety Checks<br/>Moderation & Intent]
-    SafetyCheck -->|Fail| Reject[Reject Response]
-    SafetyCheck -->|Pass| AddToMemory[Add User Message<br/>to Session Memory]
-    AddToMemory --> DetectLang[Detect Language<br/>langdetect]
-    DetectLang --> PgVec[pgvector rag_chunks<br/>locale en/es]
-    
-    PgVec --> EmbedQuery[Embed User Query<br/>OpenAI Embeddings]
-    
-    EmbedQuery --> VectorSearch[Vector Similarity Search<br/>pgvector]
-    VectorSearch --> RetrieveDocs[Retrieve Top K Documents<br/>k=4]
-    RetrieveDocs --> ParseSources[Parse Source Metadata<br/>Extract URLs & Descriptions]
-    ParseSources --> FormatKB[Format Knowledge Base<br/>Concatenate Document Content]
-    
-    FormatKB --> BuildPrompt[Build LLM Prompt<br/>System Prompt + KB + Chat History]
-    BuildPrompt --> LLMCall[Call LLM<br/>OpenAI/Claude]
-    LLMCall --> GenerateResponse[Generate Response]
-    
-    GenerateResponse --> StoreResponse[Store Response<br/>Memory + Database]
-    StoreResponse --> ReturnResponse[Return Response<br/>with Sources]
-    
-    ReturnResponse --> End([End])
-    Reject --> End
-    
-    style SafetyCheck fill:#ffebee
-    style VectorSearch fill:#fff4e1
-    style LLMCall fill:#e8f5e9
-    style StoreResponse fill:#e1f5ff
+    Query([User Query]) --> Safety[Safety Checks\nmoderation + intent]
+    Safety -->|fail| Reject[Return safe fallback]
+    Safety -->|pass| Lang[Detect Language\nen / es]
+    Lang --> KB[Bedrock KB Retrieve\nAWS_KB_ID + locale filter]
+    KB --> Chunks[Top-K document chunks\nwith source metadata]
+    Chunks --> Prompt[Build Prompt\nsystem + KB + chat history]
+    Prompt --> LLM[OpenAI GPT-4.1]
+    LLM --> Response[Response + sources]
+    Response --> Memory[Update MemoryManager]
+    Memory --> BG[Background: log to PostgreSQL]
+    Response --> Browser([Return to Browser])
 ```
 
-## Request/Response Flow
+---
 
-### Chat API Request Flow
-
-```mermaid
-sequenceDiagram
-    participant User
-    participant FastAPI
-    participant MemoryManager
-    participant RAGManager
-    participant LLMAdapter
-    participant PostgreSQL
-    
-    User->>FastAPI: POST /chat_api<br/>(user_query)
-    FastAPI->>FastAPI: Extract Session UUID<br/>(Cookie/State)
-    FastAPI->>MemoryManager: create_session(session_uuid)
-    FastAPI->>LLMAdapter: safety_checks(user_query)
-    LLMAdapter-->>FastAPI: moderation_result, intent_result
-    
-    alt Safety Check Failed
-        FastAPI->>User: Reject Response
-    else Safety Check Passed
-        FastAPI->>MemoryManager: add_message_to_session<br/>(user_query)
-        FastAPI->>FastAPI: detect_language(user_query)
-        
-        alt English
-            FastAPI->>RAGManager: ann_search(user_query, locale)
-        else Spanish
-        end
-        
-        RAGManager->>RAGManager: similarity_search(user_query, k=4, locale)
-        RAGManager->>RAGManager: parse_source(metadata)
-        RAGManager-->>FastAPI: {documents, sources}
-        
-        FastAPI->>RAGManager: knowledge_to_string(docs)
-        RAGManager-->>FastAPI: formatted_kb_string
-        
-        FastAPI->>MemoryManager: get_session_history_all()
-        MemoryManager-->>FastAPI: chat_history
-        
-        FastAPI->>LLMAdapter: get_llm_body(kb_data, chat_history)
-        LLMAdapter->>LLMAdapter: build_prompt(system + kb + history)
-        LLMAdapter-->>FastAPI: llm_payload
-        
-        FastAPI->>LLMAdapter: generate_response(llm_payload)
-        LLMAdapter->>LLMAdapter: Call OpenAI/Bedrock API
-        LLMAdapter-->>FastAPI: response_content
-        
-        FastAPI->>MemoryManager: add_message_to_session<br/>(response + sources)
-        FastAPI->>MemoryManager: increment_message_count()
-        FastAPI->>PostgreSQL: log_message()<br/>(Background Task)
-        FastAPI->>User: Return Response + Sources
-    end
-```
-
-## Component Interactions
-
-### Component Interaction Diagram
-
-```mermaid
-graph LR
-    subgraph "Core Components"
-        A[FastAPI App] --> B[MemoryManager]
-        A --> C[RAGManager]
-        A --> D[LLMAdapter]
-        A --> E[DynamoDBManager]
-        A --> F[S3Manager]
-    end
-    
-    subgraph "MemoryManager"
-        B --> B1[Session Storage]
-        B --> B2[Message Counts]
-        B --> B3[Chat History]
-    end
-    
-    subgraph "RAGManager"
-        C --> C1[Vector Search]
-        C --> C2[Source Parsing]
-        C --> C3[Knowledge Formatting]
-        C1 --> C4[pgvector<br/>rag_chunks]
-    end
-    
-    subgraph "LLMAdapter"
-        D --> D1[OpenAIAdapter]
-        D --> D2[BedrockClaudeAdapter]
-        D1 --> D3[OpenAI API]
-        D2 --> D4[AWS Bedrock]
-    end
-    
-    subgraph "Storage"
-        E --> E1[DynamoDB<br/>Ratings]
-        F --> F1[S3<br/>Transcripts]
-        A --> G[PostgreSQL<br/>Messages]
-    end
-    
-    style A fill:#e1f5ff
-    style C fill:#fff4e1
-    style D fill:#e8f5e9
-    style B fill:#f3e5f5
-```
-
-## Data Flow
-
-### Data Flow Through the System
-
-```mermaid
-flowchart LR
-    subgraph "Input"
-        A[User Query<br/>Text/Voice]
-        B[Session UUID<br/>Cookie]
-    end
-    
-    subgraph "Processing"
-        C[Language Detection]
-        D[Vector Embedding]
-        E[Similarity Search]
-        F[Document Retrieval]
-        G[LLM Generation]
-    end
-    
-    subgraph "Storage"
-        H[PostgreSQL<br/>pgvector rag_chunks]
-        I[MemoryManager<br/>Session State]
-        J[PostgreSQL<br/>Message Log]
-        K[DynamoDB<br/>Ratings]
-        L[S3<br/>Transcripts]
-    end
-    
-    subgraph "Output"
-        M[Response Text]
-        N[Source Citations]
-        O[Message ID]
-    end
-    
-    A --> C
-    B --> I
-    C --> D
-    D --> E
-    E --> H
-    H --> F
-    F --> G
-    G --> M
-    F --> N
-    G --> I
-    I --> J
-    I --> K
-    A --> L
-    I --> O
-    
-    style H fill:#f3e5f5
-    style G fill:#e8f5e9
-    style I fill:#e1f5ff
-```
-
-## Getting Started
+## Local Development
 
 ### Prerequisites
 
 - Python 3.11+
 - Node.js 18+
-- Docker (optional, for containerized deployment)
+- AWS credentials with `bedrock:Retrieve` + `bedrock:RetrieveAndGenerate` on KB `Z2NHZ8JMMQ` in `us-west-2`
+- OpenAI API key
 
-### Backend Setup
+### Step 1 — Create `application/.env`
 
-1. **Install dependencies:**
 ```bash
-cd application
-python3.11 -m venv .venv
-source .venv/bin/activate
-pip install -r requirements.txt
+cp application/sample.env application/.env
 ```
 
-2. **Configure environment variables:**
-Create a `.env` file in the `application/` directory:
+Then fill in:
 
-```bash
-# OpenAI Configuration
-OPENAI_API_KEY=your_openai_api_key
+```env
+# ── Required ────────────────────────────────────────────
+# LLM (used for chat, safety checks, and embeddings)
+OPENAI_API_KEY=sk-...
 
-# AWS Configuration
-AWS_ACCESS_KEY_ID=your_aws_key
-AWS_SECRET_ACCESS_KEY=your_aws_secret
+# RAG via AWS Bedrock Knowledge Base
+AWS_KB_ID=Z2NHZ8JMMQ
 AWS_REGION=us-west-2
 
-# Database Configuration (messages + RAG). Use either DATABASE_URL or DB_*.
-# DATABASE_URL=postgresql://user:password@host:5432/dbname
-DB_HOST=your_db_host
-DB_USER=your_db_user
-DB_PASSWORD=your_db_password
-DB_NAME=your_db_name
+# AWS credentials — choose one method:
+# Option A: explicit keys
+AWS_ACCESS_KEY_ID=AKIA...
+AWS_SECRET_ACCESS_KEY=...
 
-# AWS Services
-MESSAGES_TABLE=your_dynamodb_table
-TRANSCRIPT_BUCKET_NAME=your_s3_bucket
+# Option B: named profile (boto3 picks it up automatically; omit the key vars above)
+# AWS_PROFILE=your-profile
+
+# ── Optional — message persistence ──────────────────────
+# If omitted, chat still works but messages are not logged to a DB.
+# Use either DATABASE_URL or the DB_* individual vars.
+# DATABASE_URL=postgresql://user:pass@localhost:5432/waterbot
+# DB_HOST=localhost
+# DB_USER=waterbot
+# DB_PASSWORD=secret
+# DB_NAME=waterbot
+# DB_PORT=5432
+
+# ── Optional — ratings + transcripts ────────────────────
+# MESSAGES_TABLE=your-dynamodb-table-name
+# TRANSCRIPT_BUCKET_NAME=your-s3-bucket-name
+
+# ── Optional — CORS / cookie tuning ─────────────────────
+# ALLOWED_ORIGINS=https://your-domain.com
+# COOKIE_DOMAIN=.your-domain.com
 ```
 
-3. **Run the backend:**
+### Step 2 — Start the backend
+
 ```bash
-fastapi dev main.py
-# or
-uvicorn main:app --reload
+cd application
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements.txt
+fastapi dev main.py          # auto-reload at http://localhost:8000
 ```
 
-### Frontend Setup
+### Step 3 — Start the frontend (separate terminal)
 
-1. **Install dependencies:**
 ```bash
 cd frontend
 npm install
+npm run dev                  # http://localhost:5173
 ```
 
-2. **Run development server:**
-```bash
-npm run dev
-```
+Vite proxies all `/chat_api`, `/chat_sources_api`, `/submit_rating_api`, `/session-transcript`, `/translate`, and `/static` requests to `localhost:8000` automatically — no manual CORS configuration needed in dev.
 
-3. **Build for production:**
-```bash
-npm run build
-```
+### What works without optional vars
 
-### Docker Deployment
+| Feature | Required vars |
+|---------|--------------|
+| RAG + chat | `OPENAI_API_KEY`, `AWS_KB_ID`, `AWS_REGION`, AWS creds |
+| Message logging | `DATABASE_URL` or `DB_*` |
+| Ratings | `MESSAGES_TABLE` |
+| Transcript download | `TRANSCRIPT_BUCKET_NAME` |
+
+When optional vars are absent the app starts cleanly — those features are silently skipped.
+
+### Docker (full stack)
 
 ```bash
-# Build and run
+docker-compose up           # builds image, runs on http://localhost:8000
+# or individually:
 ./docker_build.sh
 ./docker_run.sh
 ```
 
-## API Endpoints
+The `docker-compose.yml` reads `OPENAI_API_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `TRANSCRIPT_BUCKET_NAME`, and `MESSAGES_TABLE` from your shell environment.
 
-### Chat Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/chat_api` | POST | Main chat endpoint for WaterBot |
-| `/riverbot_chat_api` | POST | Chat endpoint for RiverBot persona |
-| `/chat_sources_api` | POST | Get sources for previous response |
-| `/chat_actionItems_api` | POST | Get action items from previous response |
-| `/chat_detailed_api` | POST | Get detailed response for previous query |
-
-### Other Endpoints
-
-| Endpoint | Method | Description |
-|----------|--------|-------------|
-| `/waterbot` | GET | WaterBot HTML interface |
-| `/riverbot` | GET | RiverBot HTML interface |
-| `/transcribe` | WebSocket | Voice transcription endpoint |
-| `/session-transcript` | POST | Download session transcript |
-| `/submit_rating_api` | POST | Submit rating for a message |
-
-## Configuration
-
-### LLM Adapter Selection
-
-In `application/main.py`, configure the adapter:
-
-```python
-ADAPTERS = {
-    "claude.haiku": BedrockClaudeAdapter("anthropic.claude-3-haiku-20240307-v1:0"),
-    "claude.sonnet": BedrockClaudeAdapter("anthropic.claude-3-sonnet-20240229-v1:0"),
-    "openai-gpt4": OpenAIAdapter("gpt-4"),
-}
-
-llm_adapter = ADAPTERS["openai-gpt4"]  # or "claude.haiku"
-```
-
-### RAG / pgvector Configuration
-
-RAG uses PostgreSQL with the pgvector extension. Set either `DATABASE_URL` (e.g. `postgresql://user:password@host:5432/dbname`) or `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` (same as for messages). The `rag_chunks` table is created by the db_init Lambda. Ingest with `application/scripts/Add_files_to_db.py` and `Add_files_to_db-spanish.py`. If migrating from an existing ChromaDB install, use `application/scripts/migrate_chroma_to_pgvector.py` once (requires `pip install chromadb` temporarily).
-
-### RAG Parameters
-
-- **Top K Documents**: Default is 4 (configurable in `ann_search` method)
-- **Chunk Size**: 1500 characters with 150 overlap (when adding documents)
-- **Embedding Model**: OpenAI `text-embedding-ada-002` (via OpenAIEmbeddings)
-
-## RAG Pipeline Components
-
-### 1. RAGManager
-- **Purpose**: Wraps the vector store and manages RAG operations
-- **Key Methods**:
-  - `ann_search(query, locale)`: Performs vector similarity search (pgvector)
-  - `knowledge_to_string()`: Formats retrieved documents for LLM
-  - `parse_source()`: Extracts and formats source metadata
-
-### 2. MemoryManager
-- **Purpose**: Manages conversation sessions and history
-- **Key Methods**:
-  - `create_session()`: Creates new conversation session
-  - `add_message_to_session()`: Stores messages with sources
-  - `get_session_history_all()`: Retrieves full conversation history
-
-### 3. LLM Adapters
-- **OpenAIAdapter**: Uses OpenAI GPT models
-- **BedrockClaudeAdapter**: Uses AWS Bedrock Claude models
-- Both implement:
-  - `get_llm_body()`: Builds prompt with knowledge base
-  - `generate_response()`: Calls LLM API
-  - `safety_checks()`: Validates user input
-
-## Troubleshooting
-
-### RAG Pipeline Not Working
-
-1. **Check PostgreSQL**: Ensure `DATABASE_URL` or `DB_HOST`, `DB_USER`, `DB_PASSWORD`, `DB_NAME` are set and the db_init Lambda has created the `rag_chunks` table and pgvector extension.
-2. **Check Embeddings**: Verify embeddings are being generated (OpenAI or Bedrock).
-3. **Check Documents**: Verify documents exist in `rag_chunks` (run ingestion scripts or, for one-time migration from ChromaDB, `application/scripts/migrate_chroma_to_pgvector.py`).
-
-### Common Issues
-
-- **RAG not available (503)**: Configure PostgreSQL with pgvector and ensure rag_chunks is populated.
-- **operator does not exist: vector <=> double precision[]**: Fixed by passing embeddings as pgvector `Vector` type; ensure you're on a recent pgvector application image.
-- **relation "messages" does not exist**: The app expects a `messages` table for chat history. If your database was not initialized by the AWS db_init Lambda (e.g. Railway, Render), create the table and indexes using the same DDL as in `iac/cdk/lambda/db_init/index.py` (CREATE TABLE messages ... and related CREATE INDEX).
-- **Empty search results**: Run Add_files_to_db.py and Add_files_to_db-spanish.py with DB_* and OPENAI_API_KEY set.
-- **Embedding rate limits**: Check OpenAI API rate limits if using OpenAI embeddings.
+---
 
 ## Project Structure
 
 ```
 waterbot/
-├── application/          # FastAPI backend
-│   ├── main.py          # FastAPI application
-│   ├── managers/        # rag_manager, pgvector_store, vector_store, memory, dynamodb, s3
-│   ├── adapters/        # LLM adapters (OpenAI, Claude)
-│   └── templates/       # HTML templates
-├── frontend/            # React frontend
+├── application/                  # FastAPI backend
+│   ├── main.py                   # App entry point: all 13 endpoints, middleware, startup
+│   ├── adapters/
+│   │   ├── base.py               # ModelAdapter abstract base class
+│   │   ├── openai.py             # OpenAIAdapter (GPT-4.1, moderation, embeddings)
+│   │   └── bedrock_kb.py         # BedrockKnowledgeBase (Retrieve + RetrieveAndGenerate)
+│   ├── managers/
+│   │   ├── memory_manager.py     # In-memory session state (chat history, message counts)
+│   │   ├── rag_manager.py        # RAG orchestration (query → KB → prompt → LLM)
+│   │   ├── pgvector_store.py     # pgvector store (legacy / local dev fallback)
+│   │   ├── dynamodb_manager.py   # Ratings persistence
+│   │   └── s3_manager.py         # Transcript storage + presigned URLs
+│   ├── templates/                # Jinja2 HTML templates
+│   │   ├── index.html            # WaterBot legacy UI
+│   │   ├── riverbot.html         # RiverBot persona UI
+│   │   ├── spanish.html          # Spanish UI
+│   │   ├── splashScreen.html     # Splash / landing page
+│   │   └── aboutWaterbot.html    # About page
+│   ├── static/                   # CSS, JS, images for Jinja templates
+│   ├── mappings/                 # knowledge_sources.py, custom_tags.py
+│   ├── scripts/                  # Data ingestion (Add_files_to_db*.py)
+│   └── sample.env                # Environment variable template
+├── frontend/                     # React + Vite frontend
 │   ├── src/
-│   │   ├── components/  # React components
-│   │   ├── services/    # API services
-│   │   └── assets/      # Static assets
-│   └── public/          # Public assets
-├── iac/                 # Infrastructure as Code
-│   ├── cdk/            # AWS CDK stacks
-│   └── terraform/      # Terraform configs
-└── scripts/            # Deployment scripts
+│   │   ├── App.jsx               # Root component, global state
+│   │   ├── components/           # ChatBubble, InputWrapper, Header, MobileChatbot, RecordingModal
+│   │   └── services/api.js       # All fetch calls to backend
+│   ├── public/                   # Static assets (images, icons)
+│   └── vite.config.js            # Dev proxy config
+├── iac/
+│   └── cdk/                      # AWS CDK stacks (Python)
+│       ├── app.py                # CDK app entry
+│       ├── cdk_app_stack.py      # ECS Fargate, ALB, CloudFront, RDS, DynamoDB, S3
+│       └── lambda/               # db_init, dynamo_export, postgres_backup Lambdas
+├── .github/workflows/
+│   ├── deploy-waterbot-dev.yaml  # Dev CI/CD (shankerram3/waterbot-test → us-west-2)
+│   └── deploy-waterbot-prod.yaml # Prod CI/CD (S-Carradini/waterbot → us-east-1)
+├── docker-compose.yml
+├── Dockerfile
+└── README.md
 ```
 
-## Deployment
+---
 
-### AWS Deployment
+## API Endpoints
 
-1. **Set environment variables:**
+### Chat
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/chat_api` | POST | WaterBot main chat (English) |
+| `/riverbot_chat_api` | POST | RiverBot persona chat |
+| `/chat_sources_api` | POST | Retrieve sources for a prior response |
+| `/chat_actionItems_api` | POST | Get action items from a prior response |
+| `/chat_detailed_api` | POST | Get a more detailed response for a prior query |
+
+### Pages (Jinja2)
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/` | GET | Splash screen |
+| `/waterbot` | GET | WaterBot Jinja2 chat UI |
+| `/riverbot` | GET | RiverBot Jinja2 chat UI |
+| `/spanish` | GET | Spanish Jinja2 chat UI |
+
+### Utilities
+
+| Endpoint | Method | Description |
+|----------|--------|-------------|
+| `/transcribe` | WebSocket | Real-time voice transcription |
+| `/session-transcript` | POST | Download session transcript (S3 presigned URL) |
+| `/submit_rating_api` | POST | Submit thumbs up/down rating |
+| `/translate` | POST | Translate text between en/es |
+
+---
+
+## CI/CD Pipeline
+
+Both workflows are manually triggered (`workflow_dispatch`) and use **GitHub OIDC** (no long-lived AWS keys stored in GitHub secrets).
+
+### Dev — `shankerram3/waterbot-test` → us-west-2
+
+1. Authenticates to AWS via OIDC role `GitHubActionsECSRole`
+2. Builds Docker image (no cache)
+3. Pushes to ECR (`us-west-2`)
+4. Force-deploys ECS Fargate service
+5. Waits for service stability and verifies image digest
+6. Invalidates CloudFront cache
+
+### Prod — `S-Carradini/waterbot` → us-east-1
+
+Same steps, targeting the production ECS cluster and CloudFront distribution (`azwaterbot.org`).
+
+### Required GitHub Environment Secrets/Vars
+
+| Name | Type | Value |
+|------|------|-------|
+| `AWS_ROLE_ARN` | Secret | `arn:aws:iam::590183827936:role/GitHubActionsECSRole` |
+| `AWS_REGION` | Var | `us-west-2` (dev) / `us-east-1` (prod) |
+| `ECR_ACCOUNT_ID` | Var | `590183827936` |
+| `ECR_REPO` | Var | ECR repository name |
+| `ECS_CLUSTER` | Var | ECS cluster name |
+| `ECS_SERVICE` | Var | ECS service name |
+| `CLOUDFRONT_DISTRIBUTION_ID` | Var | CloudFront distribution ID |
+
+---
+
+## AWS Infrastructure
+
+### Environments
+
+| | Dev | Prod |
+|-|-----|------|
+| Region | us-west-2 | us-east-1 |
+| GitHub repo | `shankerram3/waterbot-test` | `S-Carradini/waterbot` |
+| GitHub environment | `aws-test-deploy` | `aws-prod-deploy` |
+| URL | (ECS task public IP) | https://azwaterbot.org |
+
+### Bedrock Knowledge Base
+
+- **KB ID**: `Z2NHZ8JMMQ`
+- **Region**: `us-west-2` (used by both dev and prod — the KB is not replicated)
+- Set `AWS_KB_ID=Z2NHZ8JMMQ` and `AWS_REGION=us-west-2` in the ECS task definition or `.env`
+
+### CDK Stacks
+
+Infrastructure is managed with AWS CDK (Python) in `iac/cdk/`.
+
 ```bash
-export OPENAI_API_KEY="sk-..."
-export SECRET_HEADER_KEY="your-secret-header"
-export BASIC_AUTH_SECRET=$(echo -n "username:password" | base64)
-export AWS_ACCESS_KEY_ID="AKIA..."
-export AWS_SECRET_ACCESS_KEY="..."
-export AWS_REGION="us-west-2"
+cd iac/cdk
+source .venv-cdk/bin/activate
+pip install -r requirements.txt
+
+# Deploy dev stack (us-west-2)
+AWS_DEFAULT_REGION=us-west-2 cdk deploy --context env=dev
+
+# Deploy prod stack (us-east-1)
+AWS_DEFAULT_REGION=us-east-1 cdk deploy --context env=dev
 ```
 
-2. **Deploy infrastructure:**
-```bash
-./scripts/setup_aws_infrastructure.sh dev
+> Use `AWS_DEFAULT_REGION` env var to target the correct region — the `--region` CLI flag does not work reliably with CDK.
+
+---
+
+## Configuration Reference
+
+### Environment Variables
+
+| Variable | Required | Description |
+|----------|----------|-------------|
+| `OPENAI_API_KEY` | Yes | OpenAI API key (chat, moderation, embeddings) |
+| `AWS_KB_ID` | Yes | Bedrock Knowledge Base ID (`Z2NHZ8JMMQ`) |
+| `AWS_REGION` | Yes | Bedrock KB region (`us-west-2`) |
+| `AWS_ACCESS_KEY_ID` | Yes* | AWS credential (*or use `AWS_PROFILE` / instance role) |
+| `AWS_SECRET_ACCESS_KEY` | Yes* | AWS credential |
+| `DATABASE_URL` | No | PostgreSQL URL for message logging |
+| `DB_HOST/USER/PASSWORD/NAME/PORT` | No | Alternative to `DATABASE_URL` |
+| `MESSAGES_TABLE` | No | DynamoDB table name for ratings |
+| `TRANSCRIPT_BUCKET_NAME` | No | S3 bucket for chat transcripts |
+| `COOKIE_DOMAIN` | No | Cookie domain (e.g. `.azwaterbot.org`) — only set when domain matches request host |
+| `ALLOWED_ORIGINS` | No | Comma-separated CORS origins |
+| `AWS_KB_MODEL_ARN` | No | Override Bedrock model ARN for RAG (defaults to Claude 3 Sonnet) |
+
+### LLM Adapter
+
+The current default is `OpenAIAdapter("gpt-4.1")` set in `main.py`. To swap adapters, modify:
+
+```python
+# application/main.py
+ADAPTERS: dict[str, object] = {
+    "openai-gpt4.1": OpenAIAdapter("gpt-4.1"),
+    # "bedrock-kb": BedrockKnowledgeBase(kb_id=AWS_KB_ID),
+}
+llm_adapter = ADAPTERS["openai-gpt4.1"]
 ```
 
-3. **Deploy application:**
-```bash
-./scripts/deploy_to_aws.sh dev latest
-```
-
-### Frontend on Vercel
-
-Set environment variable:
-- `VITE_API_BASE_URL` = your backend URL
-
-Backend must allow CORS for your Vercel domain.
+---
 
 ## Troubleshooting
 
-### RAG Pipeline Issues
+### RAG not returning results
 
-1. **Check PostgreSQL**: Ensure DB_* are set and `rag_chunks` table exists (db_init Lambda).
-2. **Verify Embeddings**: Test that embeddings are being generated.
-3. **Check Documents**: Verify documents exist in `rag_chunks` (run ingestion or migration script).
+- Verify `AWS_KB_ID=Z2NHZ8JMMQ` and `AWS_REGION=us-west-2` are set
+- Confirm your AWS identity has `bedrock:Retrieve` and `bedrock:RetrieveAndGenerate` on the KB
+- Check CloudWatch logs for `bedrock-agent-runtime` errors
 
-### Frontend Issues
+### Messages not persisting after restart
 
-- **CSS not updating**: Clear Vite cache with `rm -rf frontend/node_modules/.vite`
-- **Voice transcription not working**: Check browser permissions for microphone access
+`MemoryManager` is in-memory — this is expected. Set `DATABASE_URL` or `DB_*` vars to enable PostgreSQL message logging. The `messages` table is auto-created on startup if it doesn't exist.
+
+### `relation "messages" does not exist`
+
+The app creates the `messages` table automatically at startup (`startup_ensure_db`). If you see this error, check that your DB user has `CREATE TABLE` privileges.
+
+### Cookie/session not sticking
+
+- On HTTP (local dev), the cookie uses `SameSite=Lax` — works fine
+- On HTTPS (prod), it uses `SameSite=None; Secure` — requires HTTPS
+- `COOKIE_DOMAIN` is only applied when the request host matches — don't set it for local dev
+
+### CSS not updating in dev
+
+```bash
+rm -rf frontend/node_modules/.vite
+npm run dev
+```
+
+### Voice transcription not working
+
+Check browser permissions for microphone access. Transcription uses the browser Web Speech API (no server-side processing for basic transcription).
+
+### GitHub Actions deploy fails with "AWS_ROLE_ARN secret is missing"
+
+1. Go to your repo → Settings → Environments → `aws-test-deploy` (dev) or `aws-prod-deploy` (prod)
+2. Add secret `AWS_ROLE_ARN = arn:aws:iam::590183827936:role/GitHubActionsECSRole`
+3. Re-run the workflow — existing runs do not pick up newly added secrets
+
+---
 
 ## License
 
