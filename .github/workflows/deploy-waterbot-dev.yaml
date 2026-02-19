@@ -1,0 +1,154 @@
+name: Deploy waterbot-dev (ECS Fargate)
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+concurrency:
+  group: waterbot-dev
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    # Only run in the downstream fork, never upstream
+    if: github.repository == 'shankerram3/waterbot-test'
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      id-token: write   # required for OIDC to assume AWS role
+
+    env:
+      AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
+      ECR_ACCOUNT_ID: ${{ vars.ECR_ACCOUNT_ID }}
+      ECR_REPO: ${{ vars.ECR_REPO }}
+      ECR_IMAGE: ${{ vars.ECR_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION || 'us-west-2' }}.amazonaws.com/${{ vars.ECR_REPO }}
+      IMAGE_TAG: ${{ github.sha }}
+      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_SERVICE: ${{ vars.ECS_SERVICE }}
+      CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
+
+    steps:
+      # 📥 Checkout repository
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # 🔐 Configure AWS credentials via OIDC
+      - name: Configure AWS Credentials (OIDC)
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          aws-region: ${{ env.AWS_REGION }}
+          role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
+          role-session-name: gha-waterbot-dev
+
+      # 🔑 Login to Amazon ECR
+      - name: Login to Amazon ECR
+        uses: aws-actions/amazon-ecr-login@v2
+
+      # 🐳 Build Docker image with clean layers
+      - name: Build Docker image (no cache)
+        run: |
+          docker build --no-cache -t waterbot:dev .
+
+      # 🏷️ Tag image for ECR
+      - name: Tag image for ECR
+        run: |
+          docker tag waterbot:dev $ECR_IMAGE:latest
+          docker tag waterbot:dev $ECR_IMAGE:$IMAGE_TAG
+
+      # 📤 Push image to ECR
+      - name: Push image to ECR
+        run: |
+          docker push $ECR_IMAGE:latest
+          docker push $ECR_IMAGE:$IMAGE_TAG
+
+      # 🚀 Force ECS deployment
+      - name: Force ECS deployment with new image
+        run: |
+          aws ecs update-service \
+            --cluster "$ECS_CLUSTER" \
+            --service "$ECS_SERVICE" \
+            --force-new-deployment \
+            --region "$AWS_REGION"
+
+      # ⏳ Wait for ECS service stability
+      - name: Wait for ECS service stability
+        run: |
+          aws ecs wait services-stable \
+            --cluster "$ECS_CLUSTER" \
+            --services "$ECS_SERVICE" \
+            --region "$AWS_REGION"
+
+      # 🔎 Verify running tasks and images
+      - name: Verify running task images
+        run: |
+          LATEST_DIGEST=$(aws ecr describe-images \
+            --repository-name "$ECR_REPO" \
+            --image-ids imageTag=latest \
+            --region "$AWS_REGION" \
+            --query 'imageDetails[0].imageDigest' \
+            --output text)
+
+          TASK_ARNS=$(aws ecs list-tasks --cluster "$ECS_CLUSTER" --service-name "$ECS_SERVICE" --desired-status RUNNING --region "$AWS_REGION" --query 'taskArns' --output text)
+          if [ -z "$TASK_ARNS" ]; then
+            echo "No running tasks found" && exit 1
+          fi
+
+          TASK_DATA=$(aws ecs describe-tasks --cluster "$ECS_CLUSTER" --tasks $TASK_ARNS --region "$AWS_REGION" --query 'tasks[].{taskArn:taskArn,image:containers[0].image,imageDigest:containers[0].imageDigest,lastStatus:lastStatus}')
+          echo "$TASK_DATA"
+
+          NON_RUNNING=$(echo "$TASK_DATA" | jq -r '.[] | select(.lastStatus != "RUNNING") | .taskArn' || true)
+          if [ -n "$NON_RUNNING" ]; then
+            echo "Tasks not RUNNING: $NON_RUNNING" && exit 1
+          fi
+
+          WRONG_DIGEST=$(echo "$TASK_DATA" | jq -r --arg DIGEST "$LATEST_DIGEST" '.[] | select(.imageDigest != $DIGEST) | .taskArn' || true)
+          if [ -n "$WRONG_DIGEST" ]; then
+            echo "Tasks running stale image (digest mismatch): $WRONG_DIGEST" && exit 1
+          fi
+
+          echo "All running tasks are on digest $LATEST_DIGEST"
+
+      # 🌐 Invalidate CloudFront cache
+      - name: Invalidate CloudFront cache
+        env:
+          AWS_REGION: us-east-1
+        run: |
+          INVALIDATION_ID=$(aws cloudfront create-invalidation \
+            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+            --paths "/*" \
+            --region "$AWS_REGION" \
+            --query 'Invalidation.Id' \
+            --output text)
+
+          echo "CloudFront invalidation started: $INVALIDATION_ID"
+          ATTEMPTS=0
+          MAX_ATTEMPTS=20
+          STATUS="InProgress"
+          while [ "$STATUS" != "Completed" ] && [ $ATTEMPTS -lt $MAX_ATTEMPTS ]; do
+            sleep 6
+            STATUS=$(aws cloudfront get-invalidation \
+              --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
+              --id "$INVALIDATION_ID" \
+              --region "$AWS_REGION" \
+              --query 'Invalidation.Status' \
+              --output text)
+            echo "Check $((ATTEMPTS+1))/$MAX_ATTEMPTS: $STATUS"
+            ATTEMPTS=$((ATTEMPTS+1))
+          done
+          if [ "$STATUS" != "Completed" ]; then
+            echo "Warning: Invalidation still $STATUS after $MAX_ATTEMPTS checks" && exit 1
+          fi
+          echo "CloudFront invalidation completed"
+
+      # 🧾 Deployment summary
+      - name: Write summary
+        run: |
+          {
+            echo "## 🚀 waterbot-dev deploy"
+            echo "- Image: $ECR_IMAGE:latest (sha: $IMAGE_TAG)"
+            echo "- ECS: $ECS_CLUSTER / $ECS_SERVICE"
+            echo "- Region: $AWS_REGION"
+            echo "- CloudFront: $CLOUDFRONT_DISTRIBUTION_ID"
+            echo "- Result: SUCCESS"
+          } >> $GITHUB_STEP_SUMMARY
