@@ -33,6 +33,15 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
 
+      # Ensure OIDC role secret is set (fail fast with clear error)
+      - name: Check OIDC secret
+        run: |
+          if [ -z "${{ secrets.AWS_ROLE_ARN }}" ]; then
+            echo "::error::AWS_ROLE_ARN secret is not set. Add it in repo Settings → Secrets and variables → Actions (e.g. arn:aws:iam::ACCOUNT_ID:role/YourGitHubOIDCRoleName)"
+            exit 1
+          fi
+          echo "AWS_ROLE_ARN is set (role ARN not printed for security)."
+
       # 🔐 Configure AWS credentials via OIDC
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
