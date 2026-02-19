@@ -14,6 +14,7 @@ jobs:
     # Only run in the downstream fork, never upstream
     if: github.repository == 'shankerram3/waterbot-test'
     runs-on: ubuntu-latest
+    environment: aws-test-deploy   # use this env so job can access AWS_ROLE_ARN and vars
     permissions:
       contents: read
       id-token: write   # required for OIDC to assume AWS role
@@ -36,11 +37,15 @@ jobs:
       # Ensure OIDC role secret is set (fail fast with clear error)
       - name: Check OIDC secret
         run: |
-          if [ -z "${{ secrets.AWS_ROLE_ARN }}" ]; then
-            echo "::error::AWS_ROLE_ARN secret is not set. Add it in repo Settings → Secrets and variables → Actions (e.g. arn:aws:iam::ACCOUNT_ID:role/YourGitHubOIDCRoleName)"
+          ARN="${{ secrets.AWS_ROLE_ARN }}"
+          if [ -z "$ARN" ]; then
+            echo "::error::AWS_ROLE_ARN secret is missing or empty."
+            echo "1. Go to Environments → aws-test-deploy: https://github.com/shankerram3/waterbot-test/settings/environments"
+            echo "2. Under environment aws-test-deploy, add secret AWS_ROLE_ARN = arn:aws:iam::590183827936:role/GitHubActionsECSRole"
+            echo "3. Re-run this workflow (Re-run all jobs) — old runs do not see newly added secrets."
             exit 1
           fi
-          echo "AWS_ROLE_ARN is set (role ARN not printed for security)."
+          echo "AWS_ROLE_ARN is set (length: ${#ARN} chars)."
 
       # 🔐 Configure AWS credentials via OIDC
       - name: Configure AWS Credentials (OIDC)
