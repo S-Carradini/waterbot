@@ -3,6 +3,7 @@ ecr_auth.sh
 
 # Markdown documentation files
 *.md
+!docs/*.md
 
 # Mac OS files
 .DS_Store
