@@ -1,4 +1,0 @@
-[build]
-builder = "DOCKERFILE"
-dockerfilePath = "Dockerfile"
-watchPatterns = ["frontend/**", "application/**", "Dockerfile"]
