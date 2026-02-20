@@ -51,10 +51,42 @@ jobs:
           path: frontend/playwright-report/
           retention-days: 7
 
+  test-backend:
+    if: ${{ !inputs.skip_tests }}
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: |
+            application/requirements_full.txt
+            application/requirements.txt
+            application/requirements-dev.txt
+
+      - name: Install dependencies
+        run: |
+          pip install -r requirements_full.txt
+          pip install --no-deps -r requirements.txt
+          pip install -r requirements-dev.txt
+        working-directory: application
+
+      - name: Run pytest
+        run: pytest -v
+        working-directory: application
+        env:
+          OPENAI_API_KEY: test-key
+          AWS_KB_ID: test-kb-id
+          AWS_DEFAULT_REGION: us-east-1
+
   deploy:
-    needs: test
+    needs: [test, test-backend]
     # Only run in the upstream repo, never in forks
-    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped') && github.repository == 'S-Carradini/waterbot'
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped') && github.repository == 'S-Carradini/waterbot'
     runs-on: ubuntu-latest
     environment: aws-prod-deploy   # use this env so job can access AWS_ROLE_ARN and vars
     permissions:
