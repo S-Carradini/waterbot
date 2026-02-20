@@ -44,13 +44,9 @@ test.describe('Microphone Button Animation', () => {
       window.webkitSpeechRecognition = MockSpeechRecognition;
     });
 
-    // Navigate to the app (adjust URL based on your routing)
-    await page.goto('/waterbot');
-    // Wait for the page to load
+    await page.goto('/museum/chat');
     await page.waitForLoadState('domcontentloaded');
-    // Wait for React to render and Speech Recognition to initialize
     await page.waitForSelector('button.mic-icon-button', { timeout: 10000 });
-    // Wait a bit more for Speech Recognition to be initialized
     await page.waitForTimeout(500);
   });
 
