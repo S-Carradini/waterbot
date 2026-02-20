@@ -63,10 +63,12 @@ jobs:
         with:
           python-version: '3.11'
           cache: 'pip'
-          cache-dependency-path: application/requirements-dev.txt
+          cache-dependency-path: |
+            application/requirements.txt
+            application/requirements-dev.txt
 
-      - name: Install test dependencies
-        run: pip install -r requirements-dev.txt
+      - name: Install dependencies
+        run: pip install -r requirements.txt -r requirements-dev.txt
         working-directory: application
 
       - name: Run pytest
