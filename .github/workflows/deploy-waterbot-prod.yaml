@@ -1,6 +1,9 @@
-name: Deploy waterbot-prod (ECS Fargate)
+name: Deploy waterbot-prod (ECS Fargate - us-east-1)
 
 on:
+  push:
+    branches:
+      - main
   workflow_dispatch:
 
 concurrency:
@@ -18,12 +21,12 @@ jobs:
       id-token: write   # required for OIDC to assume AWS role
 
     env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+      AWS_REGION: us-east-1
       ECR_ACCOUNT_ID: ${{ vars.ECR_ACCOUNT_ID }}
       ECR_REPO: ${{ vars.ECR_REPO }}
-      ECR_IMAGE: ${{ vars.ECR_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION || 'us-east-1' }}.amazonaws.com/${{ vars.ECR_REPO }}
+      ECR_IMAGE: ${{ vars.ECR_ACCOUNT_ID }}.dkr.ecr.us-east-1.amazonaws.com/${{ vars.ECR_REPO }}
       IMAGE_TAG: ${{ github.sha }}
-      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_CLUSTER: cdk-app-stack-dev-WaterbotFargateCluster8D18135A-qC2WwpVI2CWn
       ECS_SERVICE: ${{ vars.ECS_SERVICE }}
       CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
 
