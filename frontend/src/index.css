@@ -40,6 +40,7 @@ body {
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
+  background-color: #7dc8e0; /* Match app background - prevents white gaps when scaled */
 }
 
 #root {
@@ -47,5 +48,29 @@ body {
   height: 100vh;
   display: flex;
   flex-direction: row;
+  overflow: hidden;
+}
+
+/* 10% scale: content 111.11% scaled to 90% = 100% fill, no white space at edges */
+.spa-scale-wrapper {
+  transform: scale(0.9);
+  transform-origin: top left;
+  width: 111.11vw;
+  min-width: 111.11vw;
+  height: 111.11vh;
+  min-height: 111.11vh;
+  flex: 1;
+}
+
+/* Full-page containers must fill scale wrapper so no white space after scale */
+.spa-scale-wrapper .desktop-container,
+.spa-scale-wrapper .home-container,
+.spa-scale-wrapper .splash-screen-container,
+.spa-scale-wrapper .splash-screen,
+.spa-scale-wrapper .mobile-chatbot-container {
+  width: 111.11vw !important;
+  height: 111.11vh !important;
+  min-width: 111.11vw !important;
+  min-height: 111.11vh !important;
 }
 

@@ -9,6 +9,7 @@ import './index.css'
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
+    <div className="spa-scale-wrapper">
     <BrowserRouter>
       <Routes>
         <Route path="/" element={<Home />} />
@@ -17,6 +18,7 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/mobile" element={<MobileChatbot />} />
       </Routes>
     </BrowserRouter>
+    </div>
   </React.StrictMode>,
 )
 
