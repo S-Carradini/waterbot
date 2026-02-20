@@ -270,15 +270,6 @@ const InputWrapper = React.forwardRef(function InputWrapper({ onSendMessage, isL
             autoComplete="off"
           />
           <button
-            type="button"
-            className={`mic-icon-button ${isListening ? 'recording' : ''}`}
-            onClick={toggleListening}
-            disabled={isLoading}
-            aria-label={isListening ? (uiText[language] || uiText.en).ariaStopRecording : (uiText[language] || uiText.en).ariaMicrophone}
-          >
-            <i className={`fas fa-microphone ${isListening ? 'recording' : ''}`}></i>
-          </button>
-          <button 
             type="submit" 
             className="paper-plane-icon-button"
             disabled={isLoading || !inputValue.trim()}
