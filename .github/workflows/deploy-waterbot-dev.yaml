@@ -5,6 +5,12 @@ on:
     branches:
       - test
   workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests and deploy directly'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: waterbot-dev
@@ -12,6 +18,7 @@ concurrency:
 
 jobs:
   test:
+    if: ${{ !inputs.skip_tests }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -46,7 +53,7 @@ jobs:
 
   deploy:
     needs: test
-    if: github.repository == 'S-Carradini/waterbot'
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped') && github.repository == 'S-Carradini/waterbot'
     runs-on: ubuntu-latest
     environment: aws-test-deploy
     permissions:

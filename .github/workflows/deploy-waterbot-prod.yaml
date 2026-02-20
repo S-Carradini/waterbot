@@ -5,6 +5,12 @@ on:
     branches:
       - main
   workflow_dispatch:
+    inputs:
+      skip_tests:
+        description: 'Skip tests and deploy directly'
+        required: false
+        default: false
+        type: boolean
 
 concurrency:
   group: waterbot-prod
@@ -12,6 +18,7 @@ concurrency:
 
 jobs:
   test:
+    if: ${{ !inputs.skip_tests }}
     runs-on: ubuntu-latest
     steps:
       - name: Checkout
@@ -47,7 +54,7 @@ jobs:
   deploy:
     needs: test
     # Only run in the upstream repo, never in forks
-    if: github.repository == 'S-Carradini/waterbot'
+    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped') && github.repository == 'S-Carradini/waterbot'
     runs-on: ubuntu-latest
     environment: aws-prod-deploy   # use this env so job can access AWS_ROLE_ARN and vars
     permissions:
