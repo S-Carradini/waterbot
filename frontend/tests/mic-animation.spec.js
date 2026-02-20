@@ -156,7 +156,7 @@ test.describe('Microphone Button Animation', () => {
     const iconColor = await micIcon.evaluate((el) => {
       return window.getComputedStyle(el).color;
     });
-    expect(iconColor).toBe('rgb(140, 29, 64)'); // #8c1d40
+    expect(iconColor).toBe('rgb(37, 76, 99)'); // #254C63
 
     // Verify the button background returns to white
     const buttonBg = await micButton.evaluate((el) => {
