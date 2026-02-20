@@ -11,7 +11,7 @@ test.describe('User Message Long Text', () => {
     await expect(textbox).toBeVisible();
     await textbox.fill(LONG_MESSAGE);
 
-    await page.locator('form').getByRole('button').click();
+    await page.locator('button.paper-plane-icon-button').click();
 
     // Wait for user message bubble to appear
     const userQuery = page.locator('.user-query').last();
