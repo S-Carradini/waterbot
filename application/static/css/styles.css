@@ -98,18 +98,22 @@ html {
 }
 
 .asu-logo {
-  width: 93px;
-  height: 72px;
-  content: url(../images/watersim-logo.svg);
-  background-repeat: no-repeat;
-  background-size: cover;
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+  max-height: 72px;
+  object-fit: contain;
+}
 
-  .vert {
-    display: block;
-    height: 72px;
-    width: auto;
-    margin: 20px 1rem 20px 0px;
-  }
+.asu-logo.vert {
+  display: block;
+  width: 180px;
+  max-width: 100%;
+  height: auto;
+  max-height: 72px;
+  margin: 20px 1rem 20px 0;
+  object-fit: contain;
 }
 
 .title-subunit-name {
@@ -407,7 +411,7 @@ a {
   opacity: 0;
   overflow: hidden;
   border-radius: 47px;
-  background: #254C63;
+  background: #800000;
   transition: height 0.3s ease, opacity 0.3s ease;
 }
 
@@ -429,7 +433,7 @@ a {
   margin: 12px auto;
   border-radius: 60%;
   background: #fff;
-  color: #254C63;
+  color: #800000;
   text-decoration: none;
   font-size: 35px;
 }

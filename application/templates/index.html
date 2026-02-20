@@ -36,18 +36,22 @@
     .logo-box {
       width: 200px;
       height: 80px;
+      padding: 10px 14px;
       background: #ffffff;
-      border: 1px solid #254C63;
+      border: 1px solid #800000;
       border-radius: 20px;
       display: flex;
       align-items: center;
       justify-content: center;
       box-sizing: border-box;
+      overflow: hidden; /* keep logo contained */
     }
 
     .logo-img {
-      height: auto;
-      width: auto;
+      width: 100%;
+      height: 100%;
+      object-fit: contain;
+      display: block;
     }
 
     /* Right: Custom Icon */
@@ -139,14 +143,14 @@
     <div class="">
       <div class="minimal-header">
         <div class="logo-box">
-          <a href="#" target="_blank" rel="noopener noreferrer">
+          <a href="https://watersimmersive.net/" target="_blank" rel="noopener noreferrer">
             <img src="../static/images/watersim-logo.svg" alt="WaterSim" class="logo-img" />
           </a>
         </div>
         <div class="top-right-icon" style="z-index: 2">
           <img src="../static/images/downIcon.png" alt="Icon" class="icon-img" />
           <div class="nav-items" id="nav-items">
-            <a href="#" class="nav-item"><i class="bi bi-house"></i></a>
+            <a href="/" class="nav-item"><i class="bi bi-house"></i></a>
             <a href="#" class="nav-item nav-download"><i class="bi bi-download"></i></a>
           </div>
         </div>
@@ -223,7 +227,7 @@
                           border: none;
                           z-index: 99;
                         ">
-                    <i class="fa fa-send" style="color: #254C63; font-size: 24px"></i>
+                    <i class="fa fa-send" style="color: #800000; font-size: 24px"></i>
                   </button>
                 </div>
               </form>

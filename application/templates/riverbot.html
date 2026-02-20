@@ -41,6 +41,7 @@
         justify-content: space-between;
         align-items: center;
         padding: 0 20px;
+        margin-top: 24px;
         height: auto;
         width: 100%;
         background: transparent;
@@ -51,18 +52,22 @@
       .logo-box {
         width: 200px;
         height: 80px;
+        padding: 10px 14px;
         background: #ffffff;
-        border: 1px solid #254C63;
+        border: 1px solid #800000;
         border-radius: 20px;
         display: flex;
         align-items: center;
         justify-content: center;
         box-sizing: border-box;
+        overflow: hidden; /* keep logo contained */
       }
 
       .logo-img {
-        height: auto;
-        width: auto;
+        width: 100%;
+        height: 100%;
+        object-fit: contain;
+        display: block;
       }
 
       /* Right: Custom Icon */
@@ -125,12 +130,18 @@
     data-bs-offset="147"
   >
     <header class="minimal-header">
-      <!--<div class="logo-box">
-  <img src="../static/images/watersim-logo.svg" alt="WaterSim" class="logo-img">
-</div>
-   <div class="top-right-icon">
-    <img src="../static/images/downIcon.png" alt="Icon" class="icon-img">
-  </div> -->
+      <div class="logo-box">
+        <a href="https://watersimmersive.net/" target="_blank" rel="noopener noreferrer">
+          <img src="../static/images/watersim-logo.svg" alt="WaterSimmersive" class="logo-img" />
+        </a>
+      </div>
+      <div class="top-right-icon" style="z-index: 2">
+        <img src="../static/images/downIcon.png" alt="Icon" class="icon-img" />
+        <div class="nav-items" id="nav-items">
+          <a href="/" class="nav-item"><i class="bi bi-house"></i></a>
+          <a href="#" class="nav-item nav-download"><i class="bi bi-download"></i></a>
+        </div>
+      </div>
     </header>
 
     <!-- Main body -->
@@ -263,7 +274,7 @@
                 >
                   <i
                     class="fa fa-send"
-                    style="color: #254C63; font-size: 30px"
+                    style="color: #800000; font-size: 30px"
                   ></i>
                 </button>
               </div>
@@ -336,7 +347,7 @@
                   y2="62.7586"
                   gradientUnits="userSpaceOnUse"
                 >
-                  <stop stop-color="#254C63" />
+                  <stop stop-color="#800000" />
                   <stop offset="1" stop-color="#254c63" stop-opacity="0.9" />
                 </linearGradient>
               </defs>
