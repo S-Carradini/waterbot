@@ -160,12 +160,12 @@ Both environments are configured with `ECR_ACCOUNT_ID`, `ECR_REPO`, `ECS_SERVICE
 
 ## Testing Stack
 
-| Layer          | Tool                        | Location                    | Run Command                     |
-|----------------|-----------------------------|-----------------------------|---------------------------------|
-| Frontend E2E   | Playwright                  | `frontend/tests/`           | `npx playwright test`           |
-| Frontend unit  | Vitest *(add this)*         | `frontend/src/__tests__/`   | `npm run test:unit`             |
-| Backend unit   | pytest *(add this)*         | `application/tests/`        | `pytest tests/ -v`              |
-| Manual QA      | Staging env                 | test.azwaterbot.org         | Manual browser verification     |
+| Layer          | Tool       | Location                  | Run Command                     |
+|----------------|------------|---------------------------|---------------------------------|
+| Frontend E2E   | Playwright | `frontend/tests/`         | `npx playwright test`           |
+| Frontend unit  | Vitest *(add this)* | `frontend/src/__tests__/` | `npm run test:unit`  |
+| Backend API    | pytest     | `application/tests/`      | `pytest -v` (from `application/`) |
+| Manual QA      | Staging env | test.azwaterbot.org      | Manual browser verification     |
 
 ---
 
@@ -202,29 +202,44 @@ npx playwright test tests/specific.js   # run a single file
 
 ## Backend Testing — pytest
 
-> **Current status:** No backend tests exist. Add the following as a minimum baseline.
+Tests live in `application/tests/` and use `httpx` + `pytest-asyncio` to test
+the FastAPI app in-process — no real OpenAI, Bedrock, or PostgreSQL connections are made.
 
-### Priority 1 — Core API
+### Setup
 
-- [ ] `POST /chat_api` returns `200` with a non-empty response body
-- [ ] Safety check rejects clearly off-topic queries
-- [ ] Language detection correctly identifies Spanish queries
-- [ ] Session UUID is set in a cookie on the first request
-
-### Priority 2 — Adapters
-
-- [ ] `BedrockKnowledgeBase` adapter returns results for a valid water-related query
-- [ ] `OpenAI` adapter handles API errors gracefully (no 500 response to the user)
+```bash
+cd application
+python3.11 -m venv .venv && source .venv/bin/activate
+pip install -r requirements-dev.txt   # pytest, pytest-asyncio, httpx
+```
 
 ### Running tests
 
 ```bash
-cd application
-source .venv/bin/activate
-pytest tests/ -v             # run all backend tests
-pytest tests/ -v -s          # include print/log output
-pytest tests/ -k "test_chat" # filter by test name pattern
+pytest -v                    # run all backend tests (from application/)
+pytest -v -s                 # include print/log output
+pytest -k "test_chat"        # filter by name pattern
 ```
+
+### What is tested
+
+| Endpoint | Test |
+|---|---|
+| `GET /` | Responds with 200 or redirect |
+| `POST /chat_api` | Returns `{resp, msgID}` with 200; msgID increments per session |
+| `POST /chat_api` | Handles `language_preference=es` |
+| `GET /messages` | Returns 401 without Basic Auth credentials |
+| `POST /session-transcript` | Returns graceful empty-session message |
+| `POST /translate` | Returns 400 for invalid `target_lang`; 200 with translations list for valid requests |
+| `POST /submit_rating_api` | Returns `{status: success}` when DynamoDB is not configured |
+
+### Adding new tests
+
+Add test cases to `application/tests/test_api.py`. Use `async def test_*` methods
+inside a class or at module level — `asyncio_mode = auto` is configured in `pytest.ini`.
+
+The `client` fixture in `conftest.py` provides a pre-configured `httpx.AsyncClient`
+wired to the FastAPI app. All external I/O (OpenAI, Bedrock, psycopg2) is mocked.
 
 ---
 
