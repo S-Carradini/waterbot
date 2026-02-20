@@ -1,6 +1,9 @@
-name: Deploy waterbot-dev (ECS Fargate)
+name: Deploy waterbot-dev (ECS Fargate - us-west-2)
 
 on:
+  push:
+    branches:
+      - test
   workflow_dispatch:
 
 concurrency:
@@ -9,23 +12,21 @@ concurrency:
 
 jobs:
   deploy:
-    # Only run in the downstream fork, never upstream
-    if: github.repository == 'shankerram3/waterbot-test'
+    if: github.repository == 'S-Carradini/waterbot'
     runs-on: ubuntu-latest
-    environment: aws-test-deploy   # use this env so job can access AWS_ROLE_ARN and vars
+    environment: aws-test-deploy
     permissions:
       contents: read
       id-token: write   # required for OIDC to assume AWS role
 
     env:
-      AWS_REGION: ${{ vars.AWS_REGION || 'us-west-2' }}
+      AWS_REGION: us-west-2
       ECR_ACCOUNT_ID: ${{ vars.ECR_ACCOUNT_ID }}
       ECR_REPO: ${{ vars.ECR_REPO }}
-      ECR_IMAGE: ${{ vars.ECR_ACCOUNT_ID }}.dkr.ecr.${{ vars.AWS_REGION || 'us-west-2' }}.amazonaws.com/${{ vars.ECR_REPO }}
+      ECR_IMAGE: ${{ vars.ECR_ACCOUNT_ID }}.dkr.ecr.us-west-2.amazonaws.com/${{ vars.ECR_REPO }}
       IMAGE_TAG: ${{ github.sha }}
-      ECS_CLUSTER: ${{ vars.ECS_CLUSTER }}
+      ECS_CLUSTER: cdk-app-stack-dev-WaterbotFargateCluster8D18135A-Rh49QXMfHkSP
       ECS_SERVICE: ${{ vars.ECS_SERVICE }}
-      CLOUDFRONT_DISTRIBUTION_ID: ${{ vars.CLOUDFRONT_DISTRIBUTION_ID }}
 
     steps:
       # 📥 Checkout repository
@@ -38,9 +39,10 @@ jobs:
           ARN="${{ secrets.AWS_ROLE_ARN }}"
           if [ -z "$ARN" ]; then
             echo "::error::AWS_ROLE_ARN secret is missing or empty."
-            echo "1. Go to Environments → aws-test-deploy: https://github.com/shankerram3/waterbot-test/settings/environments"
+            echo "1. Go to Environments → aws-test-deploy: https://github.com/S-Carradini/waterbot/settings/environments"
             echo "2. Under environment aws-test-deploy, add secret AWS_ROLE_ARN = arn:aws:iam::590183827936:role/GitHubActionsECSRole"
             echo "3. Re-run this workflow (Re-run all jobs) — old runs do not see newly added secrets."
+            echo "NOTE: The OIDC role must trust S-Carradini/waterbot:ref:refs/heads/test for this branch to authenticate."
             exit 1
           fi
           echo "AWS_ROLE_ARN is set (length: ${#ARN} chars)."
@@ -49,7 +51,7 @@ jobs:
       - name: Configure AWS Credentials (OIDC)
         uses: aws-actions/configure-aws-credentials@v4
         with:
-          aws-region: ${{ env.AWS_REGION }}
+          aws-region: us-west-2
           role-to-assume: ${{ secrets.AWS_ROLE_ARN }}
           role-session-name: gha-waterbot-dev
 
@@ -127,27 +129,14 @@ jobs:
 
           echo "All running tasks are on digest $LATEST_DIGEST"
 
-      # 🌐 Invalidate CloudFront cache (fire-and-forget)
-      - name: Invalidate CloudFront cache
-        env:
-          AWS_REGION: us-east-1
-        run: |
-          INVALIDATION_ID=$(aws cloudfront create-invalidation \
-            --distribution-id "$CLOUDFRONT_DISTRIBUTION_ID" \
-            --paths "/*" \
-            --region "$AWS_REGION" \
-            --query 'Invalidation.Id' \
-            --output text)
-          echo "CloudFront invalidation started: $INVALIDATION_ID (propagates within ~60s, not blocking)"
-
       # 🧾 Deployment summary
       - name: Write summary
         run: |
           {
             echo "## 🚀 waterbot-dev deploy"
             echo "- Image: $ECR_IMAGE:latest (sha: $IMAGE_TAG)"
-            echo "- ECS: $ECS_CLUSTER / $ECS_SERVICE"
-            echo "- Region: $AWS_REGION"
-            echo "- CloudFront: $CLOUDFRONT_DISTRIBUTION_ID"
+            echo "- ECS Cluster: $ECS_CLUSTER"
+            echo "- ECS Service: $ECS_SERVICE"
+            echo "- Region: $AWS_REGION (us-west-2)"
             echo "- Result: SUCCESS"
           } >> $GITHUB_STEP_SUMMARY
