@@ -32,9 +32,12 @@
   }
 }
 
-/* Header Unit - Pill-shaped white bar with WaterSimmersive logo (matches Home page Figma design) */
+/* Header Unit - Transparent overlay; .header-bar floats on top as the only solid element */
 .header-unit {
-  position: relative;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
   width: 100%;
   display: flex;
   align-items: center;
@@ -43,6 +46,8 @@
   padding: 12px 20px;
   box-sizing: border-box;
   flex-shrink: 0;
+  background: transparent;
+  z-index: 50;
 }
 
 .header-bar {
@@ -224,19 +229,17 @@
   white-space: pre-wrap;
 }
 
-/* Chat Column Container */
+/* Chat Column Container - extends under transparent header; padding-top keeps first content below header */
 .chat-column {
   position: absolute;
-  top: 17.36%;
+  top: 0;
   right: 0;
   bottom: 15%;
-  /* Adjusted to leave space above input-wrapper (starts at 87.21%) */
   left: 0;
   display: flex;
   flex-direction: column;
   gap: 20px;
-  padding: 10px 2.36% 20px 2.36%;
-  /* Reduced bottom padding since we have more space from bottom value */
+  padding: 140px 2.36% 20px 2.36%;
   overflow-y: auto;
   overflow-x: hidden;
 }
@@ -270,6 +273,7 @@
   overflow: visible;
   width: auto;
   height: auto;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 /* Ensure minimum height is enforced - more specific selector */
@@ -301,6 +305,7 @@
   overflow-wrap: break-word;
   word-break: break-word;
   overflow: visible;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08), 0 2px 4px rgba(0, 0, 0, 0.04);
 }
 
 /* Question Text */
@@ -1431,11 +1436,12 @@
     overflow-y: auto;
   }
 
-  /* Header Unit - pill bar, compact on mobile */
+  /* Header Unit - transparent overlay, compact on mobile */
   .header-unit {
     width: 100%;
     min-height: 50px;
     padding: 8px 16px;
+    background: transparent;
   }
 
   .header-bar {
@@ -1610,13 +1616,12 @@
     font-size: 28px;
   }
 
-  /* Chat Column - Adjust for mobile */
+  /* Chat Column - extends under transparent header; padding-top keeps first content below header */
   .chat-column {
-    top: 12% !important;
-    /* Push below header area on mobile */
+    top: 0 !important;
     padding: 10px !important;
+    padding-top: 100px !important;
     padding-bottom: 120px !important;
-    /* Extra space for input wrapper */
     margin-bottom: 0 !important;
   }
 
