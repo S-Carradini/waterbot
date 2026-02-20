@@ -65,8 +65,8 @@ test.describe('Microphone Button Animation', () => {
     await expect(micButton).toHaveClass(/recording/);
     await expect(backdrop).toBeVisible();
 
-    // Click stop
-    const stopButton = page.locator('button[aria-label="Stop Recording"]');
+    // Click stop (scoped to modal to avoid matching the mic button's aria-label)
+    const stopButton = page.locator('.recording-modal-container button[aria-label="Stop Recording"]');
     await stopButton.click();
     await page.waitForTimeout(400);
 
