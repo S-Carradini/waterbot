@@ -260,7 +260,11 @@ export default function App() {
 
   return (
     <div className="desktop-container">
-      <Header onMicClick={handleMicClick} isListening={isListening} language={language} />
+      <Header
+        onMicClick={handleMicClick}
+        isListening={isListening}
+        language={language}
+      />
 
       {/* Chat Column Container */}
       <div className="chat-column" ref={chatColumnRef}>

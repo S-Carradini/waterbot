@@ -145,129 +145,53 @@
   object-fit: contain;
 }
 
-/* Header row wrapper - no positioning on desktop so children stay relative to .home-inner */
+/* Header row wrapper - Figma Updated Waterbot UI (282:34) */
 .home-header-row {
-  /* Desktop: transparent wrapper; mobile styles in media query */
-}
-
-/* White header bar */
-.home-header-bar {
   position: absolute;
-  top: 2.25%;
-  right: 1.18%;
-  bottom: 86.52%;
-  left: 0.97%;
-  background-color: white;
-  border-radius: 50px;
-  box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
-}
-
-/* ASU Logo */
-.home-asu-logo {
-  display: block;
-  position: absolute;
-  top: 2.54%;
-  right: 85.6%;
-  bottom: 86.82%;
-  left: 2.36%;
-}
-
-.home-asu-logo img {
-  position: absolute;
-  inset: 0;
+  top: 23px;
+  left: 50%;
+  transform: translateX(-50%);
   width: 100%;
-  height: 100%;
-  object-fit: cover;
-  object-position: center;
-  pointer-events: none;
-}
-
-/* Title */
-.home-title {
-  position: absolute;
-  top: 3.81%;
-  right: 25%; /* Increased space from 34.24% */
-  bottom: 88.67%;
-  left: 20%; /* Increased space from 29.79% */
   display: flex;
-  flex-direction: row;
   justify-content: center;
   align-items: center;
-  font-family: 'Libre Franklin', -apple-system, BlinkMacSystemFont, sans-serif;
-  font-weight: 800;
-  line-height: 0;
-  color: #7dc8e0;
-  font-size: 62px;
-  letter-spacing: 0.62px;
-  overflow: visible;
+  pointer-events: none;
+  z-index: 10;
+}
+
+/* Header bar — pill-shaped white banner with logo (Figma design) */
+.home-header-bar {
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 362px;
+  max-width: 90vw;
+  height: 115px;
+  min-height: 60px;
+  padding: 12px 28px;
+  background-color: #ffffff;
+  border-radius: 57.5px; /* pill shape: 50% of height */
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
   box-sizing: border-box;
-  padding: 10px 28px; /* Add padding to prevent text clipping */
 }
 
-.home-title p {
-  line-height: 1.2;
-  white-space: nowrap;
-  margin: 0;
-  padding: 0;
-  overflow: visible;
-  text-overflow: clip;
-  box-sizing: border-box;
-  display: inline-block; /* Allows text to size naturally */
-  text-align: center;
-  width: auto; /* Let text determine width */
-  max-width: 100%; /* Ensure it doesn't exceed container */
+.home-header-bar-logo-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: auto;
+  text-decoration: none;
 }
 
-/* Responsive font size - scales down aggressively to ensure full text fits */
-@media (max-width: 1440px) {
-  .home-title {
-    font-size: clamp(24px, 4vw, 62px); /* More aggressive scaling */
-    letter-spacing: clamp(0.24px, 0.04vw, 0.62px);
-  }
-  
-  .home-title p {
-    line-height: 1.2;
-  }
+.home-header-bar-logo {
+  width: auto;
+  height: 90px;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
-/* Medium screens */
-@media (max-width: 1200px) {
-  .home-title {
-    font-size: clamp(20px, 3.5vw, 50px);
-    letter-spacing: clamp(0.2px, 0.035vw, 0.5px);
-  }
-}
-
-/* Additional breakpoint for smaller screens */
-@media (max-width: 1000px) {
-  .home-title {
-    font-size: clamp(18px, 3vw, 45px);
-    letter-spacing: clamp(0.18px, 0.03vw, 0.45px);
-  }
-  
-  .home-title p {
-    line-height: 1.2;
-  }
-}
-
-/* Mobile and very small screens */
-@media (max-width: 768px) {
-  .home-title {
-    font-size: clamp(16px, 4vw, 35px);
-    letter-spacing: clamp(0.16px, 0.04vw, 0.35px);
-    right: 15%;
-    left: 15%; /* More space on mobile */
-  }
-}
-
-@media (max-width: 480px) {
-  .home-title {
-    font-size: clamp(14px, 5vw, 28px);
-    letter-spacing: clamp(0.14px, 0.05vw, 0.28px);
-    right: 10%;
-    left: 10%; /* Even more space on very small screens */
-  }
-}
 
 /* Chat with Blue button - responsive design */
 .home-chat-button {
@@ -387,81 +311,30 @@
     padding: 10px;
   }
 
-  /* Header row - flex row so logo, title, and info icon sit in one bar on mobile */
+  /* Header row - centered pill bar on mobile */
   .home-header-row {
     position: relative;
     display: flex;
     align-items: center;
-    justify-content: space-between;
+    justify-content: center;
     width: 100%;
     min-height: 60px;
     padding: 0 10px;
     margin-bottom: 10px;
-    border-radius: 20px;
   }
 
-  /* Header Bar - background for the flex row on mobile */
+  /* Header Bar - full-width pill on mobile */
   .home-header-bar {
-    position: absolute;
-    inset: 0;
     width: 100%;
-    height: 100%;
+    max-width: 100%;
     min-height: 60px;
-    border-radius: 20px;
-    margin-bottom: 0;
-    top: auto;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    box-shadow: 0px 4px 4px 0px rgba(0, 0, 0, 0.25);
-  }
-
-  /* ASU Logo - Smaller on mobile, in flow */
-  .home-asu-logo {
-    position: relative;
-    width: 80px;
-    height: 50px;
-    top: auto;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    margin: 5px 10px;
-    flex-shrink: 0;
-    z-index: 1;
-  }
-
-  /* Title - center in remaining space */
-  .home-title {
-    position: relative;
-    width: auto;
-    flex: 1;
-    min-width: 0;
     height: auto;
-    top: auto;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    padding: 10px 6px;
-    margin: 5px 0;
-    justify-content: center;
-    z-index: 1;
+    padding: 10px 20px;
+    border-radius: 30px;
   }
 
-  /* Info Icon - in flow at end of header row */
-  .home-info-icon {
-    position: relative;
-    top: auto;
-    right: auto;
-    bottom: auto;
-    left: auto;
-    width: 50px;
-    height: 50px;
-    flex-shrink: 0;
-    z-index: 1;
-  }
-
-  .home-info-icon-text {
-    font-size: 24px;
+  .home-header-bar-logo {
+    height: 40px;
   }
 
   /* Blue Character - Adjust for mobile */
@@ -526,28 +399,12 @@
 
   .home-header-bar {
     min-height: 50px;
-    border-radius: 15px;
-    margin-bottom: 8px;
+    border-radius: 25px;
+    padding: 8px 16px;
   }
 
-  .home-asu-logo {
-    width: 60px;
-    height: 40px;
-    margin: 3px 8px;
-  }
-
-  .home-title {
-    padding: 8px;
-    margin: 3px 0;
-  }
-
-  .home-info-icon {
-    width: 40px;
-    height: 40px;
-  }
-
-  .home-info-icon-text {
-    font-size: 20px;
+  .home-header-bar-logo {
+    height: 36px;
   }
 
   .home-blue-character {
@@ -606,4 +463,3 @@
     max-width: 300px;
   }
 }
-

@@ -265,7 +265,11 @@ export default function MobileChatbot() {
   return (
     <MobileOnlyGuard>
       <div className="desktop-container mobile-chatbot-container">
-        <Header onMicClick={handleMicClick} isListening={isListening} language={language} />
+        <Header
+          onMicClick={handleMicClick}
+          isListening={isListening}
+          language={language}
+        />
 
       {/* Chat Column Container */}
       <div className="chat-column mobile-chat-column" ref={chatColumnRef}>

@@ -3,17 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import './Home.css';
 
 // Local image paths - images should be exported from Figma and placed in /public/images/
-// Figma asset IDs for reference:
-// - ASU Sunburst: 737ecde3-562a-4d5e-b278-42a4b4136c3b
-// - Vector decoration: ec688a0f-e832-4d9b-a81a-a44dd074f6ab
-// - Union chat bubble: 5c895428-f3b1-40b3-b532-27a6bfef4502
-// - Original Blue character: 98ac2073-514b-43a3-84ae-d49d5cbf6b86
-// - Info icon: dc0127b7-f4c5-41d4-975a-de6a9f180211
-const imgAsuSunBurst = "/images/asu-sunburst.png";
+const imgWatersimLogo = "/images/watersim-logo.svg";
 const imgVector = "/images/vector-decoration.png";
 const imgUnion = "/images/union-chat-bubble.png";
 const imgOriginalBlue = "/images/original-blue.png";
-const imgGroup11142 = "/images/info-icon.png";
 
 export default function Home() {
   const navigate = useNavigate();
@@ -43,33 +36,17 @@ export default function Home() {
         <img alt="" src={imgOriginalBlue} />
       </div>
 
-      {/* Header row: bar, logo, title, info icon - wrapped for mobile flex layout */}
+      {/* Header row: pill-shaped white bar with WaterSimmersive logo (Figma: Updated Waterbot UI 282:34) */}
       <div className="home-header-row">
-        {/* White header bar (background on mobile) */}
-        <div className="home-header-bar" data-node-id="1:38" />
-
-        {/* ASU Logo */}
-        <a
-          href="https://asu.edu"
-          target="_blank"
-          rel="noopener noreferrer"
-          className="home-asu-logo"
-          aria-label="Arizona State University"
-          data-name="ASU_SunBurst_1_RGB_MaroonGold_600ppi 1"
-          data-node-id="1:39"
-        >
-          <img alt="" src={imgAsuSunBurst} />
-        </a>
-
-        {/* Title */}
-        <div className="home-title" data-node-id="106:316">
-          <p>Chat With Blue</p>
-        </div>
-
-        {/* Info icon */}
-        <div className="home-info-icon" data-node-id="6:276">
-          <img alt="" src={imgGroup11142} />
-          <p className="home-info-icon-text" data-node-id="6:280">i</p>
+        <div className="home-header-bar" data-node-id="1:38">
+          <a
+            href="https://watersimmersive.net/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="home-header-bar-logo-link"
+          >
+            <img alt="WaterSimmersive" src={imgWatersimLogo} className="home-header-bar-logo" />
+          </a>
         </div>
       </div>
       </div>

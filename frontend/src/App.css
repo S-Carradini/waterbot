@@ -32,12 +32,47 @@
   }
 }
 
-/* Header Unit - Contains main card, ASU sunburst, title, and download transcript */
+/* Header Unit - Pill-shaped white bar with WaterSimmersive logo (matches Home page Figma design) */
 .header-unit {
   position: relative;
-  width: 95%;
-  height: 100%;
-  overflow: visible;
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 60px;
+  padding: 12px 20px;
+  box-sizing: border-box;
+  flex-shrink: 0;
+}
+
+.header-bar {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 362px;
+  max-width: 90vw;
+  height: 115px;
+  min-height: 60px;
+  padding: 12px 28px;
+  background-color: #ffffff;
+  border-radius: 57.5px;
+  box-shadow: 0 4px 4px rgba(0, 0, 0, 0.25);
+  box-sizing: border-box;
+}
+
+.header-bar-logo-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  text-decoration: none;
+}
+
+.header-bar-logo {
+  width: auto;
+  height: 90px;
+  max-width: 100%;
+  object-fit: contain;
+  object-position: center;
 }
 
 
@@ -133,23 +168,31 @@
   border-radius: 50px;
 }
 
-/* ASU Sunburst Background */
-.asu-sunburst {
+/* WaterSim Logo - constrained size, fully contained, no clipping */
+.watersim-logo {
   position: absolute;
   top: 2.54%;
-  right: 85.6%;
-  bottom: 86.82%;
   left: 2.36%;
+  width: 70px;
+  max-width: 10%;
+  height: 40px;
+  max-height: 70%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px;
+  box-sizing: border-box;
+  overflow: visible;
 }
 
-.asu-sunburst img {
-  position: absolute;
-  inset: 0;
+.watersim-logo img {
+  position: relative;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
   object-position: center;
   pointer-events: none;
-  width: 100%;
-  height: 100%;
+  flex-shrink: 0;
 }
 
 /* Title */
@@ -220,11 +263,10 @@
   max-width: 100%;
   background-color: white;
   border-radius: 30px;
-  padding: 20px;
+  padding: 14px 18px;
   display: flex;
   flex-direction: column;
-  gap: 15px;
-  /* Added gap between answer text and actions row for better spacing */
+  gap: 10px;
   overflow: visible;
   width: auto;
   height: auto;
@@ -295,40 +337,44 @@
   color: black;
   font-size: 31px;
   line-height: 32px;
-  /* Slightly above font-size to prevent overlap, but tighter than 35px */
   letter-spacing: -0.8px;
   overflow-wrap: break-word;
-  /* Wrap long URLs and prevent overflow */
   word-break: break-word;
   overflow: visible;
   z-index: 1;
-  margin-bottom: 5px;
-  /* Added margin for better spacing */
+  margin-bottom: 0;
   padding-left: 4px;
-  /* Add padding to prevent first word from being cut off due to negative letter-spacing */
   padding-right: 4px;
-  /* Add padding on right as well for consistency */
 }
 
 .answer-text p {
-  line-height: 40px;
-  /* Increased for better readability, esp. source lists with links */
+  line-height: 1.28;
   white-space: pre-wrap;
   overflow-wrap: break-word;
   word-break: break-word;
   margin: 0;
-  margin-bottom: 12px;
-  /* Spacing between paragraphs */
+  margin-bottom: 6px;
   padding: 0;
-  min-height: 50px;
-  /* Ensure paragraph has minimum height even when empty during typewriter effect */
+  min-height: 28px;
   text-indent: 0;
-  /* Ensure no text indentation */
 }
 
 .answer-text p:last-child {
   margin-bottom: 0;
-  /* No margin after last paragraph */
+}
+
+/* Compact list spacing inside answer (numbered/bulleted content) */
+.answer-text ol,
+.answer-text ul {
+  margin: 4px 0 6px 0;
+  padding-left: 1.4em;
+}
+.answer-text li {
+  margin-bottom: 2px;
+  line-height: 1.28;
+}
+.answer-text li:last-child {
+  margin-bottom: 0;
 }
 
 /* Thumbs Buttons Container */
@@ -366,9 +412,8 @@
   justify-content: space-evenly;
   display: flex;
   align-items: center;
-  gap: 15px;
-  padding-top: 5px;
-  /* Added padding for better spacing */
+  gap: 10px;
+  padding-top: 2px;
   margin-top: 0;
   margin-bottom: 0;
   padding-bottom: 0;
@@ -658,7 +703,7 @@
   bottom: 0;
   top: 0;
   width: 60%;
-  background-color: #8c1d40;
+  background-color: #254C63;
   border-radius: 43px;
   transition: left 0.3s ease, right 0.3s ease;
   z-index: 1;
@@ -771,7 +816,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8c1d40;
+  color: #254C63;
   font-size: clamp(24px, 2.08vw, 40px);
   transition: opacity 0.2s;
 }
@@ -796,7 +841,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8c1d40;
+  color: #254C63;
   font-size: clamp(24px, 2.08vw, 40px);
   transition: opacity 0.2s;
   flex-shrink: 0;
@@ -818,7 +863,7 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  color: #8c1d40;
+  color: #254C63;
   font-size: clamp(24px, 2.08vw, 40px);
   transition: opacity 0.2s;
   flex-shrink: 0;
@@ -845,7 +890,7 @@
 }
 
 .mic-icon-button.recording {
-  background-color: #8C1D40;
+  background-color: #254C63;
   color: white;
   animation: recordingPulse 1.5s ease-in-out infinite;
 }
@@ -982,16 +1027,16 @@
 
 
 /* Download Transcript Button */
-/* Header Buttons Container - Home, Download, Mic */
+/* Header Buttons Container - Home, Download, Mic (Figma 282:104: vertical stack, right edge) */
 .header-buttons-container {
   position: absolute;
-  top: 2.1%;
-  right: -2.19%;
+  top: 24px;
+  right: 24px;
   display: flex;
-  flex-direction: row;
-  align-items: center;
-  justify-content: flex-end;
-  gap: 25px;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: flex-start;
+  gap: 12px;
   overflow: visible;
   z-index: 100;
 }
@@ -1000,8 +1045,9 @@
 .header-dropdown {
   position: relative;
   display: flex;
-  align-items: center;
-  justify-content: flex-end;
+  flex-direction: column;
+  align-items: stretch;
+  justify-content: flex-start;
 }
 
 .header-dropdown-toggle {
@@ -1028,24 +1074,22 @@
 
 .header-dropdown-toggle i {
   font-size: 32px;
-  color: #8c1d40;
+  color: #254C63;
 }
 
+/* Figma 282:104: vertical stack, white rounded buttons, dark gray icons */
 .header-dropdown-menu {
   position: relative;
-  background: white;
-  border-radius: 50px;
-  /* Pill shape */
-  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.15);
-  padding: 18px;
-  /* Increased by 50% from 12px */
+  background: transparent;
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0;
   z-index: 102;
   display: flex;
   flex-direction: column;
   gap: 12px;
-  /* Increased by 50% from 8px */
-  overflow: hidden;
-  align-items: center;
+  overflow: visible;
+  align-items: stretch;
 }
 
 @keyframes dropdownFadeIn {
@@ -1060,27 +1104,28 @@
   }
 }
 
+/* Figma 282:104: white rounded buttons, dark gray icons */
 .header-dropdown-item {
   display: flex;
   align-items: center;
   justify-content: center;
   padding: 0;
   width: 72px;
-  /* Increased by 50% from 48px */
   height: 72px;
-  /* Increased by 50% from 48px */
   min-width: 72px;
-  /* Increased by 50% from 48px */
   min-height: 72px;
-  /* Increased by 50% from 48px */
-  background: #8c1d40;
-  /* Red circle background */
+  background: #ffffff;
   border: none;
   border-radius: 50%;
-  /* Circular icon buttons */
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   cursor: pointer;
   transition: all 0.2s ease;
   flex-shrink: 0;
+}
+
+.header-dropdown-item:hover {
+  opacity: 0.9;
+  transform: scale(1.02);
 }
 
 .header-dropdown-item:disabled {
@@ -1089,19 +1134,17 @@
 }
 
 .header-dropdown-item img {
-  width: 48px;
-  /* Increased by 50% from 32px */
-  height: 48px;
-  /* Increased by 50% from 32px */
+  width: 36px;
+  height: 36px;
   object-fit: contain;
   flex-shrink: 0;
+  filter: brightness(0) saturate(100%);
+  opacity: 0.7;
 }
 
 .header-dropdown-download img {
-  width: 70px;
-  /* Maximum size to fit in 72px button */
-  height: 70px;
-  /* Maximum size to fit in 72px button */
+  width: 42px;
+  height: 42px;
 }
 
 .header-dropdown-item i {
@@ -1110,24 +1153,22 @@
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 34px;
-  color: white;
+  font-size: 28px;
+  color: #254c63;
   flex-shrink: 0;
 }
 
 .header-dropdown-item.recording {
-  background-color: #6b1630;
-  /* Darker red when recording */
-  color: white;
+  background-color: #ffffff;
+  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.15);
 }
 
 .header-dropdown-item.recording i {
-  color: white;
+  color: #254c63;
 }
 
 .header-dropdown-item.recording:hover {
-  background-color: #6b1630;
-  /* Keep same color, no hover change */
+  background-color: #e8f2f6;
 }
 
 
@@ -1138,7 +1179,7 @@
   /* Increased by 50% from 24px */
   border: 4px solid #f3f3f3;
   /* Increased by 50% from 3px */
-  border-top: 4px solid #8c1d40;
+  border-top: 4px solid #254C63;
   /* Increased by 50% from 3px */
   border-radius: 50%;
   animation: spin 1s linear infinite;
@@ -1379,13 +1420,27 @@
     overflow-y: auto;
   }
 
-  /* Header Unit */
+  /* Header Unit - pill bar, compact on mobile */
   .header-unit {
     width: 100%;
-    min-height: 100vh;
+    min-height: 50px;
+    padding: 8px 16px;
   }
 
-  /* Header Buttons Container - Horizontal row on mobile, tucked into header */
+  .header-bar {
+    width: 100%;
+    max-width: 100%;
+    min-height: 60px;
+    height: auto;
+    padding: 10px 20px;
+    border-radius: 30px;
+  }
+
+  .header-bar-logo {
+    height: 40px;
+  }
+
+  /* Header Buttons Container - removed (logo-only header) */
   .header-buttons-container {
     position: fixed;
     top: 8px;
@@ -1599,7 +1654,7 @@
   /* Content Card - Adjust for mobile */
   .content-card-1 {
     max-width: 85%;
-    padding: 15px;
+    padding: 12px 14px;
     border-radius: 20px;
     min-height: 100px;
   }
@@ -1613,13 +1668,13 @@
 
   .answer-text p {
     line-height: 22px;
-    margin-bottom: 10px;
+    margin-bottom: 6px;
   }
 
   /* Actions Row - Stack on mobile if needed */
   .actions-row {
     flex-wrap: wrap;
-    gap: 10px;
+    gap: 8px;
   }
 
   /* Thumbs Container */
@@ -1683,6 +1738,16 @@
 
 /* Small mobile devices (480px and smaller) */
 @media (max-width: 480px) {
+
+  .header-bar {
+    min-height: 50px;
+    border-radius: 25px;
+    padding: 8px 16px;
+  }
+
+  .header-bar-logo {
+    height: 36px;
+  }
 
   /* Header Buttons Container - Even smaller */
   .header-buttons-container {
@@ -1804,7 +1869,7 @@
 
   .answer-text p {
     line-height: 20px;
-    margin-bottom: 8px;
+    margin-bottom: 6px;
   }
 
   /* Buttons - More compact */

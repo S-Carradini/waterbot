@@ -100,7 +100,7 @@ html {
 .asu-logo {
   width: 93px;
   height: 72px;
-  content: url(../images/arizona-state-university-logo-vertical.webp);
+  content: url(../images/watersim-logo.svg);
   background-repeat: no-repeat;
   background-size: cover;
 
@@ -187,7 +187,7 @@ html {
 }
 
 .btn-new-chat {
-  background-color: #8c1d40;
+  background-color: #254C63;
   font-size: 1rem;
   font-weight: 600;
   border-color: transparent;
@@ -196,7 +196,7 @@ html {
 }
 
 .btn-new-chat:hover {
-  background-color: #8c1d40;
+  background-color: #254C63;
   color: white;
   transform: scale(1.05);
 }
@@ -407,7 +407,7 @@ a {
   opacity: 0;
   overflow: hidden;
   border-radius: 47px;
-  background: #8c1d40;
+  background: #254C63;
   transition: height 0.3s ease, opacity 0.3s ease;
 }
 
@@ -429,7 +429,7 @@ a {
   margin: 12px auto;
   border-radius: 60%;
   background: #fff;
-  color: #8c1d40;
+  color: #254C63;
   text-decoration: none;
   font-size: 35px;
 }
@@ -505,7 +505,7 @@ a {
 }
 
 .dislike-buttons {
-  border: 1px solid #8c1d40;
+  border: 1px solid #254C63;
   border-radius: 20px;
   margin-right: 5 rem;
 }
@@ -634,9 +634,9 @@ waterdrop5 {
 .followup-buttons,
 .dislike-buttons {
   cursor: pointer;
-  color: #8c1d40;
+  color: #254C63;
   background: white;
-  border: 1px solid #8c1d40;
+  border: 1px solid #254C63;
   border-radius: 20px;
   text-align: center;
   vertical-align: middle;
@@ -717,7 +717,7 @@ waterdrop5 {
 .reaction-feedback {
   /* content: "\F407" !important; */
   color: white !important;
-  background: #8c1d40 !important;
+  background: #254C63 !important;
   border-radius: 50%;
   text-align: center;
   vertical-align: middle;
@@ -732,7 +732,7 @@ waterdrop5 {
 .dislikeButton-feedback {
   /* content: "\F407" !important; */
   color: white !important;
-  background: #8c1d40 !important;
+  background: #254C63 !important;
   text-align: center;
   vertical-align: middle;
   padding: 8px;
@@ -744,14 +744,14 @@ waterdrop5 {
 .followup-buttons:hover,
 .dislike-buttons:hover {
   color: white;
-  background: #8c1d40;
+  background: #254C63;
   border: 1px solid black;
   cursor: pointer;
 }
 
 .followup-selected {
   color: white;
-  background: #8c1d40;
+  background: #254C63;
 }
 
 .input-chatbot-question {
@@ -761,7 +761,7 @@ waterdrop5 {
 }
 
 .user-icon-background {
-  color: #8c1d40;
+  color: #254C63;
 }
 
 .text-input-container {
@@ -771,14 +771,14 @@ waterdrop5 {
 }
 
 .btn-submit {
-  background-color: #8c1d40;
+  background-color: #254C63;
   color: white;
   border-radius: 0rem 1rem 1rem 0rem;
   padding: 0.75rem 1.25rem;
 }
 
 .btn-submit:hover {
-  background-color: #8c1d40;
+  background-color: #254C63;
   color: white;
   transform: scale(1.05);
 }
@@ -819,8 +819,8 @@ waterdrop5 {
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background-color: #8c1d40;
-  color: #8c1d40;
+  background-color: #254C63;
+  color: #254C63;
   animation: dot-flashing 1s infinite linear alternate;
   animation-delay: 0.5s;
 }
@@ -838,8 +838,8 @@ waterdrop5 {
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background-color: #8c1d40;
-  color: #8c1d40;
+  background-color: #254C63;
+  color: #254C63;
   animation: dot-flashing 1s infinite alternate;
   animation-delay: 0s;
 }
@@ -849,15 +849,15 @@ waterdrop5 {
   width: 10px;
   height: 10px;
   border-radius: 5px;
-  background-color: #8c1d40;
-  color: #8c1d40;
+  background-color: #254C63;
+  color: #254C63;
   animation: dot-flashing 1s infinite alternate;
   animation-delay: 1s;
 }
 
 @keyframes dot-flashing {
   0% {
-    background-color: #8c1d40;
+    background-color: #254C63;
   }
 
   50%,
@@ -933,7 +933,7 @@ waterdrop5 {
 }
 
 .btn-mic:hover {
-  background-color: #8c1d40;
+  background-color: #254C63;
   color: white;
 }
 
@@ -989,7 +989,7 @@ waterdrop5 {
 }
 
 .language-button.english-button {
-  background: #8c1d40;
+  background: #254C63;
   color: #ffffff;
   border-top-left-radius: 25.5px;
   border-bottom-left-radius: 25.5px;
@@ -1041,14 +1041,14 @@ waterdrop5 {
 }
 
 .language-button.english-button:hover {
-  background-color: #a83250;
+  background-color: #254c63;
   /* Slightly lighter shade for hover */
   color: #f0f0f0;
   /* Light greyish white for text */
 }
 
 .language-button.active {
-  background-color: #8c1d40;
+  background-color: #254C63;
   color: #ffffff;
 }
 
@@ -1085,7 +1085,7 @@ waterdrop5 {
   margin-top: 0;
   flex-shrink: 0;
   /* Prevent the button from shrinking */
-  background-color: #8c1d40;
+  background-color: #254C63;
   /* Background color */
   padding: 5px 0;
   color: white;
@@ -1113,7 +1113,7 @@ waterdrop5 {
 }
 
 .transcript-button:hover {
-  background-color: #a83250;
+  background-color: #254c63;
   /* Slightly lighter shade of the original color for the hover state */
   color: #f0f0f0;
   /* A slightly off-white color for better contrast */
@@ -1141,7 +1141,7 @@ main {
   display: none;
   border: none;
   padding: 0.5rem;
-  color: #8c1d40;
+  color: #254C63;
 }
 
 .navbar-toggler:focus {
@@ -1205,7 +1205,7 @@ main {
 /* Update navigation button styles */
 .nav-item .nav-link[href="/"],
 .nav-item .nav-link#transcript-button {
-  background-color: #8c1d40;
+  background-color: #254C63;
   color: white !important;
   font-size: 1rem;
   font-weight: 500;
@@ -1217,7 +1217,7 @@ main {
 
 .nav-item .nav-link[href="/"]:hover,
 .nav-item .nav-link#transcript-button:hover {
-  background-color: #a83250;
+  background-color: #254c63;
   color: white !important;
   transform: scale(1.05);
 }

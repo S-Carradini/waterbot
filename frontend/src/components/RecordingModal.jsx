@@ -446,7 +446,7 @@ export default function RecordingModal({ isVisible, onClose, transcript = "" }) 
                 >
                   <div
                     style={{
-                      backgroundColor: '#8C1D40',
+                      backgroundColor: '#254c63',
                       position: 'relative',
                       borderRadius: '50%',
                       width: '80px',
@@ -459,11 +459,11 @@ export default function RecordingModal({ isVisible, onClose, transcript = "" }) 
                       boxShadow: '0 4px 12px rgba(0, 0, 0, 0.3)',
                     }}
                     onMouseEnter={(e) => {
-                      e.currentTarget.style.backgroundColor = '#7a1937';
+                      e.currentTarget.style.backgroundColor = '#1e3d4f';
                       e.currentTarget.style.transform = 'scale(1.05)';
                     }}
                     onMouseLeave={(e) => {
-                      e.currentTarget.style.backgroundColor = '#8C1D40';
+                      e.currentTarget.style.backgroundColor = '#254c63';
                       e.currentTarget.style.transform = 'scale(1)';
                     }}
                     data-name="Stop Recording"
@@ -472,7 +472,7 @@ export default function RecordingModal({ isVisible, onClose, transcript = "" }) 
                       aria-hidden="true"
                       style={{
                         position: 'absolute',
-                        border: '2px solid #5a1229',
+                        border: '2px solid #254c63',
                         inset: '-2px',
                         pointerEvents: 'none',
                         borderRadius: '50%'

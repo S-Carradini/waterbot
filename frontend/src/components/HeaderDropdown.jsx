@@ -1,7 +1,5 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import imgEllipse3 from '../assets/home.png';
-import imgDownloadTranscript from '../assets/download-transcript.png';
 import { downloadTranscript } from '../services/api';
 import { uiText } from '../i18n/uiText';
 
@@ -48,7 +46,7 @@ export default function HeaderDropdown({ onMicClick, isListening, language = 'en
           onClick={handleHome}
           aria-label={t.ariaHome}
         >
-          <img alt={t.ariaHome} src={imgEllipse3} />
+          <i className="fas fa-home" aria-hidden="true"></i>
         </button>
         
         <button 
@@ -60,7 +58,7 @@ export default function HeaderDropdown({ onMicClick, isListening, language = 'en
           {isDownloading ? (
             <div className="loading-spinner"></div>
           ) : (
-            <img alt={t.ariaDownloadTranscript} src={imgDownloadTranscript} />
+            <i className="fas fa-download" aria-hidden="true"></i>
           )}
         </button>
         
