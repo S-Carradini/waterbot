@@ -42,11 +42,10 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import psycopg2
 from psycopg2.extras import execute_values, DictCursor
 
-# Configure logging
+# Configure logging — write to stdout so CloudWatch can capture logs from ECS containers
 logging.basicConfig(
-    filename='app.log',  # Log to a file named app.log
-    level=logging.INFO,  # Log all INFO level messages and above
-    format='%(asctime)s - %(levelname)s - %(message)s'  # Include timestamp, log level, and message
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
 )
 
 # Ensure reproducibility by setting the seed
@@ -423,6 +422,7 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
         return json.dumps(serializable_messages)
     except Exception as e:
         logging.error("Database Error: %s", e, exc_info=True)
+        return json.dumps([])
 
 def log_message(session_uuid, msg_id, user_query, response_content, source):
     """Insert a message into the PostgreSQL database. No-op if DB is not configured or connection fails."""
