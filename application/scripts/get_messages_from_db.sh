@@ -9,9 +9,6 @@
 # Get the directory where THIS script is located
 SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
 
-# Get the directory where THIS script is located
-SCRIPT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )"
-
 # Load environment variables from .env file
 if [ -f "$SCRIPT_DIR/.env" ]; then
     echo "📄 Loading .env from: $SCRIPT_DIR/.env"
@@ -52,12 +49,30 @@ echo ""
 MESSAGES=$(curl -s -u "$USERNAME:$PASSWORD" "$PROD_URL/messages")
 
 # Check if fetch was successful
-if [ -z "$MESSAGES" ] || [ "$MESSAGES" == "null" ]; then
-    echo "❌ Error: Could not fetch messages from database"
+if [ -z "$MESSAGES" ]; then
+    echo "❌ Error: No response from $PROD_URL/messages"
     echo "   This might mean:"
     echo "   • Production is not deployed yet"
-    echo "   • PostgreSQL RDS not set up in us-east-1"
     echo "   • Network connectivity issue"
+    echo ""
+    echo "💡 Debug: curl -v -u \"\$API_USERNAME:\$API_PASSWORD\" \"$PROD_URL/messages\""
+    exit 1
+fi
+
+if [ "$MESSAGES" == "null" ]; then
+    echo "❌ Error: API returned null (database error on server side)"
+    echo "   This means the /messages endpoint hit a database exception."
+    echo "   Check CloudWatch logs for the production ECS task."
+    echo ""
+    echo "💡 Debug: aws logs tail <log-group> --region us-east-1"
+    exit 1
+fi
+
+# Ensure response is a JSON array (reject 401/500 error bodies like {"detail":"Unauthorized"})
+if ! echo "$MESSAGES" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    echo "❌ Error: API did not return a message list (likely auth failed)."
+    echo "   Set API_USERNAME and API_PASSWORD in your .env to match the backend."
+    echo "   See application/sample.env for the expected variable names."
     exit 1
 fi
 

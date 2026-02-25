@@ -1,5 +1,7 @@
 from constructs import Construct
 from aws_cdk import (
+    BundlingOptions,
+    ILocalBundling,
     Duration,
     Size,
     Stack,
@@ -24,8 +26,54 @@ from aws_cdk import (
     aws_ecs_patterns as ecs_patterns,
     custom_resources                  # ← NEW: For custom resource provider
 )
+import jsii
 import os
+import shutil
+import subprocess
 import json                           # ← NEW: For JSON handling in secrets
+
+
+@jsii.implements(ILocalBundling)
+class PipInstallBundling:
+    """Bundle a Python Lambda locally (pip install + copy source). Falls back to Docker if this fails."""
+
+    def __init__(self, source_dir: str):
+        self._source_dir = source_dir
+
+    def try_bundle(self, output_dir: str, *args, **kwargs) -> bool:
+        try:
+            subprocess.check_call(
+                [
+                    "pip", "install",
+                    "-r", "requirements.txt",
+                    "-t", output_dir,
+                    "--platform", "manylinux2014_x86_64",
+                    "--implementation", "cp",
+                    "--python-version", "3.11",
+                    "--only-binary", ":all:",
+                    "--upgrade", "--quiet",
+                ],
+                cwd=self._source_dir,
+            )
+            for item in os.listdir(self._source_dir):
+                src = os.path.join(self._source_dir, item)
+                if os.path.isfile(src):
+                    shutil.copy2(src, os.path.join(output_dir, item))
+            return True
+        except Exception:
+            return False
+
+
+def _python_bundling_options(source_dir: str) -> BundlingOptions:
+    """Return BundlingOptions that try local pip install first, Docker second."""
+    return BundlingOptions(
+        local=PipInstallBundling(source_dir),
+        image=lambda_.Runtime.PYTHON_3_11.bundling_image,
+        command=[
+            "bash", "-c",
+            "pip install -r requirements.txt -t /asset-output && cp -au . /asset-output",
+        ],
+    )
 
 class AppStack(Stack):
 
@@ -198,7 +246,10 @@ class AppStack(Stack):
             description="Initialize PostgreSQL database schema (creates tables and indexes)",
             runtime=lambda_.Runtime.PYTHON_3_11,
             handler="index.handler",
-            code=lambda_.Code.from_asset(os.path.join("lambda", "db_init")),
+            code=lambda_.Code.from_asset(
+                os.path.join("lambda", "db_init"),
+                bundling=_python_bundling_options(os.path.join("lambda", "db_init")),
+            ),
             timeout=Duration.minutes(2),  # Schema creation should be fast
             vpc=vpc,  # Must be in VPC to reach RDS
             vpc_subnets=ec2.SubnetSelection(
@@ -248,7 +299,10 @@ class AppStack(Stack):
             description="Backup PostgreSQL messages table to S3 (incremental exports)",
             runtime=lambda_.Runtime.PYTHON_3_11,
             handler="index.handler",
-            code=lambda_.Code.from_asset(os.path.join("lambda", "postgres_backup")),
+            code=lambda_.Code.from_asset(
+                os.path.join("lambda", "postgres_backup"),
+                bundling=_python_bundling_options(os.path.join("lambda", "postgres_backup")),
+            ),
             timeout=Duration.minutes(5),  # Backup can take a few minutes for large datasets
             vpc=vpc,  # Must be in VPC to reach RDS
             vpc_subnets=ec2.SubnetSelection(
