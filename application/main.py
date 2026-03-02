@@ -294,9 +294,14 @@ def _ensure_messages_table():
                 response_content TEXT NOT NULL,
                 source JSONB,
                 chatbot_type VARCHAR(50) DEFAULT 'waterbot',
-                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+                created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+                reaction SMALLINT,
+                user_comment TEXT
             );
         """)
+        # Add columns for existing tables that predate the rating feature
+        cur.execute("ALTER TABLE messages ADD COLUMN IF NOT EXISTS reaction SMALLINT;")
+        cur.execute("ALTER TABLE messages ADD COLUMN IF NOT EXISTS user_comment TEXT;")
         for idx in (
             "CREATE INDEX IF NOT EXISTS idx_session_uuid ON messages(session_uuid);",
             "CREATE INDEX IF NOT EXISTS idx_created_at ON messages(created_at);",
@@ -460,6 +465,33 @@ def log_message(session_uuid, msg_id, user_query, response_content, source):
             logging.error("Database Error: %s", e, exc_info=True)
             return
 
+def update_rating_pg(session_uuid, msg_id, reaction=None, user_comment=None):
+    """Update reaction/user_comment on an existing message row. No-op if DB is not configured."""
+    if not POSTGRES_ENABLED:
+        return
+    sets, vals = [], []
+    if reaction is not None:
+        sets.append("reaction = %s")
+        vals.append(int(reaction))
+    if user_comment is not None:
+        sets.append("user_comment = %s")
+        vals.append(user_comment)
+    if not sets:
+        return
+    vals.extend([session_uuid, str(msg_id)])
+    query = f"UPDATE messages SET {', '.join(sets)} WHERE session_uuid = %s AND msg_id = %s;"
+    try:
+        conn = _pg_connect()
+        cur = conn.cursor()
+        cur.execute(query, vals)
+        conn.commit()
+        cur.close()
+        conn.close()
+        logging.info("Rating updated in PostgreSQL for session=%s msg=%s", session_uuid, msg_id)
+    except Exception as e:
+        logging.error("Failed to update rating in PostgreSQL: %s", e, exc_info=True)
+
+
 @app.post("/session-transcript")
 async def session_transcript_post(request: Request):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
@@ -504,21 +536,11 @@ async def submit_rating_api_post(
         userComment: str = Form(None, description="Optional user comment")
     ):
     try:
-        if not MESSAGES_TABLE:
-            # DynamoDB not configured: accept feedback but don't persist; UI still works
-            return {"status": "success"}
         session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
         counter_uuid = await memory.get_message_count_uuid(session_uuid)
-        message_uuid_combo = counter_uuid + "." + message_id
-        await datastore.update_rating_fields(
-            session_uuid=session_uuid,
-            message_id=message_uuid_combo,
-            reaction=reaction,
-            userComment=userComment
-        )
+        msg_id = counter_uuid + "." + message_id
+        update_rating_pg(session_uuid, msg_id, reaction=reaction, user_comment=userComment)
         return {"status": "success"}
-    except ValueError as e:
-        raise HTTPException(status_code=500, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"Error updating rating: {str(e)}")
 

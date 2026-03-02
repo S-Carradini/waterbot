@@ -132,13 +132,20 @@ class TestTranslateEndpoint:
 # POST /submit_rating_api
 # ---------------------------------------------------------------------------
 class TestRatingEndpoint:
-    async def test_submit_rating_no_dynamo_returns_success(self, client):
-        """POST /submit_rating_api when MESSAGES_TABLE is unset should return {status: success}."""
+    async def test_submit_rating_returns_success(self, client):
+        """POST /submit_rating_api returns success (no-op when POSTGRES_ENABLED=False)."""
         response = await client.post(
             "/submit_rating_api",
-            data={"message_id": "1", "reaction": "thumbs_up"},
+            data={"message_id": "1", "reaction": "1"},
         )
-        # Either 200 success (no DynamoDB configured) or 500 if mock needed
-        assert response.status_code in (200, 500)
-        if response.status_code == 200:
-            assert response.json().get("status") == "success"
+        assert response.status_code == 200
+        assert response.json().get("status") == "success"
+
+    async def test_submit_rating_with_comment(self, client):
+        """POST /submit_rating_api with userComment returns success."""
+        response = await client.post(
+            "/submit_rating_api",
+            data={"message_id": "1", "reaction": "-1", "userComment": "Not helpful"},
+        )
+        assert response.status_code == 200
+        assert response.json().get("status") == "success"
