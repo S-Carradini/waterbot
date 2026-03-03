@@ -1,0 +1,45 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Admin - Data Download</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet" />
+</head>
+<body class="bg-light">
+  <div class="container py-5" style="max-width: 480px;">
+    <h2 class="mb-4">Download Chat Messages</h2>
+
+    <div class="mb-3">
+      <label for="format" class="form-label">Format</label>
+      <select id="format" class="form-select">
+        <option value="csv" selected>CSV</option>
+        <option value="json">JSON</option>
+      </select>
+    </div>
+
+    <div class="mb-3">
+      <label for="chatbot" class="form-label">Chatbot</label>
+      <select id="chatbot" class="form-select">
+        <option value="" selected>All</option>
+        <option value="waterbot">waterbot</option>
+        <option value="riverbot">riverbot</option>
+      </select>
+    </div>
+
+    <button id="download-btn" class="btn btn-primary">Download</button>
+  </div>
+
+  <script>
+    document.getElementById("download-btn").addEventListener("click", function () {
+      var fmt = document.getElementById("format").value;
+      var chatbot = document.getElementById("chatbot").value;
+      var url = "/download-messages?format=" + encodeURIComponent(fmt);
+      if (chatbot) {
+        url += "&chatbot_type=" + encodeURIComponent(chatbot);
+      }
+      window.location.href = url;
+    });
+  </script>
+</body>
+</html>

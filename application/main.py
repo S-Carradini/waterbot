@@ -501,6 +501,11 @@ def download_messages(
         raise HTTPException(status_code=500, detail="Failed to export messages")
 
 
+@app.get("/admin/data", response_class=HTMLResponse)
+def admin_data_page(request: Request, user: str = Depends(authenticate)):
+    return templates.TemplateResponse("admin_data.html", {"request": request})
+
+
 def log_message(session_uuid, msg_id, user_query, response_content, source):
     """Insert a message into the PostgreSQL database. No-op if DB is not configured or connection fails."""
     if not POSTGRES_ENABLED:
