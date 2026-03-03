@@ -17,7 +17,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware  # ✅ ADDED: CORS middleware import
 
 from managers.memory_manager import MemoryManager
-from managers.dynamodb_manager import DynamoDBManager
 from managers.rag_manager import RAGManager
 from sources_verifier import should_show_sources
 from managers.pgvector_store import PgVectorStore
@@ -228,7 +227,6 @@ secret_key=secrets.token_urlsafe(32)
 app.add_middleware(SetCookieMiddleware)
 app.add_middleware(SessionMiddleware, secret_key=secret_key)
 
-MESSAGES_TABLE=os.getenv("MESSAGES_TABLE")
 TRANSCRIPT_BUCKET_NAME=os.getenv("TRANSCRIPT_BUCKET_NAME")
 
 # adapter choices
@@ -248,7 +246,6 @@ embeddings = llm_adapter.get_embeddings()
 
 # Manager classes
 memory = MemoryManager()  # Assuming you have a MemoryManager class
-datastore = DynamoDBManager(messages_table=MESSAGES_TABLE)
 s3_manager = S3Manager(bucket_name=TRANSCRIPT_BUCKET_NAME)
 
 # Database connection: DATABASE_URL (e.g. Railway) or DB_HOST/DB_USER/DB_PASSWORD/DB_NAME
