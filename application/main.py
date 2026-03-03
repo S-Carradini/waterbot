@@ -12,7 +12,7 @@ from fastapi import FastAPI, BackgroundTasks, Depends, HTTPException
 from fastapi import Request, Form
 from fastapi.security import HTTPBasic, HTTPBasicCredentials
 from fastapi.templating import Jinja2Templates
-from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse
+from fastapi.responses import HTMLResponse, RedirectResponse, FileResponse, StreamingResponse
 from fastapi.staticfiles import StaticFiles
 from fastapi.middleware.cors import CORSMiddleware  # ✅ ADDED: CORS middleware import
 
@@ -35,6 +35,8 @@ import os
 import json
 import datetime
 import pathlib
+import csv
+import io
 from starlette.middleware.base import BaseHTTPMiddleware
 
 ### Postgres
@@ -411,7 +413,7 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
 
         # Convert datetime objects to strings
         def convert_datetime_to_str(obj):
-            if isinstance(obj, datetime):
+            if isinstance(obj, (datetime.datetime, datetime.date)):
                 return obj.isoformat()  # Convert datetime to ISO format string
             return obj
 
@@ -425,6 +427,79 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
     except Exception as e:
         logging.error("Database Error: %s", e, exc_info=True)
         return json.dumps([])
+
+@app.get("/download-messages")
+def download_messages(
+    user: str = Depends(authenticate),
+    format: str = "csv",
+    chatbot_type: str = None,
+):
+    """Download all messages as CSV or JSON file."""
+    if not POSTGRES_ENABLED:
+        raise HTTPException(status_code=503, detail="Database not configured")
+
+    if format not in ("csv", "json"):
+        raise HTTPException(status_code=400, detail="format must be 'csv' or 'json'")
+
+    try:
+        conn = _pg_connect()
+        cursor = conn.cursor(cursor_factory=DictCursor)
+
+        query = "SELECT id, session_uuid, msg_id, chatbot_type, user_query, response_content, source, created_at, reaction, user_comment FROM messages"
+        params = []
+        if chatbot_type:
+            query += " WHERE chatbot_type = %s"
+            params.append(chatbot_type)
+        query += " ORDER BY created_at DESC"
+
+        cursor.execute(query, params)
+        rows = cursor.fetchall()
+        cursor.close()
+        conn.close()
+
+        today = datetime.date.today().isoformat()
+
+        if format == "json":
+            def serialize(obj):
+                if isinstance(obj, (datetime.datetime, datetime.date)):
+                    return obj.isoformat()
+                return obj
+
+            data = []
+            for row in rows:
+                d = dict(row)
+                data.append({k: serialize(v) for k, v in d.items()})
+
+            content = json.dumps(data, indent=2)
+            return StreamingResponse(
+                iter([content]),
+                media_type="application/json",
+                headers={"Content-Disposition": f'attachment; filename="messages_{today}.json"'},
+            )
+
+        # CSV format
+        output = io.StringIO()
+        writer = csv.writer(output)
+        columns = ["id", "session_uuid", "msg_id", "chatbot_type", "user_query", "response_content", "source", "created_at", "reaction", "user_comment"]
+        writer.writerow(columns)
+        for row in rows:
+            d = dict(row)
+            writer.writerow([
+                d.get(col, "") if not isinstance(d.get(col), (datetime.datetime, datetime.date))
+                else d[col].isoformat()
+                for col in columns
+            ])
+
+        output.seek(0)
+        return StreamingResponse(
+            output,
+            media_type="text/csv",
+            headers={"Content-Disposition": f'attachment; filename="messages_{today}.csv"'},
+        )
+    except Exception as e:
+        logging.error("Download error: %s", e, exc_info=True)
+        raise HTTPException(status_code=500, detail="Failed to export messages")
+
 
 def log_message(session_uuid, msg_id, user_query, response_content, source):
     """Insert a message into the PostgreSQL database. No-op if DB is not configured or connection fails."""
