@@ -186,46 +186,70 @@ def main():
     conn = pg_connect()
     ensure_columns(conn)
 
-    # 3. Get existing keys to avoid duplicates
+    # 3. Get existing keys to separate updates from inserts
     existing = get_existing_keys(conn)
     log.info("Existing PostgreSQL messages: %d", len(existing))
 
-    # 4. Transform and filter
-    rows = []
-    skipped = 0
+    # 4. Transform and split into updates (existing rows) vs inserts (new rows)
+    to_update = []  # rows that already exist in PG — update reaction/comment only
+    to_insert = []  # rows not in PG — full insert
     for item in items:
         row = transform(item)
         key = (row["session_uuid"], row["msg_id"])
         if key in existing:
-            skipped += 1
-            continue
-        rows.append(row)
+            # Only update if DynamoDB has rating data worth merging
+            if row["reaction"] is not None or row["user_comment"]:
+                to_update.append(row)
+        else:
+            to_insert.append(row)
 
-    log.info("To insert: %d  |  Already exist (skip): %d  |  Total scanned: %d", len(rows), skipped, len(items))
+    log.info("To update (merge ratings): %d  |  To insert (new): %d  |  Total scanned: %d",
+             len(to_update), len(to_insert), len(items))
 
-    if not rows:
-        log.info("Nothing new to insert.")
+    if not to_update and not to_insert:
+        log.info("Nothing to migrate.")
         conn.close()
         return
 
     if not args.execute:
-        log.info("DRY RUN — no rows written. Re-run with --execute to insert.")
-        # Print a sample
-        for r in rows[:3]:
-            log.info("  Sample: session=%s msg=%s query=%.60s... ts=%s reaction=%s",
+        log.info("DRY RUN — no writes to PostgreSQL. Re-run with --execute to apply.")
+        for r in (to_update + to_insert)[:3]:
+            log.info("  Sample: session=%s msg=%s reaction=%s comment=%s",
                      r["session_uuid"][:12], r["msg_id"][:12],
-                     r["user_query"], r["created_at"], r["reaction"])
+                     r["reaction"], r.get("user_comment", "")[:40] if r.get("user_comment") else "")
         conn.close()
         return
 
-    # 5. Insert
+    # 5a. Update existing rows with rating data from DynamoDB
+    update_sql = """
+        UPDATE messages SET reaction = %s, user_comment = %s
+        WHERE session_uuid = %s AND msg_id = %s
+          AND (reaction IS NULL AND user_comment IS NULL);
+    """
+    cur = conn.cursor()
+    updated = 0
+    for row in to_update:
+        try:
+            cur.execute(update_sql, (
+                row["reaction"],
+                row["user_comment"],
+                row["session_uuid"],
+                row["msg_id"],
+            ))
+            updated += cur.rowcount
+        except Exception as e:
+            log.error("Failed to update session=%s msg=%s: %s", row["session_uuid"], row["msg_id"], e)
+            conn.rollback()
+            cur = conn.cursor()
+            continue
+
+    # 5b. Insert rows that don't exist in PostgreSQL
     insert_sql = """
         INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, chatbot_type, created_at, reaction, user_comment)
         VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s);
     """
-    cur = conn.cursor()
     inserted = 0
-    for row in rows:
+    for row in to_insert:
         try:
             cur.execute(insert_sql, (
                 row["session_uuid"],
@@ -250,7 +274,7 @@ def main():
     conn.close()
 
     log.info("=== Migration Complete ===")
-    log.info("Inserted: %d  |  Skipped (existing): %d  |  Total scanned: %d", inserted, skipped, len(items))
+    log.info("Updated: %d  |  Inserted: %d  |  Total scanned: %d", updated, inserted, len(items))
 
 
 if __name__ == "__main__":
