@@ -90,9 +90,15 @@ def handler(event, context):
             response_content TEXT NOT NULL,
             source JSONB,  -- JSONB allows efficient querying of JSON data
             chatbot_type VARCHAR(50) DEFAULT 'waterbot',  -- ✅ NEW: Track which chatbot (waterbot/riverbot)
-            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP
+            created_at TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+            reaction SMALLINT,           -- thumbs up/down rating (1 = up, -1 = down)
+            user_comment TEXT             -- optional user feedback text
         );
         
+        -- Add columns for existing tables that predate the rating feature
+        ALTER TABLE messages ADD COLUMN IF NOT EXISTS reaction SMALLINT;
+        ALTER TABLE messages ADD COLUMN IF NOT EXISTS user_comment TEXT;
+
         -- Index on session_uuid for fast lookups by session
         CREATE INDEX IF NOT EXISTS idx_session_uuid ON messages(session_uuid);
         
