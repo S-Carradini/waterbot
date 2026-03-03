@@ -225,7 +225,7 @@ else:
 app.mount("/static", StaticFiles(directory="static"), name="static")
 
 # Middleware management
-secret_key=secrets.token_urlsafe(32)
+secret_key = os.getenv("SESSION_SECRET", secrets.token_urlsafe(32))
 app.add_middleware(SetCookieMiddleware)
 app.add_middleware(SessionMiddleware, secret_key=secret_key)
 
@@ -389,13 +389,24 @@ except Exception as e:
     knowledge_base = None
     logging.warning("RAG disabled: %s", e)
 
-# Authentication function
-def authenticate(credentials: HTTPBasicCredentials = Depends(security)):
-    correct_username = "admin"
-    correct_password = "supersecurepassword"
-    if credentials.username != correct_username or credentials.password != correct_password:
-        raise HTTPException(status_code=401, detail="Unauthorized")
-    return credentials.username
+ADMIN_USERNAME = "admin"
+ADMIN_PASSWORD = "supersecurepassword"
+
+# Authentication: accepts session cookie OR HTTP Basic Auth (for API clients)
+def authenticate(request: Request, credentials: HTTPBasicCredentials = Depends(security)):
+    admin = request.session.get("admin")
+    if admin:
+        return admin
+    if credentials.username == ADMIN_USERNAME and credentials.password == ADMIN_PASSWORD:
+        return credentials.username
+    raise HTTPException(status_code=401, detail="Unauthorized")
+
+# Authentication for admin pages: session-only, redirects to login form
+def authenticate_admin_page(request: Request):
+    admin = request.session.get("admin")
+    if admin:
+        return admin
+    raise HTTPException(status_code=307, headers={"Location": "/admin/login"})
 
 # Secure endpoint
 @app.get("/messages")
@@ -433,6 +444,8 @@ def download_messages(
     user: str = Depends(authenticate),
     format: str = "csv",
     chatbot_type: str = None,
+    start_date: str = None,
+    end_date: str = None,
 ):
     """Download all messages as CSV or JSON file."""
     if not POSTGRES_ENABLED:
@@ -446,16 +459,28 @@ def download_messages(
         cursor = conn.cursor(cursor_factory=DictCursor)
 
         query = "SELECT id, session_uuid, msg_id, chatbot_type, user_query, response_content, source, created_at, reaction, user_comment FROM messages"
+        conditions = []
         params = []
         if chatbot_type:
-            query += " WHERE chatbot_type = %s"
+            conditions.append("chatbot_type = %s")
             params.append(chatbot_type)
+        if start_date:
+            conditions.append("created_at >= %s")
+            params.append(start_date)
+        if end_date:
+            conditions.append("created_at <= %s")
+            params.append(end_date + " 23:59:59")
+        if conditions:
+            query += " WHERE " + " AND ".join(conditions)
         query += " ORDER BY created_at DESC"
 
         cursor.execute(query, params)
         rows = cursor.fetchall()
         cursor.close()
         conn.close()
+
+        if not rows:
+            raise HTTPException(status_code=404, detail="No messages found for the selected filters")
 
         today = datetime.date.today().isoformat()
 
@@ -502,8 +527,27 @@ def download_messages(
 
 
 @app.get("/admin/data", response_class=HTMLResponse)
-def admin_data_page(request: Request, user: str = Depends(authenticate)):
+def admin_data_page(request: Request, user: str = Depends(authenticate_admin_page)):
     return templates.TemplateResponse("admin_data.html", {"request": request})
+
+
+@app.get("/admin/login", response_class=HTMLResponse)
+def admin_login_page(request: Request, error: int = 0):
+    return templates.TemplateResponse("admin_login.html", {"request": request, "error": error})
+
+
+@app.post("/admin/login")
+def admin_login(request: Request, username: str = Form(...), password: str = Form(...)):
+    if username == ADMIN_USERNAME and password == ADMIN_PASSWORD:
+        request.session["admin"] = username
+        return RedirectResponse(url="/admin/data", status_code=303)
+    return RedirectResponse(url="/admin/login?error=1", status_code=303)
+
+
+@app.get("/admin/logout")
+def admin_logout(request: Request):
+    request.session.clear()
+    return RedirectResponse(url="/admin/login", status_code=303)
 
 
 def log_message(session_uuid, msg_id, user_query, response_content, source):
