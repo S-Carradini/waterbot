@@ -8,7 +8,12 @@
 </head>
 <body class="bg-light">
   <div class="container py-5" style="max-width: 480px;">
-    <h2 class="mb-4">Download Chat Messages</h2>
+    <div class="d-flex justify-content-between align-items-center mb-4">
+      <h2 class="mb-0">Download Chat Messages</h2>
+      <a href="/admin/logout" class="btn btn-outline-secondary btn-sm">Logout</a>
+    </div>
+
+    <div id="alert-box"></div>
 
     <div class="mb-3">
       <label for="format" class="form-label">Format</label>
@@ -27,18 +32,74 @@
       </select>
     </div>
 
+    <div class="mb-3">
+      <label for="start-date" class="form-label">Start Date</label>
+      <input type="date" id="start-date" class="form-control" />
+    </div>
+
+    <div class="mb-3">
+      <label for="end-date" class="form-label">End Date</label>
+      <input type="date" id="end-date" class="form-control" />
+    </div>
+
     <button id="download-btn" class="btn btn-primary">Download</button>
   </div>
 
   <script>
+    var alertBox = document.getElementById("alert-box");
+
+    function clearAlert() {
+      alertBox.innerHTML = "";
+    }
+
+    document.getElementById("format").addEventListener("change", clearAlert);
+    document.getElementById("chatbot").addEventListener("change", clearAlert);
+    document.getElementById("start-date").addEventListener("change", clearAlert);
+    document.getElementById("end-date").addEventListener("change", clearAlert);
+
     document.getElementById("download-btn").addEventListener("click", function () {
+      clearAlert();
       var fmt = document.getElementById("format").value;
       var chatbot = document.getElementById("chatbot").value;
+      var startDate = document.getElementById("start-date").value;
+      var endDate = document.getElementById("end-date").value;
+
       var url = "/download-messages?format=" + encodeURIComponent(fmt);
       if (chatbot) {
         url += "&chatbot_type=" + encodeURIComponent(chatbot);
       }
-      window.location.href = url;
+      if (startDate) {
+        url += "&start_date=" + encodeURIComponent(startDate);
+      }
+      if (endDate) {
+        url += "&end_date=" + encodeURIComponent(endDate);
+      }
+
+      fetch(url).then(function (response) {
+        if (response.ok) {
+          var filename = "messages." + fmt;
+          var disposition = response.headers.get("Content-Disposition");
+          if (disposition) {
+            var match = disposition.match(/filename="?([^"]+)"?/);
+            if (match) filename = match[1];
+          }
+          return response.blob().then(function (blob) {
+            var a = document.createElement("a");
+            a.href = URL.createObjectURL(blob);
+            a.download = filename;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+          });
+        }
+        return response.json().then(function (data) {
+          var msg = data.detail || "An error occurred";
+          var cls = response.status === 404 ? "alert-warning" : "alert-danger";
+          alertBox.innerHTML = '<div class="alert ' + cls + '">' + msg + '</div>';
+        });
+      }).catch(function () {
+        alertBox.innerHTML = '<div class="alert alert-danger">Network error — please try again</div>';
+      });
     });
   </script>
 </body>
