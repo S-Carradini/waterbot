@@ -74,3 +74,17 @@ body {
   min-height: 111.11vh !important;
 }
 
+/* Figma design pages bypass the scale wrapper and old background */
+.spa-scale-wrapper:has(.figma-root) {
+  transform: none;
+  width: 100vw;
+  min-width: 100vw;
+  height: 100vh;
+  min-height: 100vh;
+}
+.figma-root {
+  background: #ffffff;
+  width: 100vw;
+  height: 100vh;
+}
+

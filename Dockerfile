@@ -1,5 +1,3 @@
-# syntax=docker/dockerfile:1
-
 # Stage 1: Build the React frontend
 FROM node:18-alpine AS frontend-builder
 
@@ -9,8 +7,7 @@ WORKDIR /build
 COPY frontend/package.json frontend/package-lock.json* ./
 
 # Install all dependencies (including devDependencies needed for build)
-RUN --mount=type=cache,target=/root/.npm \
-    npm ci || npm install
+RUN npm ci || npm install
 
 # Copy frontend source code
 COPY frontend/ ./
@@ -37,8 +34,7 @@ COPY application/requirements_full.txt /app/
 
 # Install dependencies
 # Install requirements_full.txt first (base dependencies), then requirements.txt (which may override versions)
-RUN --mount=type=cache,target=/root/.cache/pip \
-    pip install --upgrade pip && \
+RUN pip install --upgrade pip && \
     pip install -r requirements_full.txt && \
     pip install --no-deps -r requirements.txt
 
