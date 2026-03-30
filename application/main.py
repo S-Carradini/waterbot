@@ -20,10 +20,9 @@ from managers.memory_manager import MemoryManager
 from managers.rag_manager import RAGManager
 from sources_verifier import should_show_sources
 from managers.pgvector_store import PgVectorStore
-from managers.s3_manager import S3Manager, LocalTranscriptManager
+from managers.s3_manager import LocalTranscriptManager
 
 from adapters.openai import OpenAIAdapter
-from adapters.bedrock_kb import BedrockKnowledgeBase
 from starlette.middleware.sessions import SessionMiddleware
 from langdetect import detect, DetectorFactory
 
@@ -43,7 +42,7 @@ from starlette.middleware.base import BaseHTTPMiddleware
 import psycopg2
 from psycopg2.extras import execute_values, DictCursor
 
-# Configure logging — write to stdout so CloudWatch can capture logs from ECS containers
+# Configure logging — write to stdout for log aggregation
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s - %(levelname)s - %(message)s'
@@ -142,17 +141,14 @@ app = FastAPI()
 def startup_ensure_db():
     """Ensure messages and rag_chunks tables exist when using PostgreSQL (e.g. Railway/Render without db_init Lambda)."""
     _ensure_messages_table()
-    if not AWS_KB_ID:
-        _ensure_rag_chunks_table()
+    _ensure_rag_chunks_table()
 
 
 # ✅ ADDED: CORS Middleware - MUST be added before other middleware
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
-        "https://azwaterbot.org",
-        "https://djl31v9y2vbwy.cloudfront.net",
-        "https://waterbot-2qo4tjmdo-shankerram3s-projects.vercel.app",
+        "https://waterbot-production.up.railway.app",
         "https://*.vercel.app",  # Allow all Vercel preview deployments
         "http://localhost:5173",  # Vite default port for local development
         "http://localhost:3000",  # Alternative local port
@@ -229,8 +225,6 @@ secret_key = os.getenv("SESSION_SECRET", secrets.token_urlsafe(32))
 app.add_middleware(SetCookieMiddleware)
 app.add_middleware(SessionMiddleware, secret_key=secret_key)
 
-TRANSCRIPT_BUCKET_NAME=os.getenv("TRANSCRIPT_BUCKET_NAME")
-
 # adapter choices
 ADAPTERS: dict[str, object] = {
     "openai-gpt4.1": OpenAIAdapter("gpt-4.1"),
@@ -239,22 +233,15 @@ ADAPTERS: dict[str, object] = {
 # Set adapter choice
 llm_adapter = ADAPTERS["openai-gpt4.1"]
 
-# If AWS_KB_ID is set, we will route RAG to Bedrock KB instead of pgvector
-AWS_KB_ID = os.getenv("AWS_KB_ID") or os.getenv("BEDROCK_KB_ID")
-AWS_REGION = os.getenv("AWS_REGION") or "us-west-2"
-AWS_KB_MODEL_ARN = os.getenv("AWS_KB_MODEL_ARN")
-
 embeddings = llm_adapter.get_embeddings()
 
 # Manager classes
 memory = MemoryManager()  # Assuming you have a MemoryManager class
 TRANSCRIPT_STORAGE_PATH = os.getenv("TRANSCRIPT_STORAGE_PATH")
-if TRANSCRIPT_BUCKET_NAME:
-    s3_manager = S3Manager(bucket_name=TRANSCRIPT_BUCKET_NAME)
-elif TRANSCRIPT_STORAGE_PATH:
-    s3_manager = LocalTranscriptManager(storage_path=TRANSCRIPT_STORAGE_PATH)
+if TRANSCRIPT_STORAGE_PATH:
+    transcript_manager = LocalTranscriptManager(storage_path=TRANSCRIPT_STORAGE_PATH)
 else:
-    s3_manager = None
+    transcript_manager = None
 
 # Database connection: DATABASE_URL (e.g. Railway) or DB_HOST/DB_USER/DB_PASSWORD/DB_NAME
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -369,28 +356,21 @@ def _ensure_rag_chunks_table():
         logging.warning("Could not ensure rag_chunks table (non-fatal): %s", e)
 
 
-# RAG backend selection: Bedrock KB if configured, else pgvector
-def get_vector_store_or_kb():
-    if AWS_KB_ID:
-        logging.info("Using Bedrock Knowledge Base %s (region=%s)", AWS_KB_ID, AWS_REGION)
-        return BedrockKnowledgeBase(kb_id=AWS_KB_ID, model_arn=AWS_KB_MODEL_ARN, region=AWS_REGION)
-
+# RAG backend: pgvector
+def get_vector_store():
     if not POSTGRES_ENABLED:
         raise ValueError(
-            "RAG requires PostgreSQL: set DATABASE_URL (RAG-only) or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME."
+            "RAG requires PostgreSQL: set DATABASE_URL or DB_HOST, DB_USER, DB_PASSWORD, DB_NAME."
         )
     if DATABASE_URL:
         return PgVectorStore(db_url=DATABASE_URL, embedding_function=embeddings)
     return PgVectorStore(db_params=DB_PARAMS, embedding_function=embeddings)
 
 
-# Ensure rag_chunks table exists only when using pgvector
-if not AWS_KB_ID:
-    _ensure_rag_chunks_table()
+_ensure_rag_chunks_table()
 
 try:
-    backend = get_vector_store_or_kb()
-    knowledge_base = RAGManager(backend) if isinstance(backend, PgVectorStore) else backend
+    knowledge_base = RAGManager(get_vector_store())
 except Exception as e:
     knowledge_base = None
     logging.warning("RAG disabled: %s", e)
@@ -647,10 +627,10 @@ async def session_transcript_post(request: Request):
         if isinstance(entry, dict) and "role" in entry and "content" in entry:
             session_text += f"Role: {entry['role']}\nContent: {entry['content']}\n\n"
 
-    if s3_manager:
+    if transcript_manager:
         object_key = f"session-transcript/{filename}"
-        await s3_manager.upload(key=object_key, body=session_text)
-        url = await s3_manager.generate_presigned(key=object_key)
+        await transcript_manager.upload(key=object_key, body=session_text)
+        url = await transcript_manager.generate_presigned(key=object_key)
         return {"presigned_url": url, "filename": filename}
     # No storage configured: return transcript inline so frontend can still trigger download
     return {"presigned_url": None, "transcript": session_text, "filename": filename}

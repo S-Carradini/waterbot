@@ -91,7 +91,7 @@ export default function ChatBubble({
       <div className="bubble--bot__content">
         <div className="bubble--bot__text" dangerouslySetInnerHTML={{ __html: renderedContent }} />
 
-        {messageId && !isTyping && !isLoading && (
+        {messageId != null && !isTyping && !isLoading && (
           <div className="reactions-bar">
             {!ratingSubmitted ? (
               <>

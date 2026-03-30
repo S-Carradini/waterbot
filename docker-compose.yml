@@ -3,14 +3,15 @@ services:
     build:
       context: .
     environment:
-      - OPENAI_API_KEY=${OPENAI_API_KEY}  # Pass the key from your local environment
-      - AWS_DEFAULT_REGION=us-east-1 
-      - AWS_ACCESS_KEY_ID=${AWS_ACCESS_KEY_ID}   # Pass AWS access key ID from environment
-      - AWS_SECRET_ACCESS_KEY=${AWS_SECRET_ACCESS_KEY}   # Pass AWS secret access key from environment
-      - TRANSCRIPT_BUCKET_NAME=${TRANSCRIPT_BUCKET_NAME}
-      - MESSAGES_TABLE=${MESSAGES_TABLE}
-    # No volumes: use image as built. Frontend is built in the Dockerfile (npm run build);
-    # no host npm run build or dist mount required.
+      - OPENAI_API_KEY=${OPENAI_API_KEY}
+      - DATABASE_URL=${DATABASE_URL}
+      - TRANSCRIPT_STORAGE_PATH=/app/transcripts
+      - SESSION_SECRET=${SESSION_SECRET}
+    volumes:
+      - transcripts:/app/transcripts
     ports:
       - "8000:8000"
     command: ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000", "--reload"]
+
+volumes:
+  transcripts:

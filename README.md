@@ -1,14 +1,14 @@
 # WaterBot — RAG-Powered Chatbot for Arizona Water Information
 
-WaterBot is a Retrieval-Augmented Generation (RAG) chatbot that provides information about water in Arizona. It features a React/Vite frontend and a FastAPI backend. RAG is powered by **AWS Bedrock Knowledge Bases**; LLM responses are generated via **OpenAI GPT-4.1**. A secondary "RiverBot" persona is also supported via separate routes and templates.
+WaterBot is a Retrieval-Augmented Generation (RAG) chatbot that provides information about water in Arizona. It features a React/Vite frontend and a FastAPI backend. RAG is powered by **pgvector + OpenAI embeddings**; LLM responses are generated via **OpenAI GPT-4.1**. A secondary "RiverBot" persona is also supported via separate routes and templates.
 
-**Production URL:** https://azwaterbot.org
+**Production URL:** https://waterbot-production.up.railway.app
 
 ---
 
 ## Features
 
-- **RAG via AWS Bedrock Knowledge Base** — semantic search over Arizona water documents, no self-hosted vector DB required
+- **RAG via pgvector** — semantic search over Arizona water documents using OpenAI embeddings + PostgreSQL pgvector
 - **Multi-language** — English and Spanish, auto-detected via `langdetect` with user override
 - **Voice transcription** — real-time speech-to-text via browser Web Speech API / WebSocket
 - **Session memory** — per-user UUID cookie keeps conversation context
@@ -27,14 +27,13 @@ WaterBot is a Retrieval-Augmented Generation (RAG) chatbot that provides informa
 |-------|-----------|
 | Frontend | React + Vite, Framer Motion, Tailwind CSS |
 | Backend | FastAPI (Python 3.11) |
-| RAG | AWS Bedrock Knowledge Base (Retrieve API) |
+| RAG | pgvector + OpenAI embeddings |
 | LLM | OpenAI GPT-4.1 |
 | Session identity | UUID cookie (`USER_SESSION`) set by `SetCookieMiddleware` |
-| Message logging | PostgreSQL (`messages` table) — optional, done in background |
-| Ratings | AWS DynamoDB — optional |
-| Transcripts | AWS S3 — optional |
+| Message logging | PostgreSQL (`messages` table) — includes ratings |
+| Transcripts | Local filesystem (Railway volume) |
 | Container | Docker (multi-stage build) |
-| Hosting | AWS ECS Fargate + ALB + CloudFront |
+| Hosting | Railway |
 
 ### Request Flow
 
@@ -42,7 +41,7 @@ WaterBot is a Retrieval-Augmented Generation (RAG) chatbot that provides informa
 Browser → UUID Cookie → FastAPI
   → Safety checks (OpenAI moderation + intent detection)
   → Language detection (langdetect)
-  → Bedrock KB Retrieve API (top-k chunks)
+  → pgvector similarity search (top-k chunks)
   → Build prompt (system + KB context + chat history)
   → OpenAI GPT-4.1
   → Response + sources → Browser
@@ -57,31 +56,19 @@ graph TB
         Browser
     end
 
-    subgraph "AWS CloudFront + ALB"
-        CF[CloudFront\nazwaterbot.org]
-        ALB[Application Load Balancer]
-    end
-
-    subgraph "ECS Fargate"
+    subgraph "Railway"
         App[FastAPI App\nmain.py]
-    end
-
-    subgraph "AWS Services"
-        KB[Bedrock Knowledge Base\nZ2NHZ8JMMQ us-west-2]
-        RDS[RDS PostgreSQL\nmessages table]
-        DDB[DynamoDB\nratings]
-        S3[S3\ntranscripts]
+        PG[PostgreSQL + pgvector\nmessages + rag_chunks]
+        Vol[Volume\ntranscripts]
     end
 
     subgraph "External"
         OAI[OpenAI GPT-4.1\nLLM + embeddings + moderation]
     end
 
-    Browser --> CF --> ALB --> App
-    App --> KB
-    App --> RDS
-    App --> DDB
-    App --> S3
+    Browser --> App
+    App --> PG
+    App --> Vol
     App --> OAI
 ```
 
@@ -92,8 +79,8 @@ flowchart TD
     Query([User Query]) --> Safety[Safety Checks\nmoderation + intent]
     Safety -->|fail| Reject[Return safe fallback]
     Safety -->|pass| Lang[Detect Language\nen / es]
-    Lang --> KB[Bedrock KB Retrieve\nAWS_KB_ID + locale filter]
-    KB --> Chunks[Top-K document chunks\nwith source metadata]
+    Lang --> PGV[pgvector Similarity Search\ntop-k chunks + locale filter]
+    PGV --> Chunks[Top-K document chunks\nwith source metadata]
     Chunks --> Prompt[Build Prompt\nsystem + KB + chat history]
     Prompt --> LLM[OpenAI GPT-4.1]
     LLM --> Response[Response + sources]
@@ -110,51 +97,27 @@ flowchart TD
 
 - Python 3.11+
 - Node.js 18+
-- AWS credentials with `bedrock:Retrieve` + `bedrock:RetrieveAndGenerate` on KB `Z2NHZ8JMMQ` in `us-west-2`
+- PostgreSQL with pgvector extension (or use Railway's public Postgres URL)
 - OpenAI API key
 
-### Step 1 — Create `application/.env`
+### Step 1 — Create `.env`
 
 ```bash
-cp application/sample.env application/.env
+cp application/sample.env .env
 ```
 
 Then fill in:
 
 ```env
 # ── Required ────────────────────────────────────────────
-# LLM (used for chat, safety checks, and embeddings)
 OPENAI_API_KEY=sk-...
 
-# RAG via AWS Bedrock Knowledge Base
-AWS_KB_ID=Z2NHZ8JMMQ
-AWS_REGION=us-west-2
+# PostgreSQL (Railway public URL or local)
+DATABASE_URL=postgresql://user:pass@host:port/dbname
 
-# AWS credentials — choose one method:
-# Option A: explicit keys
-AWS_ACCESS_KEY_ID=AKIA...
-AWS_SECRET_ACCESS_KEY=...
-
-# Option B: named profile (boto3 picks it up automatically; omit the key vars above)
-# AWS_PROFILE=your-profile
-
-# ── Optional — message persistence ──────────────────────
-# If omitted, chat still works but messages are not logged to a DB.
-# Use either DATABASE_URL or the DB_* individual vars.
-# DATABASE_URL=postgresql://user:pass@localhost:5432/waterbot
-# DB_HOST=localhost
-# DB_USER=waterbot
-# DB_PASSWORD=secret
-# DB_NAME=waterbot
-# DB_PORT=5432
-
-# ── Optional — ratings + transcripts ────────────────────
-# MESSAGES_TABLE=your-dynamodb-table-name
-# TRANSCRIPT_BUCKET_NAME=your-s3-bucket-name
-
-# ── Optional — CORS / cookie tuning ─────────────────────
-# ALLOWED_ORIGINS=https://your-domain.com
-# COOKIE_DOMAIN=.your-domain.com
+# ── Optional ────────────────────────────────────────────
+# TRANSCRIPT_STORAGE_PATH=/app/transcripts
+# SESSION_SECRET=your-secret-key
 ```
 
 ### Step 2 — Start the backend
@@ -180,10 +143,10 @@ Vite proxies all `/chat_api`, `/chat_sources_api`, `/submit_rating_api`, `/sessi
 
 | Feature | Required vars |
 |---------|--------------|
-| RAG + chat | `OPENAI_API_KEY`, `AWS_KB_ID`, `AWS_REGION`, AWS creds |
+| RAG + chat | `OPENAI_API_KEY`, `DATABASE_URL` (or `DB_*`) |
 | Message logging | `DATABASE_URL` or `DB_*` |
-| Ratings | `MESSAGES_TABLE` |
-| Transcript download | `TRANSCRIPT_BUCKET_NAME` |
+| Ratings | `DATABASE_URL` or `DB_*` (stored in `messages` table) |
+| Transcript download | `TRANSCRIPT_STORAGE_PATH` |
 
 When optional vars are absent the app starts cleanly — those features are silently skipped.
 
@@ -193,10 +156,9 @@ When optional vars are absent the app starts cleanly — those features are sile
 docker-compose up           # builds image, runs on http://localhost:8000
 # or individually:
 ./docker_build.sh
-./docker_run.sh
 ```
 
-The `docker-compose.yml` reads `OPENAI_API_KEY`, `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, `TRANSCRIPT_BUCKET_NAME`, and `MESSAGES_TABLE` from your shell environment.
+The `docker-compose.yml` reads `OPENAI_API_KEY`, `DATABASE_URL`, and `SESSION_SECRET` from your shell environment.
 
 ---
 
@@ -208,20 +170,13 @@ waterbot/
 │   ├── main.py                   # App entry point: all 13 endpoints, middleware, startup
 │   ├── adapters/
 │   │   ├── base.py               # ModelAdapter abstract base class
-│   │   ├── openai.py             # OpenAIAdapter (GPT-4.1, moderation, embeddings)
-│   │   └── bedrock_kb.py         # BedrockKnowledgeBase (Retrieve + RetrieveAndGenerate)
+│   │   └── openai.py             # OpenAIAdapter (GPT-4.1, moderation, embeddings)
 │   ├── managers/
 │   │   ├── memory_manager.py     # In-memory session state (chat history, message counts)
-│   │   ├── rag_manager.py        # RAG orchestration (query → KB → prompt → LLM)
-│   │   ├── pgvector_store.py     # pgvector store (legacy / local dev fallback)
-│   │   ├── dynamodb_manager.py   # Ratings persistence
-│   │   └── s3_manager.py         # Transcript storage + presigned URLs
+│   │   ├── rag_manager.py        # RAG orchestration (query → pgvector → prompt → LLM)
+│   │   ├── pgvector_store.py     # pgvector store (cosine similarity search)
+│   │   └── s3_manager.py         # Local transcript storage (Railway volume)
 │   ├── templates/                # Jinja2 HTML templates
-│   │   ├── index.html            # WaterBot legacy UI
-│   │   ├── riverbot.html         # RiverBot persona UI
-│   │   ├── spanish.html          # Spanish UI
-│   │   ├── splashScreen.html     # Splash / landing page
-│   │   └── aboutWaterbot.html    # About page
 │   ├── static/                   # CSS, JS, images for Jinja templates
 │   ├── mappings/                 # knowledge_sources.py, custom_tags.py
 │   ├── scripts/                  # Data ingestion (Add_files_to_db*.py)
@@ -233,14 +188,8 @@ waterbot/
 │   │   └── services/api.js       # All fetch calls to backend
 │   ├── public/                   # Static assets (images, icons)
 │   └── vite.config.js            # Dev proxy config
-├── iac/
-│   └── cdk/                      # AWS CDK stacks (Python)
-│       ├── app.py                # CDK app entry
-│       ├── cdk_app_stack.py      # ECS Fargate, ALB, CloudFront, RDS, DynamoDB, S3
-│       └── lambda/               # db_init, dynamo_export, postgres_backup Lambdas
 ├── .github/workflows/
-│   ├── deploy-waterbot-dev.yaml  # Dev CI/CD (shankerram3/waterbot-test → us-west-2)
-│   └── deploy-waterbot-prod.yaml # Prod CI/CD (S-Carradini/waterbot → us-east-1)
+│   └── deploy-railway.yaml       # Railway CI/CD
 ├── docker-compose.yml
 ├── Dockerfile
 └── README.md
@@ -274,7 +223,7 @@ waterbot/
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/transcribe` | WebSocket | Real-time voice transcription |
-| `/session-transcript` | POST | Download session transcript (S3 presigned URL) |
+| `/session-transcript` | POST | Download session transcript |
 | `/submit_rating_api` | POST | Submit thumbs up/down rating |
 | `/translate` | POST | Translate text between en/es |
 
@@ -282,69 +231,7 @@ waterbot/
 
 ## CI/CD Pipeline
 
-Both workflows are manually triggered (`workflow_dispatch`) and use **GitHub OIDC** (no long-lived AWS keys stored in GitHub secrets).
-
-### Dev — `shankerram3/waterbot-test` → us-west-2
-
-1. Authenticates to AWS via OIDC role `GitHubActionsECSRole`
-2. Builds Docker image (no cache)
-3. Pushes to ECR (`us-west-2`)
-4. Force-deploys ECS Fargate service
-5. Waits for service stability and verifies image digest
-6. Invalidates CloudFront cache
-
-### Prod — `S-Carradini/waterbot` → us-east-1
-
-Same steps, targeting the production ECS cluster and CloudFront distribution (`azwaterbot.org`).
-
-### Required GitHub Environment Secrets/Vars
-
-| Name | Type | Value |
-|------|------|-------|
-| `AWS_ROLE_ARN` | Secret | `arn:aws:iam::590183827936:role/GitHubActionsECSRole` |
-| `AWS_REGION` | Var | `us-west-2` (dev) / `us-east-1` (prod) |
-| `ECR_ACCOUNT_ID` | Var | `590183827936` |
-| `ECR_REPO` | Var | ECR repository name |
-| `ECS_CLUSTER` | Var | ECS cluster name |
-| `ECS_SERVICE` | Var | ECS service name |
-| `CLOUDFRONT_DISTRIBUTION_ID` | Var | CloudFront distribution ID |
-
----
-
-## AWS Infrastructure
-
-### Environments
-
-| | Dev | Prod |
-|-|-----|------|
-| Region | us-west-2 | us-east-1 |
-| GitHub repo | `shankerram3/waterbot-test` | `S-Carradini/waterbot` |
-| GitHub environment | `aws-test-deploy` | `aws-prod-deploy` |
-| URL | (ECS task public IP) | https://azwaterbot.org |
-
-### Bedrock Knowledge Base
-
-- **KB ID**: `Z2NHZ8JMMQ`
-- **Region**: `us-west-2` (used by both dev and prod — the KB is not replicated)
-- Set `AWS_KB_ID=Z2NHZ8JMMQ` and `AWS_REGION=us-west-2` in the ECS task definition or `.env`
-
-### CDK Stacks
-
-Infrastructure is managed with AWS CDK (Python) in `iac/cdk/`.
-
-```bash
-cd iac/cdk
-source .venv-cdk/bin/activate
-pip install -r requirements.txt
-
-# Deploy dev stack (us-west-2)
-AWS_DEFAULT_REGION=us-west-2 cdk deploy --context env=dev
-
-# Deploy prod stack (us-east-1)
-AWS_DEFAULT_REGION=us-east-1 cdk deploy --context env=dev
-```
-
-> Use `AWS_DEFAULT_REGION` env var to target the correct region — the `--region` CLI flag does not work reliably with CDK.
+Railway deployment is triggered via GitHub Actions (`deploy-railway.yaml`) using a `RAILWAY_TOKEN` secret.
 
 ---
 
@@ -355,17 +242,12 @@ AWS_DEFAULT_REGION=us-east-1 cdk deploy --context env=dev
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `OPENAI_API_KEY` | Yes | OpenAI API key (chat, moderation, embeddings) |
-| `AWS_KB_ID` | Yes | Bedrock Knowledge Base ID (`Z2NHZ8JMMQ`) |
-| `AWS_REGION` | Yes | Bedrock KB region (`us-west-2`) |
-| `AWS_ACCESS_KEY_ID` | Yes* | AWS credential (*or use `AWS_PROFILE` / instance role) |
-| `AWS_SECRET_ACCESS_KEY` | Yes* | AWS credential |
-| `DATABASE_URL` | No | PostgreSQL URL for message logging |
-| `DB_HOST/USER/PASSWORD/NAME/PORT` | No | Alternative to `DATABASE_URL` |
-| `MESSAGES_TABLE` | No | DynamoDB table name for ratings |
-| `TRANSCRIPT_BUCKET_NAME` | No | S3 bucket for chat transcripts |
-| `COOKIE_DOMAIN` | No | Cookie domain (e.g. `.azwaterbot.org`) — only set when domain matches request host |
-| `ALLOWED_ORIGINS` | No | Comma-separated CORS origins |
-| `AWS_KB_MODEL_ARN` | No | Override Bedrock model ARN for RAG (defaults to Claude 3 Sonnet) |
+| `DATABASE_URL` | Yes* | PostgreSQL URL (*or use `DB_*` vars) |
+| `DB_HOST/USER/PASSWORD/NAME/PORT` | Yes* | Alternative to `DATABASE_URL` |
+| `TRANSCRIPT_STORAGE_PATH` | No | Local path for transcript files |
+| `SESSION_SECRET` | No | Session signing key (random if omitted) |
+| `COOKIE_DOMAIN` | No | Cookie domain (e.g. `.yourdomain.com`) |
+| `SOURCES_VERIFIER_MODEL` | No | Model for source verification (default: `gpt-4o-mini`) |
 
 ### LLM Adapter
 
@@ -375,7 +257,6 @@ The current default is `OpenAIAdapter("gpt-4.1")` set in `main.py`. To swap adap
 # application/main.py
 ADAPTERS: dict[str, object] = {
     "openai-gpt4.1": OpenAIAdapter("gpt-4.1"),
-    # "bedrock-kb": BedrockKnowledgeBase(kb_id=AWS_KB_ID),
 }
 llm_adapter = ADAPTERS["openai-gpt4.1"]
 ```
@@ -386,9 +267,9 @@ llm_adapter = ADAPTERS["openai-gpt4.1"]
 
 ### RAG not returning results
 
-- Verify `AWS_KB_ID=Z2NHZ8JMMQ` and `AWS_REGION=us-west-2` are set
-- Confirm your AWS identity has `bedrock:Retrieve` and `bedrock:RetrieveAndGenerate` on the KB
-- Check CloudWatch logs for `bedrock-agent-runtime` errors
+- Verify `DATABASE_URL` is set and the PostgreSQL instance has pgvector extension enabled
+- Ensure `rag_chunks` table is populated (run `scripts/Add_files_to_db.py`)
+- Check logs for `RAG disabled` warnings at startup
 
 ### Messages not persisting after restart
 
@@ -414,12 +295,6 @@ npm run dev
 ### Voice transcription not working
 
 Check browser permissions for microphone access. Transcription uses the browser Web Speech API (no server-side processing for basic transcription).
-
-### GitHub Actions deploy fails with "AWS_ROLE_ARN secret is missing"
-
-1. Go to your repo → Settings → Environments → `aws-test-deploy` (dev) or `aws-prod-deploy` (prod)
-2. Add secret `AWS_ROLE_ARN = arn:aws:iam::590183827936:role/GitHubActionsECSRole`
-3. Re-run the workflow — existing runs do not pick up newly added secrets
 
 ---
 

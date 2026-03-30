@@ -62,9 +62,7 @@ fi
 if [ "$MESSAGES" == "null" ]; then
     echo "❌ Error: API returned null (database error on server side)"
     echo "   This means the /messages endpoint hit a database exception."
-    echo "   Check CloudWatch logs for the production ECS task."
-    echo ""
-    echo "💡 Debug: aws logs tail <log-group> --region us-east-1"
+    echo "   Check Railway logs for the production service."
     exit 1
 fi
 

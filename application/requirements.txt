@@ -3,12 +3,8 @@ langchain-openai
 langchain-community
 psycopg[binary]
 pgvector
-langchain-aws>=1.0.0
 openai
 fastapi
 itsdangerous
-boto3
-botocore
-amazon-transcribe
 langdetect
 pypdf
