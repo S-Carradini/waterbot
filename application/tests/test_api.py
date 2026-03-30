@@ -14,9 +14,9 @@ pytestmark = pytest.mark.asyncio
 # ---------------------------------------------------------------------------
 class TestHealthRoutes:
     async def test_root_redirects_or_returns_html(self, client):
-        """GET / should redirect to /museum or serve HTML (200 or 3xx)."""
+        """GET / should serve the SPA or return 404 when frontend dist isn't built."""
         response = await client.get("/", follow_redirects=False)
-        assert response.status_code in (200, 302, 307, 308)
+        assert response.status_code in (200, 302, 307, 308, 404)
 
     async def test_museum_route_returns_html(self, client):
         """GET /museum should serve the SPA or splash page (200 or redirect)."""

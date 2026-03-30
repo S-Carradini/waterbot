@@ -4,43 +4,39 @@ const LONG_MESSAGE = 'This is a very long question to test if the input chat bub
 
 test.describe('User Message Long Text', () => {
   test('long user message displays fully without cutoff or overflow', async ({ page }) => {
-    await page.goto('/museum/chat');
+    await page.goto('/chat');
     await page.waitForLoadState('domcontentloaded');
 
-    const textbox = page.getByRole('textbox', { name: 'Type your question here' });
+    const textbox = page.getByLabel('Message input');
     await expect(textbox).toBeVisible();
     await textbox.fill(LONG_MESSAGE);
 
-    await page.locator('form').getByRole('button').click();
+    await page.locator('.composer__btn-send').click();
 
     // Wait for user message bubble to appear
-    const userQuery = page.locator('.user-query').last();
-    await expect(userQuery).toBeVisible({ timeout: 5000 });
+    const userBubble = page.locator('.bubble--user').last();
+    await expect(userBubble).toBeVisible({ timeout: 5000 });
 
     // Assert full text is visible
-    await expect(userQuery.locator('.question-text p')).toContainText(
+    const content = userBubble.locator('.bubble--user__content');
+    await expect(content).toContainText(
       'This is a very long question to test if the input chat bubble breaks'
     );
-    await expect(userQuery.locator('.question-text p')).toContainText(
+    await expect(content).toContainText(
       'full picture of water management in our desert environment'
     );
 
-    // Assert no vertical cutoff: check question-text (polygon extends outside user-query)
-    const questionText = userQuery.locator('.question-text');
-    const verticalOk = await questionText.evaluate((el) => {
-      const scrollH = el.scrollHeight;
-      const clientH = el.clientHeight;
+    // Assert no vertical cutoff
+    const verticalOk = await content.evaluate((el) => {
       const tolerance = 2;
-      return scrollH <= clientH + tolerance;
+      return el.scrollHeight <= el.clientHeight + tolerance;
     });
     expect(verticalOk).toBe(true);
 
     // Assert no horizontal overflow
-    const horizontalOk = await questionText.evaluate((el) => {
-      const scrollW = el.scrollWidth;
-      const clientW = el.clientWidth;
+    const horizontalOk = await content.evaluate((el) => {
       const tolerance = 2;
-      return scrollW <= clientW + tolerance;
+      return el.scrollWidth <= el.clientWidth + tolerance;
     });
     expect(horizontalOk).toBe(true);
 
