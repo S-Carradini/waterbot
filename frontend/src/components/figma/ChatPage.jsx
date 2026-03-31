@@ -44,7 +44,7 @@ export default function ChatPage() {
   // Initialize with welcome message
   useEffect(() => {
     setMessages([
-      { id: nextId(), type: 'bot', content: t.defaultAnswerText, messageId: null, showActions: false, disableTypewriter: true },
+      { id: nextId(), type: 'intro', content: t.defaultAnswerText, messageId: null, showActions: false, disableTypewriter: true },
     ]);
   }, []);
 
@@ -197,7 +197,7 @@ export default function ChatPage() {
     const texts = botMsgs.map((m) => m.content);
 
     // Switch language + prepend new welcome message (single state update)
-    const newDefault = { id: nextId(), type: 'bot', content: (uiText[nextLang] || uiText.en).defaultAnswerText, messageId: null, showActions: false, disableTypewriter: true };
+    const newDefault = { id: nextId(), type: 'intro', content: (uiText[nextLang] || uiText.en).defaultAnswerText, messageId: null, showActions: false, disableTypewriter: true };
     setLanguage(nextLang);
     setMessages([newDefault, ...updatedFiltered]);
 
