@@ -187,7 +187,7 @@ export default function VoiceOverlay({ isOpen, onStop, onTranscript, language, t
         <X size={22} />
       </button>
 
-      <div className="voice-overlay__mascot" style={{ position: 'relative' }}>
+      <div style={{ position: 'relative', width: 180, height: 180, marginBottom: 24, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
         <ListeningRipples />
         <AnimatedBlue isListening={true} />
       </div>
