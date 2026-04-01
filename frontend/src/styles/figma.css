@@ -192,7 +192,10 @@
 }
 .bubble--bot__text p { margin: 0 0 8px; }
 .bubble--bot__text p:last-child { margin-bottom: 0; }
-.bubble--bot__text ul, .bubble--bot__text ol { margin: 4px 0; padding-left: 20px; }
+.bubble--bot__text ul, .bubble--bot__text ol { margin: 4px 0 8px; padding-left: 20px; }
+.bubble--bot__text li { margin-bottom: 2px; }
+.bubble--bot__text h1, .bubble--bot__text h2, .bubble--bot__text h3 { margin: 12px 0 6px; font-size: 16px; line-height: 22px; }
+.bubble--bot__text strong { font-weight: 600; }
 .bubble--bot__text a { color: var(--wb-primary); }
 
 /* ---- Reactions ---- */
@@ -211,7 +214,7 @@
 .reaction-btn:disabled { opacity: 0.5; cursor: default; }
 
 /* ---- Follow-up Chips ---- */
-.follow-up-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 16px; padding-left: 58px; }
+.follow-up-chips { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 10px; }
 .chip {
   min-height: 40px; padding: 6px 16px; border-radius: var(--wb-radius-pill);
   font-size: 14px; line-height: 20px; border: 1px solid var(--wb-border);

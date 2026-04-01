@@ -266,23 +266,22 @@ export default function ChatPage() {
                 }
                 const isLast = index === messages.length - 1;
                 return (
-                  <React.Fragment key={msg.id || index}>
-                    <ChatBubble
-                      answerText={msg.content}
-                      messageId={msg.messageId}
-                      showActions={msg.showActions}
-                      disableActions={isLoading || (isLast && isTyping)}
-                      onRating={handleRating}
-                      isLoading={isLoading && isLast && (!msg.content || String(msg.content).trim() === '')}
-                      disableTypewriter={msg.disableTypewriter}
-                      language={language}
-                      onContentUpdate={scrollToBottom}
-                      onTypingChange={isLast ? setIsTyping : undefined}
-                    />
-                    {msg.showActions && isLast && !isLoading && !isTyping && (
-                      <FollowUpChips onAction={handleAction} disabled={isLoading || isTyping} t={t} />
-                    )}
-                  </React.Fragment>
+                  <ChatBubble
+                    key={msg.id || index}
+                    answerText={msg.content}
+                    messageId={msg.messageId}
+                    showActions={msg.showActions}
+                    disableActions={isLoading || (isLast && isTyping)}
+                    onRating={handleRating}
+                    isLoading={isLoading && isLast && (!msg.content || String(msg.content).trim() === '')}
+                    disableTypewriter={msg.disableTypewriter}
+                    language={language}
+                    onContentUpdate={scrollToBottom}
+                    onTypingChange={isLast ? setIsTyping : undefined}
+                    followUpChips={msg.showActions && isLast && !isLoading && !isTyping
+                      ? <FollowUpChips onAction={handleAction} disabled={isLoading || isTyping} t={t} />
+                      : null}
+                  />
                 );
               })}
             </div>

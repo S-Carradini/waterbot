@@ -1369,16 +1369,6 @@ async def settings_page(request: Request):
     """Serve React SPA for settings page (new Figma design)"""
     return await _serve_react_spa()
 
-@app.get("/aboutwaterbot", response_class=HTMLResponse)
-async def about_waterbot(request: Request):
-    """Serve the about Waterbot page (Jinja template)"""
-    return templates.TemplateResponse("aboutWaterbot.html", {"request": request})
-
-@app.get("/Spanish_Translation_2.0.1.html", response_class=HTMLResponse)
-async def spanish_translation(request: Request):
-    """Serve the Spanish translation page (Jinja template)"""
-    return templates.TemplateResponse("spanish.html", {"request": request})
-
 @app.get("/riverbot", response_class=HTMLResponse)
 async def riverbot_page(request: Request):
     """Serve the riverbot page (Jinja template)"""

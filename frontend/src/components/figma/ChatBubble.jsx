@@ -1,7 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { marked } from 'marked';
 import { useTypewriter } from '../../hooks/useTypewriter';
 import blueCharacter from '../../assets/blue-character.png';
+
+marked.setOptions({ breaks: false, gfm: true });
+
+function cleanMarkdown(text) {
+  if (!text) return '';
+  return text
+    // Convert <br> / <br/> / <br /> tags to newlines so marked can parse structure
+    .replace(/<br\s*\/?>/gi, '\n')
+    // Normalize dash-items without space (e.g. "-Fix" → "- Fix")
+    .replace(/^-([A-Za-z])/gm, '- $1')
+    // Collapse 3+ newlines into 2
+    .replace(/\n{3,}/g, '\n\n')
+    // Remove blank lines between consecutive list items so marked groups them
+    .replace(/(^- .+)\n\n(?=- )/gm, '$1\n')
+    .replace(/(^\d+\. .+)\n\n(?=\d+\. )/gm, '$1\n')
+    // Remove blank line between a bold title and the list that follows
+    .replace(/((?:\*\*.+\*\*)|(?:<b>.+<\/b>))\n\n(?=- )/gm, '$1\n');
+}
 
 export default function ChatBubble({
   answerText,
@@ -14,6 +33,7 @@ export default function ChatBubble({
   language,
   onContentUpdate,
   onTypingChange,
+  followUpChips,
 }) {
   const [ratingSubmitted, setRatingSubmitted] = useState(false);
   const [selectedReaction, setSelectedReaction] = useState(null);
@@ -66,7 +86,8 @@ export default function ChatBubble({
     setShowFeedback(false);
   };
 
-  const renderedContent = disableTypewriter ? textContent : displayedText;
+  const rawContent = disableTypewriter ? textContent : displayedText;
+  const renderedContent = useMemo(() => marked.parse(cleanMarkdown(rawContent)), [rawContent]);
 
   const feedbackLabels = language === 'es'
     ? { title: '\u00bfQu\u00e9 no te gust\u00f3?', fi: 'Incorrecto', gr: 'Respuesta gen\u00e9rica', ra: 'Se neg\u00f3 a responder', other: 'Otro', more: 'Cu\u00e9ntanos m\u00e1s...', submit: 'Enviar', thanks: 'Gracias por tus comentarios.' }
@@ -139,6 +160,8 @@ export default function ChatBubble({
         {feedbackSubmitted && (
           <div className="ty-feedback"><span className="ty-feedback__text">{feedbackLabels.thanks}</span></div>
         )}
+
+        {followUpChips}
       </div>
     </div>
   );
