@@ -417,7 +417,7 @@ def get_messages(user: str = Depends(authenticate)):  # Requires authentication
     try:
         conn = _pg_connect()
         cursor = conn.cursor(cursor_factory=DictCursor)
-        cursor.execute("SELECT * FROM messages ORDER BY created_at DESC LIMIT 100;")
+        cursor.execute("SELECT * FROM messages ORDER BY created_at DESC;")
         messages = cursor.fetchall()
         cursor.close()
         conn.close()
