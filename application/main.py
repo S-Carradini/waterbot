@@ -550,17 +550,16 @@ def admin_logout(request: Request):
     return RedirectResponse(url="/admin/login", status_code=303)
 
 
-def log_message(session_uuid, msg_id, user_query, response_content, source):
-    """Insert a message into the PostgreSQL database. No-op if DB is not configured or connection fails."""
+def log_message(session_uuid, msg_id, user_query, response_content, source, chatbot_type="waterbot"):
     if not POSTGRES_ENABLED:
         return
-    source_json = json.dumps(source)  # Convert source (list/dict) to a JSON string
-    msg_id_str = str(msg_id)  # Ensure msg_id is a string
+    source_json = json.dumps(source)
+    msg_id_str = str(msg_id)
     query = """
-        INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, created_at)
-        VALUES (%s, %s, %s, %s, %s, %s);
+        INSERT INTO messages (session_uuid, msg_id, user_query, response_content, source, chatbot_type, created_at)
+        VALUES (%s, %s, %s, %s, %s, %s, %s);
     """
-    args = (session_uuid, msg_id_str, user_query, response_content, source_json, datetime.datetime.utcnow())
+    args = (session_uuid, msg_id_str, user_query, response_content, source_json, chatbot_type, datetime.datetime.utcnow())
 
     for attempt in range(2):
         try:
@@ -782,7 +781,8 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=bot_response,
-        source=[] 
+        source=[],
+        chatbot_type="riverbot"
     )
 
     return {
@@ -920,7 +920,8 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
         msg_id=await memory.get_message_count_uuid_combo(session_uuid),
         user_query=generated_user_query,
         response_content=response_content,
-        source=sources
+        source=sources,
+        chatbot_type="riverbot"
     )
 
     return {
@@ -1035,7 +1036,8 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=generated_user_query, 
         response_content=response_content,
-        source=sources
+        source=sources,
+        chatbot_type="riverbot"
     )
 
     return {
@@ -1253,7 +1255,8 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
             msg_id=await memory.get_message_count_uuid_combo(session_uuid),
             user_query=generated_user_query,
             response_content=response_content,
-            source=[]
+            source=[],
+            chatbot_type="riverbot" 
         )
 
         return {
