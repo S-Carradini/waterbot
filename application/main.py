@@ -1308,7 +1308,8 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
         msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
         user_query=user_query, 
         response_content=response_content,
-        source=docs["sources"]
+        source=docs["sources"],
+        chatbot_type="riverbot"
     )
 
     return {
