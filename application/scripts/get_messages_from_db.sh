@@ -121,7 +121,7 @@ echo "📄 Creating detailed TXT report..."
   "\n" +
   "📚 SOURCES: " + (.source | length | tostring) + " sources" +
   (if (.source | length) > 0 then 
-    "\n" + (.source | to_entries | map("   [" + (.key + 1 | tostring) + "] " + .value) | join("\n"))
+    "\n" + (.source | to_entries | map("   [" + (.key + 1 | tostring) + "] " + (.value | if type == "object" then (.url // .filename // (tostring)) else tostring end)) | join("\n"))
   else "" end) +
   "\n\n" + 
   "================================================================================================\n\n"'
@@ -191,7 +191,6 @@ echo "   • Date Range: $FIRST_DATE to $LAST_DATE"
 WITH_SOURCES=$(echo "$MESSAGES" | jq '[.[] | select((.source | length) > 0)] | length')
 echo "   • Messages with Sources: $WITH_SOURCES"
 
-# ✅ NEW: Show chatbot type breakdown
 echo ""
 echo "📊 Chatbot Type Breakdown:"
 WATERBOT_COUNT=$(echo "$MESSAGES" | jq '[.[] | select((.chatbot_type // "waterbot") == "waterbot")] | length')

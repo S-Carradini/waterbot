@@ -46,7 +46,7 @@ echo "📊 Fetching messages from PostgreSQL RDS (us-west-2)..."
 echo ""
 
 # Fetch messages from API (use jq -r to unwrap double-encoded JSON string)
-MESSAGES=$(curl -s -u "$USERNAME:$PASSWORD" "$PROD_URL/messages" | jq -r '.')
+MESSAGES=$(curl -s -u "$USERNAME:$PASSWORD" "$TEST_URL/messages" | jq -r '.')
 
 # Check if fetch was successful
 if [ -z "$MESSAGES" ] || [ "$MESSAGES" == "null" ]; then
@@ -55,6 +55,13 @@ if [ -z "$MESSAGES" ] || [ "$MESSAGES" == "null" ]; then
     echo "   • Test environment is not deployed yet"
     echo "   • PostgreSQL RDS not set up in us-west-2"
     echo "   • Network connectivity issue"
+    exit 1
+fi
+
+# Ensure response is a JSON array (reject 401/500 error bodies)
+if ! echo "$MESSAGES" | jq -e 'type == "array"' >/dev/null 2>&1; then
+    echo "❌ Error: API did not return a message list (likely auth failed)."
+    echo "   Set API_USERNAME and API_PASSWORD in your .env to match the backend."
     exit 1
 fi
 
@@ -104,7 +111,7 @@ echo "📄 Creating detailed TXT report..."
   "\n" +
   "📚 SOURCES: " + (.source | length | tostring) + " sources" +
   (if (.source | length) > 0 then
-    "\n" + (.source | to_entries | map("   [" + (.key + 1 | tostring) + "] " + .value) | join("\n"))
+    "\n" + (.source | to_entries | map("   [" + (.key + 1 | tostring) + "] " + (.value | if type == "object" then (.url // .filename // (tostring)) else tostring end)) | join("\n"))
   else "" end) +
   "\n\n" +
   "================================================================================================\n\n"'
