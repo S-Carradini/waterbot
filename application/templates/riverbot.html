@@ -556,23 +556,7 @@
         }
       }
 
-      document
-        .getElementById("transcript-button")
-        .addEventListener("click", function () {
-          fetch("/session-transcript", {
-            method: "POST", // or 'GET' if your server supports it
-            credentials: "include", // Ensures cookies are sent with the request
-          })
-            .then((response) => response.json())
-            .then((data) => {
-              console.log("Success:", data);
-              // You might want to redirect the user to the URL or open it in a new tab
-              window.open(data.presigned_url, "_blank");
-            })
-            .catch((error) => {
-              console.error("Error:", error);
-            });
-        });
+      // Transcript download is handled in utilsRiverbot.js via .nav-download
     </script>
   </body>
   <footer></footer>

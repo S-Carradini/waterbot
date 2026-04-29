@@ -36,11 +36,16 @@ $(document).ready(function () {
           return;
         }
 
+        const now = new Date();
+        const pad = n => String(n).padStart(2, "0");
+        const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+        const cleanFilename = `waterbot-transcript-${ts}.txt`;
+
         if (data.presigned_url) {
           // S3 configured: trigger download via presigned URL
           const link = document.createElement("a");
           link.href = data.presigned_url;
-          link.download = data.filename || "session-transcript.txt";
+          link.download = cleanFilename;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -50,7 +55,7 @@ $(document).ready(function () {
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = data.filename || "session-transcript.txt";
+          link.download = cleanFilename;
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);

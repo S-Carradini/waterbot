@@ -34,6 +34,91 @@ $(document).ready(function () {
   // }
 
   // Toggle buttons for language selection
+  // Download transcript
+  const navDownload = document.querySelector(".nav-download");
+  if (navDownload) {
+    navDownload.addEventListener("click", async (e) => {
+      e.preventDefault();
+      try {
+        const response = await fetch("/session-transcript", {
+          method: "POST",
+          credentials: "include",
+        });
+        if (!response.ok) {
+          throw new Error("Failed to fetch transcript");
+        }
+        const data = await response.json();
+        if (data.message && data.message.includes("No chat history")) {
+          alert("No chat history found for this session.");
+          return;
+        }
+        const now = new Date();
+        const pad = n => String(n).padStart(2, "0");
+        const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
+        const cleanFilename = `riverbot-transcript-${ts}.txt`;
+
+        if (data.presigned_url) {
+          const link = document.createElement("a");
+          link.href = data.presigned_url;
+          link.download = cleanFilename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+        } else if (data.transcript != null) {
+          const blob = new Blob([data.transcript], { type: "text/plain" });
+          const url = URL.createObjectURL(blob);
+          const link = document.createElement("a");
+          link.href = url;
+          link.download = cleanFilename;
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          URL.revokeObjectURL(url);
+        }
+      } catch (err) {
+        console.error("Error downloading transcript:", err);
+        alert("Could not download transcript. Please try again.");
+      }
+    });
+  }
+
+  // Home button - navigate to riverbot page
+  const homeNavItem = document.querySelector(".nav-item:first-child");
+  if (homeNavItem) {
+    homeNavItem.addEventListener("click", (e) => {
+      e.preventDefault();
+      window.location.href = "/riverbot";
+    });
+  }
+
+  // Nav open/close animation (hover + click on icon)
+  const navContainer = document.querySelector(".top-right-icon");
+  const navItems = document.getElementById("nav-items");
+  const openHeight = "170px";
+
+  function isNavOpen() {
+    return navItems && parseFloat(navItems.style.height) > 0;
+  }
+  function openNav() {
+    if (navItems) { navItems.style.height = openHeight; navItems.style.opacity = "1"; }
+  }
+  function closeNav() {
+    if (navItems) { navItems.style.height = "0"; navItems.style.opacity = "0"; }
+  }
+
+  if (navContainer) {
+    navContainer.addEventListener("mouseenter", openNav);
+    navContainer.addEventListener("mouseleave", closeNav);
+    const iconImg = navContainer.querySelector(".icon-img");
+    if (iconImg) {
+      iconImg.addEventListener("click", (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        if (isNavOpen()) closeNav(); else openNav();
+      });
+    }
+  }
+
   const englishButton = document.getElementById("english-button");
   const spanishButton = document.getElementById("spanish-button");
 
@@ -523,10 +608,12 @@ $(document).ready(function () {
     console.log("Calling API: " + apiUrl);
     $(".followup-buttons").hide();
     displayLoadingAnimation();
+    $("#user_query").prop("disabled", true);
+    $("#submit-button").prop("disabled", true);
     scrollToBottom();
     fetch(apiUrl, {
       method: "POST",
-      credentials: "include", // ✅ Send cookies with request
+      credentials: "include",
     })
       .then((response) => {
         if (!response.ok) {
