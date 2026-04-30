@@ -897,19 +897,19 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
         raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
     doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
 
-    llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
+    llm_body=await llm_adapter.get_llm_nextsteps_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response, endpoint_type="riverbot" )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
     generated_user_query = f'{custom_tags.tags["NEXTSTEPS_REQUEST"][0]}Provide me the action items{custom_tags.tags["NEXTSTEPS_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
 
-    await memory.add_message_to_session( 
-        session_id=session_uuid, 
+    await memory.add_message_to_session(
+        session_id=session_uuid,
         message={"role":"user","content":generated_user_query},
         source_list=[]
     )
-    await memory.add_message_to_session( 
-        session_id=session_uuid, 
+    await memory.add_message_to_session(
+        session_id=session_uuid,
         message={"role":"assistant","content":response_content},
         source_list=memory_payload
     )
@@ -1013,19 +1013,19 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
         raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
     doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
 
-    llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response )
+    llm_body=await llm_adapter.get_llm_detailed_body( kb_data=doc_content_str,user_query=user_query,bot_response=bot_response, endpoint_type="riverbot" )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
 
     generated_user_query = f'{custom_tags.tags["MOREDETAIL_REQUEST"][0]}Provide me a more detailed response.{custom_tags.tags["MOREDETAIL_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
 
-    await memory.add_message_to_session( 
-        session_id=session_uuid, 
+    await memory.add_message_to_session(
+        session_id=session_uuid,
         message={"role":"user","content":generated_user_query},
         source_list=[]
     )
-    await memory.add_message_to_session( 
-        session_id=session_uuid, 
+    await memory.add_message_to_session(
+        session_id=session_uuid,
         message={"role":"assistant","content":response_content},
         source_list=memory_payload
     )
@@ -1033,8 +1033,8 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
 
     background_tasks.add_task(log_message,
         session_uuid=session_uuid,
-        msg_id=await memory.get_message_count_uuid_combo(session_uuid), 
-        user_query=generated_user_query, 
+        msg_id=await memory.get_message_count_uuid_combo(session_uuid),
+        user_query=generated_user_query,
         response_content=response_content,
         source=sources,
         chatbot_type="riverbot"

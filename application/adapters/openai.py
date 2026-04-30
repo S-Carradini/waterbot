@@ -26,8 +26,11 @@ class OpenAIAdapter(ModelAdapter):
         )  
     
 
-    async def get_llm_detailed_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language='en' ):
-        system_prompt=await self.get_chat_detailed_prompt(kb_data, language=language)
+    async def get_llm_detailed_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language='en', endpoint_type="default" ):
+        if endpoint_type == "riverbot":
+            system_prompt = f"""You are River. Answer as a river would, providing more depth and detail than before."""
+        else:
+            system_prompt=await self.get_chat_detailed_prompt(kb_data, language=language)
         messages=[]
         messages.append(
             {
@@ -35,7 +38,7 @@ class OpenAIAdapter(ModelAdapter):
                 'content':system_prompt
             }
         )
-        inject_user_query="<NEXTSTEPS_REQUEST>Provide me the action items<NEXTSTEPS_REQUEST>"
+        inject_user_query="<MOREDETAIL_REQUEST>Provide me a more detailed response.</MOREDETAIL_REQUEST>"
         messages=await self.build_message_chain_for_action(user_query=user_query,bot_response=bot_response,inject_user_query=inject_user_query,messages=messages)
 
         openai_payload = await self.generate_llm_payload(messages=messages, temperature=temperature)
@@ -43,9 +46,11 @@ class OpenAIAdapter(ModelAdapter):
         return openai_payload
     
 
-    async def get_llm_nextsteps_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language='en' ):
-        system_prompt=await self.get_action_item_prompt(kb_data, language=language)
-
+    async def get_llm_nextsteps_body( self, kb_data, user_query,bot_response, max_tokens=512, temperature=.5, language='en', endpoint_type="default" ):
+        if endpoint_type == "riverbot":
+            system_prompt = f"""You are River. Suggest three simple next steps the person can take, answering as a river would."""
+        else:
+            system_prompt=await self.get_action_item_prompt(kb_data, language=language)
 
         messages=[]
         messages.append(
@@ -54,7 +59,7 @@ class OpenAIAdapter(ModelAdapter):
                 'content':system_prompt
             }
         )
-        inject_user_query="<NEXTSTEPS_REQUEST>Provide me the action items<NEXTSTEPS_REQUEST>"
+        inject_user_query="<NEXTSTEPS_REQUEST>Provide me the action items</NEXTSTEPS_REQUEST>"
         messages=await self.build_message_chain_for_action(user_query=user_query,bot_response=bot_response,inject_user_query=inject_user_query,messages=messages)
         
         openai_payload = await self.generate_llm_payload(messages=messages, temperature=temperature)
