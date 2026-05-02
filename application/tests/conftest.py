@@ -22,6 +22,8 @@ from httpx import ASGITransport, AsyncClient
 os.environ.setdefault("OPENAI_API_KEY", "test-key-not-real")
 os.environ.setdefault("AWS_KB_ID", "test-kb-id")
 os.environ.setdefault("AWS_DEFAULT_REGION", "us-west-2")
+# Avoid importing a developer `.env` that sets LLM_PROVIDER=llama without LLAMA_MODEL_ID.
+os.environ.setdefault("LLM_PROVIDER", "openai")
 # No DATABASE_URL / DB_HOST → POSTGRES_ENABLED=False → psycopg2.connect never called
 os.environ.pop("DATABASE_URL", None)
 os.environ.pop("DB_HOST", None)

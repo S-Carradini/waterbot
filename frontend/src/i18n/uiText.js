@@ -1,35 +1,63 @@
-/**
- * Shared EN/ES UI text for chat page localization.
- * Use: uiText[lang].key or uiText.en.headerTitle
- */
 export const uiText = {
   en: {
+    // Splash
+    splashSubline: 'Ask questions about water in Arizona.',
+    enterChat: 'Enter Chat',
+    howItWorks: 'How it works',
+    disclaimer: 'Educational tool. Responses may be imperfect. Check sources for trusted references.',
+    partnerLine: 'Arizona Water Innovation Initiative \u2022 Arizona State University',
+    // Header
     headerTitle: 'Chat With Blue',
+    voiceMode: 'Voice Mode',
+    downloadTranscript: 'Download Transcript',
+    settings: 'Settings',
+    // Chat
+    askPlaceholder: 'Ask a question about water in Arizona\u2026',
     actionLabels: {
       'tell-me-more': 'Tell Me More',
       'next-steps': 'Next Steps',
       sources: 'Sources',
     },
-    defaultAnswerText: `Hi! My name is Blue! I'm here to answer your questions about water in Arizona.
-Ask me anything you want about the story of water in our state!
-Not sure where to start? You can try asking questions about:
-
-1. Arizona's unique water landscape, rivers, lakes, groundwater, and aquifers
-2. Colorado River's role in Arizona's water supply
-3. What's on your mind about conserving water in our desert environment?
-4. Are there any government programs or initiatives to address drought in Arizona?
-
-Ask any question in the space below to start exploring Arizona's water situation with me!`,
-    errorGeneric: 'Sorry, I encountered an error. Please try again.',
+    defaultAnswerText:
+      "Hi! I'm Waterbot. I can help answer questions about water in Arizona, including drought, conservation, groundwater, rivers, and public water management.",
+    errorGeneric: 'Sorry, something went wrong. Please try again.',
     sourcesWarning: 'Sources are available for informational questions. Please ask a specific question.',
-    inputPlaceholder: 'Type your question here',
-    ariaHome: 'Home',
-    ariaDownloadTranscript: 'Download transcript',
-    ariaMicrophone: 'Microphone',
-    ariaStopRecording: 'Stop Recording',
-    downloadErrorAlert: 'Could not download transcript. Please try again.',
-    loadingMessage: 'Generating response...',
-    feedbackThankYou: 'Thank you for your feedback!',
+    inputPlaceholder: 'Ask a question about water in Arizona\u2026',
+    // Context panel
+    contextPanel: 'Explore Topics',
+    topicWaterCycle: 'Water Cycle',
+    topicDrought: 'Drought',
+    topicGovernance: 'Governance',
+    topicClimate: 'Climate',
+    topicLocalRivers: 'Local Rivers',
+    suggestedPrompts: 'Suggested Prompts',
+    prompt1: 'What is drought contingency planning in Arizona?',
+    prompt2: 'How is groundwater managed in Arizona?',
+    prompt3: 'Where does Phoenix get its water?',
+    trustNote: 'Waterbot uses curated water information sources. Always verify important information.',
+    // Voice
+    listening: 'Listening\u2026',
+    tapToStop: 'Tap to stop',
+    riverThinking: 'Waterbot is thinking\u2026',
+    // Download
+    download: 'Download',
+    copyClipboard: 'Copy to clipboard',
+    // About
+    aboutTitle: 'About Waterbot',
+    aboutText:
+      'The Arizona Water Chatbot, also called Waterbot, is an AI chatbot that answers questions about water in Arizona, including conservation, management, drought, and related public information.',
+    close: 'Close',
+    // How it works
+    howTitle: 'How it works',
+    step1Title: 'Ask a question',
+    step1Desc: 'Type a question about Arizona water, drought, conservation, management, or local water issues.',
+    step2Title: 'Get a response',
+    step2Desc: 'Waterbot provides an answer in clear language based on trusted water information sources.',
+    step3Title: 'Explore more',
+    step3Desc: 'Use follow-up options like "Tell me more" or "Sources" to continue learning.',
+    startChat: 'Start Chat',
+    // Feedback
+    feedbackThankYou: 'Thanks for your feedback. We will use it to improve Waterbot.',
     feedbackTitle: 'What did you not like?',
     factuallyIncorrect: 'Factually incorrect',
     genericResponse: 'Generic response',
@@ -37,41 +65,83 @@ Ask any question in the space below to start exploring Arizona's water situation
     other: 'Other',
     tellUsMore: 'Tell us more...',
     submit: 'Submit',
+    // Misc
+    loadingMessage: 'Generating response...',
+    ariaHome: 'Home',
+    ariaDownloadTranscript: 'Download transcript',
+    ariaMicrophone: 'Microphone',
+    ariaStopRecording: 'Stop Recording',
+    downloadErrorAlert: 'Could not download transcript. Please try again.',
+    english: 'English',
+    spanish: 'Espa\u00f1ol',
+    backToChat: 'Back to Chat',
   },
   es: {
+    splashSubline: 'Haz preguntas sobre el agua en Arizona.',
+    enterChat: 'Entrar al Chat',
+    howItWorks: 'C\u00f3mo funciona',
+    disclaimer: 'Herramienta educativa. Las respuestas pueden ser imperfectas. Consulta fuentes para referencias confiables.',
+    partnerLine: 'Arizona Water Innovation Initiative \u2022 Arizona State University',
     headerTitle: 'Chatea con Blue',
+    voiceMode: 'Modo de Voz',
+    downloadTranscript: 'Descargar Transcripci\u00f3n',
+    settings: 'Configuraci\u00f3n',
+    askPlaceholder: 'Haz una pregunta sobre el agua en Arizona\u2026',
     actionLabels: {
-      'tell-me-more': 'Cuéntame más',
-      'next-steps': 'Próximos pasos',
+      'tell-me-more': 'Cu\u00e9ntame m\u00e1s',
+      'next-steps': 'Pr\u00f3ximos pasos',
       sources: 'Fuentes',
     },
-    defaultAnswerText: `¡Hola! ¡Soy Blue! Estoy aquí para responder tus preguntas sobre el agua en Arizona.
-¡Pregúntame lo que quieras sobre la historia del agua en nuestro estado!
-¿No sabes por dónde empezar? Puedes intentar preguntar sobre:
-
-1. El paisaje hídrico único de Arizona: ríos, lagos, aguas subterráneas y acuíferos
-2. El papel del río Colorado en el suministro de agua de Arizona
-3. Qué te gustaría saber sobre conservar el agua en nuestro entorno desértico
-4. ¿Existen programas o iniciativas gubernamentales para abordar la sequía en Arizona?
-
-¡Escribe cualquier pregunta en el espacio de abajo para explorar conmigo la situación del agua en Arizona!`,
-    errorGeneric: 'Lo siento, hubo un error. Por favor, inténtalo de nuevo.',
-    sourcesWarning: 'Las fuentes están disponibles para preguntas informativas. Por favor, haz una pregunta específica.',
-    inputPlaceholder: 'Escribe tu pregunta aquí',
-    ariaHome: 'Inicio',
-    ariaDownloadTranscript: 'Descargar transcripción',
-    ariaMicrophone: 'Micrófono',
-    ariaStopRecording: 'Detener grabación',
-    downloadErrorAlert: 'No se pudo descargar la transcripción. Por favor, inténtalo de nuevo.',
-    loadingMessage: 'Generando respuesta...',
-    feedbackThankYou: '¡Gracias por tus comentarios!',
-    feedbackTitle: '¿Qué no te gustó?',
+    defaultAnswerText:
+      'Hola! Soy Waterbot. Puedo ayudarte a responder preguntas sobre el agua en Arizona, incluyendo sequ\u00eda, conservaci\u00f3n, agua subterr\u00e1nea, r\u00edos y gesti\u00f3n p\u00fablica del agua.',
+    errorGeneric: 'Lo siento, algo sali\u00f3 mal. Por favor, int\u00e9ntalo de nuevo.',
+    sourcesWarning: 'Las fuentes est\u00e1n disponibles para preguntas informativas. Por favor, haz una pregunta espec\u00edfica.',
+    inputPlaceholder: 'Haz una pregunta sobre el agua en Arizona\u2026',
+    contextPanel: 'Explorar Temas',
+    topicWaterCycle: 'Ciclo del Agua',
+    topicDrought: 'Sequ\u00eda',
+    topicGovernance: 'Gobernanza',
+    topicClimate: 'Clima',
+    topicLocalRivers: 'R\u00edos Locales',
+    suggestedPrompts: 'Indicaciones Sugeridas',
+    prompt1: '\u00bfQu\u00e9 es la planificaci\u00f3n de contingencia por sequ\u00eda en Arizona?',
+    prompt2: '\u00bfC\u00f3mo se gestiona el agua subterr\u00e1nea en Arizona?',
+    prompt3: '\u00bfDe d\u00f3nde obtiene Phoenix su agua?',
+    trustNote: 'Waterbot utiliza fuentes de informaci\u00f3n sobre agua curadas. Siempre verifica informaci\u00f3n importante.',
+    listening: 'Escuchando\u2026',
+    tapToStop: 'Toca para detener',
+    riverThinking: 'Waterbot est\u00e1 pensando\u2026',
+    download: 'Descargar',
+    copyClipboard: 'Copiar al portapapeles',
+    aboutTitle: 'Acerca de Waterbot',
+    aboutText:
+      'El Chatbot de Agua de Arizona, tambi\u00e9n llamado Waterbot, es un chatbot de IA que responde preguntas sobre el agua en Arizona, incluyendo conservaci\u00f3n, gesti\u00f3n, sequ\u00eda e informaci\u00f3n p\u00fablica relacionada.',
+    close: 'Cerrar',
+    howTitle: 'C\u00f3mo funciona',
+    step1Title: 'Haz una pregunta',
+    step1Desc: 'Escribe una pregunta sobre el agua en Arizona, sequ\u00eda, conservaci\u00f3n, gesti\u00f3n o temas locales del agua.',
+    step2Title: 'Obt\u00e9n una respuesta',
+    step2Desc: 'Waterbot proporciona una respuesta en lenguaje claro basada en fuentes confiables de informaci\u00f3n sobre el agua.',
+    step3Title: 'Explora m\u00e1s',
+    step3Desc: 'Usa opciones de seguimiento como "Cu\u00e9ntame m\u00e1s" o "Fuentes" para seguir aprendiendo.',
+    startChat: 'Iniciar Chat',
+    feedbackThankYou: 'Gracias por tus comentarios. Los usaremos para mejorar Waterbot.',
+    feedbackTitle: '\u00bfQu\u00e9 no te gust\u00f3?',
     factuallyIncorrect: 'Incorrecto',
-    genericResponse: 'Respuesta genérica',
-    refusedToAnswer: 'Se negó a responder',
+    genericResponse: 'Respuesta gen\u00e9rica',
+    refusedToAnswer: 'Se neg\u00f3 a responder',
     other: 'Otro',
-    tellUsMore: 'Cuéntanos más...',
+    tellUsMore: 'Cu\u00e9ntanos m\u00e1s...',
     submit: 'Enviar',
+    loadingMessage: 'Generando respuesta...',
+    ariaHome: 'Inicio',
+    ariaDownloadTranscript: 'Descargar transcripci\u00f3n',
+    ariaMicrophone: 'Micr\u00f3fono',
+    ariaStopRecording: 'Detener grabaci\u00f3n',
+    downloadErrorAlert: 'No se pudo descargar la transcripci\u00f3n. Por favor, int\u00e9ntalo de nuevo.',
+    english: 'English',
+    spanish: 'Espa\u00f1ol',
+    backToChat: 'Volver al Chat',
   },
 };
 

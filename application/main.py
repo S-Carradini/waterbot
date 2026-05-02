@@ -20,9 +20,10 @@ from managers.memory_manager import MemoryManager
 from managers.rag_manager import RAGManager
 from sources_verifier import should_show_sources
 from managers.pgvector_store import PgVectorStore
-from managers.s3_manager import S3Manager
+from managers.s3_manager import S3Manager, LocalTranscriptManager
 
 from adapters.openai import OpenAIAdapter
+from adapters.llama import LlamaAdapter
 from adapters.bedrock_kb import BedrockKnowledgeBase
 from starlette.middleware.sessions import SessionMiddleware
 from langdetect import detect, DetectorFactory
@@ -132,7 +133,8 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         return response
 
 # Take environment variables from .env
-load_dotenv(override=True)  
+# Existing process env wins over `.env` (tests/CI can pin LLM_PROVIDER; local shell exports apply).
+load_dotenv(override=False)  
 
 # FastaAPI startup
 app = FastAPI()
@@ -232,12 +234,24 @@ app.add_middleware(SessionMiddleware, secret_key=secret_key)
 TRANSCRIPT_BUCKET_NAME=os.getenv("TRANSCRIPT_BUCKET_NAME")
 
 # adapter choices
-ADAPTERS: dict[str, object] = {
-    "openai-gpt4.1": OpenAIAdapter("gpt-4.1"),
-}
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").strip().lower()
 
-# Set adapter choice
-llm_adapter = ADAPTERS["openai-gpt4.1"]
+OPENAI_CHAT_MODEL_ID = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4.1")
+LLAMA_CHAT_MODEL_ID = os.getenv("LLAMA_MODEL_ID", "").strip()
+
+if LLM_PROVIDER in ("openai", "chatgpt"):
+    llm_adapter = OpenAIAdapter(OPENAI_CHAT_MODEL_ID)
+elif LLM_PROVIDER in ("llama",):
+    if not LLAMA_CHAT_MODEL_ID:
+        raise ValueError(
+            "LLM_PROVIDER=llama requires LLAMA_MODEL_ID. "
+            "On https://router.huggingface.co/v1, the `:sambanova` provider requires SambaNova pay-as-you-go "
+            "to be enabled on your Hugging Face account; use a model id for a provider you have access to, "
+            "or set LLAMA_BASE_URL to another OpenAI-compatible host (e.g. Novita, Groq) and matching model id."
+        )
+    llm_adapter = LlamaAdapter(LLAMA_CHAT_MODEL_ID)
+else:
+    raise ValueError(f"Unsupported LLM_PROVIDER={LLM_PROVIDER!r}. Expected 'openai' or 'llama'.")
 
 # If AWS_KB_ID is set, we will route RAG to Bedrock KB instead of pgvector
 AWS_KB_ID = os.getenv("AWS_KB_ID") or os.getenv("BEDROCK_KB_ID")
@@ -248,7 +262,13 @@ embeddings = llm_adapter.get_embeddings()
 
 # Manager classes
 memory = MemoryManager()  # Assuming you have a MemoryManager class
-s3_manager = S3Manager(bucket_name=TRANSCRIPT_BUCKET_NAME)
+TRANSCRIPT_STORAGE_PATH = os.getenv("TRANSCRIPT_STORAGE_PATH")
+if TRANSCRIPT_BUCKET_NAME:
+    s3_manager = S3Manager(bucket_name=TRANSCRIPT_BUCKET_NAME)
+elif TRANSCRIPT_STORAGE_PATH:
+    s3_manager = LocalTranscriptManager(storage_path=TRANSCRIPT_STORAGE_PATH)
+else:
+    s3_manager = None
 
 # Database connection: DATABASE_URL (e.g. Railway) or DB_HOST/DB_USER/DB_PASSWORD/DB_NAME
 DATABASE_URL = os.getenv("DATABASE_URL")
@@ -640,12 +660,12 @@ async def session_transcript_post(request: Request):
         if isinstance(entry, dict) and "role" in entry and "content" in entry:
             session_text += f"Role: {entry['role']}\nContent: {entry['content']}\n\n"
 
-    if TRANSCRIPT_BUCKET_NAME:
+    if s3_manager:
         object_key = f"session-transcript/{filename}"
         await s3_manager.upload(key=object_key, body=session_text)
         url = await s3_manager.generate_presigned(key=object_key)
-        return {"presigned_url": url}
-    # No S3 bucket configured: return transcript inline so frontend can still trigger download
+        return {"presigned_url": url, "filename": filename}
+    # No storage configured: return transcript inline so frontend can still trigger download
     return {"presigned_url": None, "transcript": session_text, "filename": filename}
 
 @app.post('/submit_rating_api')
@@ -1336,16 +1356,56 @@ async def favicon_png():
         return FileResponse(str(favicon_path))
     raise HTTPException(status_code=404)
 
-# Root and /waterbot: serve Jinja templates (splash screen, chat UI)
+# Serve transcript files from local volume storage (Railway)
+@app.get("/transcript-file/{file_path:path}")
+async def serve_transcript_file(file_path: str):
+    if not TRANSCRIPT_STORAGE_PATH:
+        raise HTTPException(status_code=404, detail="Local transcript storage not configured")
+    import pathlib as _pl
+    base = _pl.Path(TRANSCRIPT_STORAGE_PATH).resolve()
+    target = (base / file_path).resolve()
+    # Prevent path traversal
+    if not str(target).startswith(str(base)):
+        raise HTTPException(status_code=403, detail="Forbidden")
+    if not target.exists():
+        raise HTTPException(status_code=404, detail="Transcript not found")
+    return FileResponse(str(target), media_type="text/plain", filename=target.name,
+                        headers={"Content-Disposition": f'attachment; filename="{target.name}"'})
+
+# Helper to serve the React SPA index.html
+async def _serve_react_spa():
+    if not frontend_dist_path:
+        raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+    index_path = frontend_dist_path / "index.html"
+    if index_path.exists():
+        return FileResponse(str(index_path))
+    raise HTTPException(status_code=404, detail="React frontend not found. Please build the frontend first.")
+
+# Root and /waterbot: serve React SPA (new Figma design)
 @app.get("/", response_class=HTMLResponse)
 async def root(request: Request):
-    """Serve the splash screen (Jinja template)"""
-    return templates.TemplateResponse("splashScreen.html", {"request": request})
+    """Serve React SPA for splash screen (new Figma design)"""
+    return await _serve_react_spa()
 
 @app.get("/waterbot", response_class=HTMLResponse)
 async def waterbot(request: Request):
-    """Serve the waterbot chat page (Jinja template)"""
-    return templates.TemplateResponse("index.html", {"request": request})
+    """Redirect /waterbot to /chat (handled by React SPA router)"""
+    return RedirectResponse(url="/chat", status_code=302)
+
+@app.get("/chat", response_class=HTMLResponse)
+async def chat_page(request: Request):
+    """Serve React SPA for chat page (new Figma design)"""
+    return await _serve_react_spa()
+
+@app.get("/transcript", response_class=HTMLResponse)
+async def transcript_page(request: Request):
+    """Serve React SPA for transcript page (new Figma design)"""
+    return await _serve_react_spa()
+
+@app.get("/settings", response_class=HTMLResponse)
+async def settings_page(request: Request):
+    """Serve React SPA for settings page (new Figma design)"""
+    return await _serve_react_spa()
 
 @app.get("/aboutwaterbot", response_class=HTMLResponse)
 async def about_waterbot(request: Request):

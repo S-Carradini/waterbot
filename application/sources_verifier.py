@@ -1,6 +1,11 @@
 """
-OpenAI-based classifier to decide whether a response deserves a sources list.
-Uses OPENAI_API_KEY and gpt-4o-mini with a heuristic fallback when the API is unavailable.
+Classifier to decide whether a response deserves a sources list.
+
+Supported providers:
+  - `openai`: uses `OPENAI_API_KEY`
+  - `llama`: uses `LLAMA_API_KEY` and an OpenAI-compatible chat endpoint
+
+When the required key is missing or the request fails, it falls back to heuristics.
 """
 
 import os
@@ -51,9 +56,30 @@ async def should_show_sources(
     if not sources or (isinstance(sources, list) and len(sources) == 0):
         return False
 
-    api_key = os.getenv("OPENAI_API_KEY")
-    if not api_key:
-        logging.warning("SOURCES_VERIFIER: OPENAI_API_KEY not set, using heuristic only.")
+    llm_provider = os.getenv("LLM_PROVIDER", "openai").strip().lower()
+    sources_verifier_provider = os.getenv("SOURCES_VERIFIER_PROVIDER", llm_provider).strip().lower()
+
+    if sources_verifier_provider in ("openai", "chatgpt"):
+        api_key = os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logging.warning("SOURCES_VERIFIER: OPENAI_API_KEY not set, using heuristic only.")
+            return _heuristic_should_show_sources(user_query, sources)
+        model_id = SOURCES_VERIFIER_MODEL
+        client = None  # created below
+        base_url = None
+    elif sources_verifier_provider == "llama":
+        api_key = os.getenv("LLAMA_API_KEY") or os.getenv("OPENAI_API_KEY")
+        if not api_key:
+            logging.warning("SOURCES_VERIFIER: LLAMA_API_KEY not set, using heuristic only.")
+            return _heuristic_should_show_sources(user_query, sources)
+        base_url = os.getenv("LLAMA_BASE_URL") or os.getenv("OPENAI_BASE_URL") or "https://router.huggingface.co/v1"
+        model_id = os.getenv("SOURCES_VERIFIER_MODEL") or os.getenv("LLAMA_MODEL_ID") or SOURCES_VERIFIER_MODEL
+        client = None  # created below
+    else:
+        logging.warning(
+            "SOURCES_VERIFIER: Unsupported SOURCES_VERIFIER_PROVIDER=%r, using heuristic only.",
+            sources_verifier_provider,
+        )
         return _heuristic_should_show_sources(user_query, sources)
 
     system_prompt = """You are a classifier for a water-in-Arizona chatbot. Given the user's last question and the bot's reply, decide whether showing "sources" (citations) makes sense.
@@ -65,11 +91,12 @@ Answer YES only if the user asked a substantive, informational question and the 
     try:
         from openai import OpenAI
 
-        client = OpenAI()
+        # OpenAI SDK supports OpenAI-compatible endpoints via `base_url`.
+        client = OpenAI(api_key=api_key, base_url=base_url) if base_url else OpenAI(api_key=api_key)
         response = await asyncio.wait_for(
             asyncio.to_thread(
                 lambda: client.chat.completions.create(
-                    model=SOURCES_VERIFIER_MODEL,
+                    model=model_id,
                     messages=[
                         {"role": "system", "content": system_prompt},
                         {"role": "user", "content": user_prompt},
