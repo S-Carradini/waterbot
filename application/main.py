@@ -23,6 +23,7 @@ from managers.pgvector_store import PgVectorStore
 from managers.s3_manager import S3Manager, LocalTranscriptManager
 
 from adapters.openai import OpenAIAdapter
+from adapters.llama import LlamaAdapter
 from adapters.bedrock_kb import BedrockKnowledgeBase
 from starlette.middleware.sessions import SessionMiddleware
 from langdetect import detect, DetectorFactory
@@ -132,7 +133,8 @@ class SetCookieMiddleware(BaseHTTPMiddleware):
         return response
 
 # Take environment variables from .env
-load_dotenv(override=True)  
+# Existing process env wins over `.env` (tests/CI can pin LLM_PROVIDER; local shell exports apply).
+load_dotenv(override=False)  
 
 # FastaAPI startup
 app = FastAPI()
@@ -232,12 +234,24 @@ app.add_middleware(SessionMiddleware, secret_key=secret_key)
 TRANSCRIPT_BUCKET_NAME=os.getenv("TRANSCRIPT_BUCKET_NAME")
 
 # adapter choices
-ADAPTERS: dict[str, object] = {
-    "openai-gpt4.1": OpenAIAdapter("gpt-4.1"),
-}
+LLM_PROVIDER = os.getenv("LLM_PROVIDER", "openai").strip().lower()
 
-# Set adapter choice
-llm_adapter = ADAPTERS["openai-gpt4.1"]
+OPENAI_CHAT_MODEL_ID = os.getenv("OPENAI_CHAT_MODEL_ID", "gpt-4.1")
+LLAMA_CHAT_MODEL_ID = os.getenv("LLAMA_MODEL_ID", "").strip()
+
+if LLM_PROVIDER in ("openai", "chatgpt"):
+    llm_adapter = OpenAIAdapter(OPENAI_CHAT_MODEL_ID)
+elif LLM_PROVIDER in ("llama",):
+    if not LLAMA_CHAT_MODEL_ID:
+        raise ValueError(
+            "LLM_PROVIDER=llama requires LLAMA_MODEL_ID. "
+            "On https://router.huggingface.co/v1, the `:sambanova` provider requires SambaNova pay-as-you-go "
+            "to be enabled on your Hugging Face account; use a model id for a provider you have access to, "
+            "or set LLAMA_BASE_URL to another OpenAI-compatible host (e.g. Novita, Groq) and matching model id."
+        )
+    llm_adapter = LlamaAdapter(LLAMA_CHAT_MODEL_ID)
+else:
+    raise ValueError(f"Unsupported LLM_PROVIDER={LLM_PROVIDER!r}. Expected 'openai' or 'llama'.")
 
 # If AWS_KB_ID is set, we will route RAG to Bedrock KB instead of pgvector
 AWS_KB_ID = os.getenv("AWS_KB_ID") or os.getenv("BEDROCK_KB_ID")
