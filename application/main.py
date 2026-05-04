@@ -1214,7 +1214,7 @@ async def chat_api_post(
         chat_history=await memory.get_session_history_all(session_uuid), 
         kb_data=doc_content_str,
         temperature=.5,
-        max_tokens=500,
+        max_tokens=2000,
         endpoint_type="spanish" if response_language == 'es' else "default" )
 
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
@@ -1311,7 +1311,7 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
         chat_history=await memory.get_session_history_all(session_uuid), 
         kb_data=doc_content_str,
         temperature=.5,
-        max_tokens=500,
+        max_tokens=2000,
         endpoint_type="riverbot" )
 
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
