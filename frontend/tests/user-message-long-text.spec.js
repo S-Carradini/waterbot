@@ -7,7 +7,9 @@ test.describe('User Message Long Text', () => {
     await page.goto('/museum/chat');
     await page.waitForLoadState('domcontentloaded');
 
-    const textbox = page.getByRole('textbox', { name: 'Message input' });
+    // The /museum/chat page uses InputWrapper.jsx which has class="text-input"
+    // but no aria-label; placeholder is i18n-dependent. Use the stable CSS class.
+    const textbox = page.locator('.text-input');
     await expect(textbox).toBeVisible();
     await textbox.fill(LONG_MESSAGE);
 
