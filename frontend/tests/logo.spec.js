@@ -2,7 +2,8 @@ import { test, expect } from '@playwright/test';
 
 test.describe('WaterSim Logo', () => {
   test('home page - logo is visible, contained, and not cut off', async ({ page }) => {
-    await page.goto('/');
+    // Home is now at /museum/home; / serves FigmaSplashScreen which uses different markup
+    await page.goto('/museum/home');
     await page.waitForLoadState('domcontentloaded');
 
     const logo = page.locator('.home-header-bar img').first();

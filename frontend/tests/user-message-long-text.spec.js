@@ -7,7 +7,7 @@ test.describe('User Message Long Text', () => {
     await page.goto('/museum/chat');
     await page.waitForLoadState('domcontentloaded');
 
-    const textbox = page.getByRole('textbox', { name: 'Type your question here' });
+    const textbox = page.getByRole('textbox', { name: 'Message input' });
     await expect(textbox).toBeVisible();
     await textbox.fill(LONG_MESSAGE);
 
