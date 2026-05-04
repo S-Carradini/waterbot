@@ -1,6 +1,10 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('Chat response formatting', () => {
+  // CI doesn't run a backend, so /chat_api never responds and the typing indicator never appears.
+  // This is effectively an integration test that needs the FastAPI server + OpenAI key.
+  test.skip(!!process.env.CI, 'Requires running backend; runs locally only');
+
   test('Next Steps response should have compact formatting', async ({ page, browserName }) => {
     test.setTimeout(180000);
 
