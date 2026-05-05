@@ -5,6 +5,7 @@ export default function FollowUpChips({ onAction, disabled, t }) {
     { key: 'tell-me-more', label: t.actionLabels['tell-me-more'] },
     { key: 'next-steps', label: t.actionLabels['next-steps'] },
     { key: 'sources', label: t.actionLabels.sources },
+    { key: 'give-example', label: t.actionLabels['give-example'] },
   ];
 
   return (
