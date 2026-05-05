@@ -17,6 +17,7 @@ export const uiText = {
       'tell-me-more': 'Tell Me More',
       'next-steps': 'Next Steps',
       sources: 'Sources',
+      'give-example': 'Give an Example',
     },
     defaultAnswerText:
       "Hi! I'm Waterbot. I can help answer questions about water in Arizona, including drought, conservation, groundwater, rivers, and public water management.",
@@ -91,6 +92,7 @@ export const uiText = {
       'tell-me-more': 'Cu\u00e9ntame m\u00e1s',
       'next-steps': 'Pr\u00f3ximos pasos',
       sources: 'Fuentes',
+      'give-example': 'Dame un ejemplo',
     },
     defaultAnswerText:
       'Hola! Soy Waterbot. Puedo ayudarte a responder preguntas sobre el agua en Arizona, incluyendo sequ\u00eda, conservaci\u00f3n, agua subterr\u00e1nea, r\u00edos y gesti\u00f3n p\u00fablica del agua.',

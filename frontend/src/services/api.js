@@ -134,6 +134,39 @@ export async function getSources(language = 'en') {
 }
 
 /**
+ * Get concrete examples grounded in the RAG corpus, with graceful fallback
+ * when the previous answer doesn't lend itself to examples.
+ */
+export async function getExamples(language = 'en') {
+  const formData = new FormData();
+  formData.append('language_preference', language);
+  try {
+    const response = await fetch(`${API_BASE_URL}/chat_examples_api`, {
+      method: 'POST',
+      body: formData,
+      credentials: 'include',
+    });
+
+    if (!response.ok) {
+      let errorMessage = `Failed to get examples: ${response.status} ${response.statusText}`;
+      try {
+        const errorData = await response.text();
+        console.error('Backend error response:', errorData);
+        errorMessage += ` - ${errorData}`;
+      } catch (e) {
+        // Ignore if we can't parse error
+      }
+      throw new Error(errorMessage);
+    }
+
+    return response.json();
+  } catch (error) {
+    console.error('Error in getExamples:', error);
+    throw error;
+  }
+}
+
+/**
  * Submit a rating/reaction
  */
 export async function submitRating(messageId, reaction, userComment = null) {

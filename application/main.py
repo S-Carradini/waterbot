@@ -978,6 +978,68 @@ async def chat_action_items_api_post(
         "msgID": await memory.get_message_count(session_uuid)
     }
 
+@app.post('/chat_examples_api')
+async def chat_examples_api_post(
+    request: Request,
+    background_tasks: BackgroundTasks,
+    language_preference: Annotated[str | None, Form()] = None
+):
+    session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
+    docs = await memory.get_latest_memory(session_id=session_uuid, read="documents")
+    sources = await memory.get_latest_memory(session_id=session_uuid, read="sources")
+
+    memory_payload = {"documents": docs, "sources": sources}
+
+    user_query = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-2)
+    bot_response = await memory.get_latest_memory(session_id=session_uuid, read="content")
+
+    detected_language = detect_language(user_query)
+    language = resolve_language(language_preference, detected_language)
+    response_language = determine_prompt_language(language, language_preference)
+
+    if not knowledge_base:
+        raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
+    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
+
+    llm_body = await llm_adapter.get_llm_examples_body(
+        kb_data=doc_content_str,
+        user_query=user_query,
+        bot_response=bot_response,
+        language=response_language,
+    )
+    response_content = await llm_adapter.generate_response(llm_body=llm_body)
+
+    instruction_text = "Dame un ejemplo" if response_language == 'es' else "Give an example"
+    generated_user_query = f'{custom_tags.tags["EXAMPLES_REQUEST"][0]}{instruction_text}{custom_tags.tags["EXAMPLES_REQUEST"][1]}'
+    generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
+
+    await memory.add_message_to_session(
+        session_id=session_uuid,
+        message={"role": "user", "content": generated_user_query},
+        source_list=[],
+    )
+    await memory.add_message_to_session(
+        session_id=session_uuid,
+        message={"role": "assistant", "content": response_content},
+        source_list=memory_payload,
+    )
+    await memory.increment_message_count(session_uuid)
+
+    background_tasks.add_task(
+        log_message,
+        session_uuid=session_uuid,
+        msg_id=await memory.get_message_count_uuid_combo(session_uuid),
+        user_query=generated_user_query,
+        response_content=response_content,
+        source=sources,
+    )
+
+    return {
+        "resp": response_content,
+        "msgID": await memory.get_message_count(session_uuid),
+    }
+
+
 @app.post('/riverbot_chat_detailed_api')
 async def riverbot_chat_detailed_api_post(request: Request, background_tasks:BackgroundTasks):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid

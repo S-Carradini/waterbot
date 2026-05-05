@@ -12,6 +12,7 @@ import {
   getDetailedResponse,
   getActionItems,
   getSources,
+  getExamples,
   submitRating,
   translateMessages,
   downloadTranscript,
@@ -146,6 +147,7 @@ export default function ChatPage() {
       if (actionType === 'tell-me-more') response = await getDetailedResponse(language);
       else if (actionType === 'next-steps') response = await getActionItems(language);
       else if (actionType === 'sources') response = await getSources(language);
+      else if (actionType === 'give-example') response = await getExamples(language);
       else { setIsLoading(false); return; }
 
       setIsLoading(false);

@@ -56,9 +56,27 @@ class OpenAIAdapter(ModelAdapter):
         )
         inject_user_query="<NEXTSTEPS_REQUEST>Provide me the action items<NEXTSTEPS_REQUEST>"
         messages=await self.build_message_chain_for_action(user_query=user_query,bot_response=bot_response,inject_user_query=inject_user_query,messages=messages)
-        
+
         openai_payload = await self.generate_llm_payload(messages=messages, temperature=temperature)
 
+        return openai_payload
+
+
+    async def get_llm_examples_body( self, kb_data, user_query, bot_response, max_tokens=512, temperature=.3, language='en' ):
+        system_prompt = await self.get_examples_prompt(kb_data, language=language)
+        messages = [{'role': 'system', 'content': system_prompt}]
+        inject_user_query = (
+            "<EXAMPLES_REQUEST>Dame ejemplos concretos relacionados con la respuesta anterior</EXAMPLES_REQUEST>"
+            if language == 'es'
+            else "<EXAMPLES_REQUEST>Give concrete examples related to the previous answer</EXAMPLES_REQUEST>"
+        )
+        messages = await self.build_message_chain_for_action(
+            user_query=user_query,
+            bot_response=bot_response,
+            inject_user_query=inject_user_query,
+            messages=messages,
+        )
+        openai_payload = await self.generate_llm_payload(messages=messages, temperature=temperature)
         return openai_payload
     
 
