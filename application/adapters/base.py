@@ -117,62 +117,100 @@ Adhere to the rules strictly. Non-compliance will result in termination.
     async def get_examples_prompt(self,kb_data, language='en'):
         if language == 'es':
             system_prompt = """
-        Tu tarea es decidir si la respuesta anterior se beneficiaría de ejemplos concretos y, si es así, proporcionar 2-3 ejemplos breves usando ÚNICAMENTE el material fuente provisto abajo.
+        Tu tarea es proporcionar 2-3 EJEMPLOS DEL MUNDO REAL que ilustren la respuesta anterior, usando ÚNICAMENTE el material fuente provisto abajo.
+
+        <what_counts_as_an_example>
+            Un ejemplo válido es UNA INSTANCIA CONCRETA del concepto discutido — es decir:
+            - Un proyecto, programa o iniciativa real con nombre (ej.: "Central Arizona Project", "Drought Contingency Plan de 2019").
+            - Una comunidad, ciudad, condado o tribu específica de Arizona y lo que hace/experimenta (ej.: "Pinal County reduce el bombeo agrícola en X%").
+            - Un evento, sequía o decisión específicos con fecha y lugar.
+            - Una persona u organización específica y su acción.
+        </what_counts_as_an_example>
+
+        <what_does_NOT_count>
+            NO devuelvas ninguno de los siguientes como un "ejemplo":
+            - Citas de casos legales, nombres de leyes o referencias bibliográficas (ej.: "Arizona v. California, 373 U.S. 546" NO es un ejemplo, es una cita).
+            - Definiciones o reformulaciones generales del tema sin un sujeto concreto.
+            - Material sobre lugares fuera de Arizona, A MENOS que la respuesta anterior los mencione específicamente.
+            - Consejos genéricos o lecciones aprendidas sin un actor real nombrado.
+        </what_does_NOT_count>
 
         <decision>
-            Primero, determina si los ejemplos concretos ayudarían a aclarar la respuesta anterior.
-            - Algunas respuestas ya son ejemplos por su naturaleza (saludos, rechazos, respuestas sí/no simples, mensajes de error). En esos casos, NO fuerces ejemplos.
-            - Si el material fuente no contiene ejemplos relevantes a la respuesta anterior, NO inventes.
+            Antes de generar ejemplos:
+            1. Identifica el TEMA ESPECÍFICO de la respuesta anterior (ej.: "derechos de agua tribales en Arizona", no solo "agua").
+            2. Busca en el material fuente instancias del mundo real DIRECTAMENTE relacionadas con ese tema.
+            3. Si no encuentras al menos 2 ejemplos genuinos del mundo real que coincidan con el tema, devuelve el mensaje de respaldo. NO inventes, NO sustituyas con citas legales, NO uses material no relacionado.
+            Algunas respuestas son inherentemente sin ejemplos (saludos, rechazos, sí/no simples) — devuelve el respaldo en esos casos.
         </decision>
 
         <output_when_examples_apply>
-            Devuelve 2-3 ejemplos breves y concretos extraídos del material fuente.
-
             <formatting>
                 1. El total debe estar por debajo de 512 caracteres.
                 2. Usa una lista numerada.
                 3. Envuelve cada número y su texto en etiquetas <b> y </b>.
                 4. Agrega dos etiquetas <br> antes de cada número.
-                5. Usa nombres de lugares, fechas y nombres propios reales tomados del material fuente.
+                5. Cada elemento debe nombrar el actor del mundo real (lugar, organización, programa) Y describir lo que hizo/experimentó en una oración.
             </formatting>
+
+            <example_format>
+                Aquí hay algunos ejemplos concretos:
+                <br><br><b>1. Pinal County (2023)</b> - los agricultores recibieron asignaciones reducidas de CAP debido al primer recorte oficial de Tier 1.
+                <br><br><b>2. Central Arizona Project</b> - desvía agua del Río Colorado a Phoenix, Tucson y áreas tribales del centro de Arizona.
+            </example_format>
         </output_when_examples_apply>
 
         <output_when_examples_dont_apply>
-            Si los ejemplos no aplican, devuelve EXACTAMENTE este texto y nada más:
+            Devuelve EXACTAMENTE este texto y nada más:
             "No tengo ejemplos específicos para esta respuesta. ¿Puedo aclararte algo más?"
         </output_when_examples_dont_apply>
 
         Material fuente: {kb_data}"""
         else:
             system_prompt = """
-        Your task is to decide whether the previous answer would benefit from concrete examples, and if so, provide 2-3 short examples using ONLY the source material provided below.
+        Your task is to provide 2-3 REAL-WORLD EXAMPLES that illustrate the previous answer, using ONLY the source material provided below.
+
+        <what_counts_as_an_example>
+            A valid example is a CONCRETE INSTANCE of the concept being discussed — meaning:
+            - A real named project, program, or initiative (e.g., "Central Arizona Project", "2019 Drought Contingency Plan").
+            - A specific Arizona community, city, county, or tribe and what they do/experience (e.g., "Pinal County cut agricultural pumping by X%").
+            - A specific event, drought year, or decision with a date and place.
+            - A specific person or organization and what they did.
+        </what_counts_as_an_example>
+
+        <what_does_NOT_count>
+            DO NOT return any of the following as an "example":
+            - Legal case citations, statute names, or bibliographic references (e.g., "Arizona v. California, 373 U.S. 546" is NOT an example — it's a citation).
+            - General definitions or restatements of the topic without a concrete subject.
+            - Material about places outside Arizona, UNLESS the previous answer specifically mentioned them.
+            - Generic advice or lessons-learned without a named real-world actor.
+        </what_does_NOT_count>
 
         <decision>
-            First, decide whether concrete examples would clarify the previous answer.
-            - Some answers are inherently example-free (greetings, refusals, simple yes/no answers, error messages). In those cases, do NOT force examples.
-            - If the source material does not contain examples relevant to the previous answer, do NOT invent any.
+            Before generating examples:
+            1. Identify the SPECIFIC topic of the previous answer (e.g., "tribal water rights in Arizona", not just "water").
+            2. Search the source material for real-world instances DIRECTLY related to that topic.
+            3. If you cannot find at least 2 genuine real-world examples that match the topic, return the fallback message. Do NOT invent, do NOT substitute legal citations, do NOT use unrelated material.
+            Some answers are inherently example-free (greetings, refusals, simple yes/no) — return the fallback in those cases.
         </decision>
 
         <output_when_examples_apply>
-            Return 2-3 short, concrete examples drawn from the source material.
-
             <formatting>
                 1. Must be less than 512 characters total.
                 2. Use a numbered list.
                 3. Wrap each number and its text in <b> and </b> tags.
                 4. Include two <br> tags prior to each number.
-                5. Use real place names, dates, and proper nouns drawn from the source material.
+                5. Each item must name the real-world actor (place, organization, program) AND describe what it did/experiences in one sentence.
             </formatting>
 
-            <example>
+            <example_format>
                 Here are a few concrete examples:
-                <br><br><b>1. Lorem Ipsum project (2023)</b> - description grounded in source material.
-                <br><br><b>2. Lorem County initiative</b> - description grounded in source material.
-            </example>
+                <br><br><b>1. Pinal County (2023)</b> - farmers received reduced CAP allocations after the first official Tier 1 shortage declaration.
+                <br><br><b>2. Central Arizona Project</b> - delivers Colorado River water to Phoenix, Tucson, and tribal lands across central Arizona.
+            </example_format>
         </output_when_examples_apply>
 
         <output_when_examples_dont_apply>
-            If examples don't apply, return EXACTLY this text and nothing else:
+            Return EXACTLY this text and nothing else:
             "I don't have specific examples for this response. Is there something else I can clarify?"
         </output_when_examples_dont_apply>
 
