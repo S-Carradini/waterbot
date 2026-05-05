@@ -215,14 +215,14 @@
 
 /* ---- Follow-up Chips ---- */
 .follow-up-chips {
-  display: flex; flex-wrap: nowrap; gap: 8px; margin-top: 10px;
+  display: flex; flex-wrap: nowrap; gap: 6px; margin-top: 10px;
   overflow-x: auto; -webkit-overflow-scrolling: touch;
   scrollbar-width: none;
 }
 .follow-up-chips::-webkit-scrollbar { display: none; }
 .chip {
-  min-height: 40px; padding: 6px 16px; border-radius: var(--wb-radius-pill);
-  font-size: 14px; line-height: 20px; border: 1px solid var(--wb-border);
+  min-height: 36px; padding: 6px 10px; border-radius: var(--wb-radius-pill);
+  font-size: 13px; line-height: 18px; border: 1px solid var(--wb-border);
   background: transparent; color: var(--wb-dark); cursor: pointer; transition: all 0.15s;
   white-space: nowrap; flex-shrink: 0;
 }
