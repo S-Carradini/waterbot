@@ -978,6 +978,25 @@ async def chat_action_items_api_post(
         "msgID": await memory.get_message_count(session_uuid)
     }
 
+_EXAMPLES_FALLBACK_EN = "I don't have specific examples for this response. Is there something else I can clarify?"
+_EXAMPLES_FALLBACK_ES = "No tengo ejemplos específicos para esta respuesta. ¿Puedo aclararte algo más?"
+# Citation patterns that indicate the LLM ignored the "no citations" rule.
+# Conservative — only catches obvious legal-style citations (case names + reporter cites or section refs).
+import re as _re
+_CITATION_PATTERNS = [
+    _re.compile(r'\d+\s+U\.?S\.?\s+\d+'),         # "463 U.S. 545"
+    _re.compile(r'\d+\s+F\.?\s*\d?d\s+\d+'),       # "752 F.2d 397"
+    _re.compile(r'\bv\.\s+[A-Z][a-zA-Z]+'),        # "v. SomeName"
+    _re.compile(r'\d+\s+S\.?\s*Ct\.?\s+\d+'),      # "123 S. Ct. 456"
+]
+
+
+def _looks_like_citations(text: str) -> bool:
+    """Returns True if the LLM response is dominated by legal-style citations rather than real-world examples."""
+    matches = sum(len(p.findall(text)) for p in _CITATION_PATTERNS)
+    return matches >= 2  # 2+ citation hits across the whole response = bail out
+
+
 @app.post('/chat_examples_api')
 async def chat_examples_api_post(
     request: Request,
@@ -985,10 +1004,7 @@ async def chat_examples_api_post(
     language_preference: Annotated[str | None, Form()] = None
 ):
     session_uuid = request.cookies.get(COOKIE_NAME) or request.state.client_cookie_disabled_uuid
-    docs = await memory.get_latest_memory(session_id=session_uuid, read="documents")
     sources = await memory.get_latest_memory(session_id=session_uuid, read="sources")
-
-    memory_payload = {"documents": docs, "sources": sources}
 
     user_query = await memory.get_latest_memory(session_id=session_uuid, read="content", travel=-2)
     bot_response = await memory.get_latest_memory(session_id=session_uuid, read="content")
@@ -999,7 +1015,19 @@ async def chat_examples_api_post(
 
     if not knowledge_base:
         raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
-    doc_content_str = await knowledge_base.knowledge_to_string({"documents": docs})
+
+    # Fresh RAG retrieval targeted at narrative/example content, not the original
+    # turn's docs (which on legal-heavy topics return mostly case citations).
+    # Use the bot's prior response as the semantic anchor and add hint terms that
+    # bias the embedding toward concrete instances rather than legal documents.
+    example_query_hint_en = "real-world examples named projects programs communities tribes events Arizona water"
+    example_query_hint_es = "ejemplos del mundo real proyectos programas comunidades tribus eventos Arizona agua"
+    hint = example_query_hint_es if response_language == 'es' else example_query_hint_en
+    fresh_query = f"{(bot_response or '')[:600]}\n\n{hint}"
+
+    fresh_docs_payload = await knowledge_base.ann_search(fresh_query, locale=response_language)
+    doc_content_str = await knowledge_base.knowledge_to_string(fresh_docs_payload)
+    memory_payload = {"documents": fresh_docs_payload.get("documents", []), "sources": sources}
 
     llm_body = await llm_adapter.get_llm_examples_body(
         kb_data=doc_content_str,
@@ -1008,6 +1036,11 @@ async def chat_examples_api_post(
         language=response_language,
     )
     response_content = await llm_adapter.generate_response(llm_body=llm_body)
+
+    # Safety net: if the LLM ignored the "no citations" rule and dumped legal
+    # references anyway, replace with the fallback line.
+    if _looks_like_citations(response_content):
+        response_content = _EXAMPLES_FALLBACK_ES if response_language == 'es' else _EXAMPLES_FALLBACK_EN
 
     instruction_text = "Dame un ejemplo" if response_language == 'es' else "Give an example"
     generated_user_query = f'{custom_tags.tags["EXAMPLES_REQUEST"][0]}{instruction_text}{custom_tags.tags["EXAMPLES_REQUEST"][1]}'
