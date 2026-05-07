@@ -466,6 +466,9 @@ $(document).ready(function () {
       case "sourcesButton":
         callAPI("/chat_sources_api");
         break;
+      case "examplesButton":
+        callAPI("/chat_examples_api");
+        break;
       // Add more cases for additional buttons if needed
     }
   });
@@ -647,6 +650,9 @@ function displayBotMessage(botResponse, messageID, onComplete) {
         </a>
         <a type="button" class = "btn btn-sm followup-buttons fw-bold" id="sourcesButton">
           Sources
+        </a>
+        <a type="button" class = "btn btn-sm followup-buttons fw-bold" id="examplesButton">
+          Give an Example
         </a>
         <!-- <a type="button" class = "btn btn-sm followup-buttons" id="actionItemsButton">
           <div>Things you can do</div> -->
