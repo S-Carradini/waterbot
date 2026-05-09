@@ -36,16 +36,11 @@ $(document).ready(function () {
           return;
         }
 
-        const now = new Date();
-        const pad = n => String(n).padStart(2, "0");
-        const ts = `${now.getFullYear()}-${pad(now.getMonth()+1)}-${pad(now.getDate())}_${pad(now.getHours())}-${pad(now.getMinutes())}-${pad(now.getSeconds())}`;
-        const cleanFilename = `waterbot-transcript-${ts}.txt`;
-
         if (data.presigned_url) {
           // S3 configured: trigger download via presigned URL
           const link = document.createElement("a");
           link.href = data.presigned_url;
-          link.download = cleanFilename;
+          link.download = data.filename || "session-transcript.txt";
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -55,7 +50,7 @@ $(document).ready(function () {
           const url = URL.createObjectURL(blob);
           const link = document.createElement("a");
           link.href = url;
-          link.download = cleanFilename;
+          link.download = data.filename || "session-transcript.txt";
           document.body.appendChild(link);
           link.click();
           document.body.removeChild(link);
@@ -466,9 +461,6 @@ $(document).ready(function () {
       case "sourcesButton":
         callAPI("/chat_sources_api");
         break;
-      case "examplesButton":
-        callAPI("/chat_examples_api");
-        break;
       // Add more cases for additional buttons if needed
     }
   });
@@ -650,9 +642,6 @@ function displayBotMessage(botResponse, messageID, onComplete) {
         </a>
         <a type="button" class = "btn btn-sm followup-buttons fw-bold" id="sourcesButton">
           Sources
-        </a>
-        <a type="button" class = "btn btn-sm followup-buttons fw-bold" id="examplesButton">
-          Give an Example
         </a>
         <!-- <a type="button" class = "btn btn-sm followup-buttons" id="actionItemsButton">
           <div>Things you can do</div> -->

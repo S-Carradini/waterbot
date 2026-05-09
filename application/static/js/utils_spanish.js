@@ -469,9 +469,6 @@ function showReactions(message) {
       case 'sourcesButton':
         callAPI('/chat_sources_api');
         break;
-      case 'examplesButton':
-        callAPI('/chat_examples_api');
-        break;
         // Add more cases for additional buttons if needed
     }
   });
@@ -623,9 +620,6 @@ chatHistory.appendChild(userMessage);
         </a>
         <a type="button" class = "btn btn-sm followup-buttons fw-bold" id="sourcesButton">
           Fuentes
-        </a>
-        <a type="button" class = "btn btn-sm followup-buttons fw-bold" id="examplesButton">
-          Dame un ejemplo
         </a>
         <!-- <a type="button" class = "btn btn-sm followup-buttons" id="actionItemsButton">
           <div>Things you can do</div> -->
