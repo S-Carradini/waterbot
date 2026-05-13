@@ -110,7 +110,7 @@ class MemoryManager:
                 if dedup_key not in seen_urls:
                     entry = "<br>" + str(counter) + ". " + human_readable
                     if url:
-                        entry += "<br>" + url
+                        entry += f'<br><a href="{url}" target="_blank" rel="noopener noreferrer">{url}</a>'
                     html += entry
                     has_items = True
                     counter += 1

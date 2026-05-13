@@ -392,6 +392,14 @@
 .answer-text li:last-child {
   margin-bottom: 0;
 }
+.answer-text a {
+  color: #1a6fb5;
+  text-decoration: underline;
+  word-break: break-all;
+}
+.answer-text a:hover {
+  color: #0e4d8a;
+}
 
 /* Thumbs Buttons Container */
 .thumbs-container .thumbs-up,
@@ -444,6 +452,32 @@
   align-items: center;
   gap: 10px;
   flex-shrink: 0;
+}
+
+/* TTS Speaker Button */
+.tts-button {
+  background: none;
+  border: none;
+  cursor: pointer;
+  padding: 6px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #7dc8e0;
+  font-size: 18px;
+  flex-shrink: 0;
+  transition: color 0.2s, opacity 0.2s;
+  border-radius: 50%;
+}
+.tts-button:hover {
+  color: #1a6fb5;
+}
+.tts-button--speaking {
+  color: #1a6fb5;
+}
+.tts-button:disabled {
+  opacity: 0.4;
+  cursor: default;
 }
 
 /* Action Buttons */
