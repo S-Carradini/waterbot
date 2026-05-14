@@ -507,6 +507,25 @@ $(document).ready(function () {
   }
 
 
+  $(document).on("click", ".tts-btn", function () {
+    const domId = $(this).data("dom-id");
+    const $btn = $(this);
+    const $icon = $btn.find("i");
+    if (window.speechSynthesis && window.speechSynthesis.speaking) {
+      window.speechSynthesis.cancel();
+      $(".tts-btn i").removeClass("fa-stop").addClass("fa-volume-up");
+      return;
+    }
+    const text = $("#botmessage-" + domId).text().trim();
+    if (!text || !window.speechSynthesis) return;
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = "en-US";
+    utterance.onend = function() { $icon.removeClass("fa-stop").addClass("fa-volume-up"); };
+    utterance.onerror = function() { $icon.removeClass("fa-stop").addClass("fa-volume-up"); };
+    $icon.removeClass("fa-volume-up").addClass("fa-stop");
+    window.speechSynthesis.speak(utterance);
+  });
+
   $(document).on("click", ".reaction", function () {
     $(".reaction").find("i").removeClass("followup-selected");
     if (document.querySelector(".reaction > .followup-selected") != null) {
@@ -541,6 +560,12 @@ function removeThumbsDown(messageid) {
   $("a[data-messageid='" + messageid + "'][data-reaction=1]").removeClass(
     "reaction"
   );
+}
+
+function linkifyUrls(text) {
+  return text.replace(/(?<!['"=])(https?:\/\/[^\s<>"']+)/g, function(url) {
+    return '<a href="' + url + '" target="_blank" rel="noopener noreferrer">' + url + '</a>';
+  });
 }
 
 function messageInterval(botResponse, messageID, onComplete) {
@@ -635,8 +660,9 @@ function displayBotMessage(botResponse, messageID, onComplete) {
       <div class="row mb-0">
         <div class="col-12" style="padding-top: 0.5rem;">
        
-        <a class="reaction" title="I like the response" data-messageid=${messageID} data-reaction="1"><i class="bi bi-hand-thumbs-up fa-0.75x"></i></a> 
+        <a class="reaction" title="I like the response" data-messageid=${messageID} data-reaction="1"><i class="bi bi-hand-thumbs-up fa-0.75x"></i></a>
         <a class="reaction" data-toggle="tooltip" data-placement="top" title="Could be better" data-messageid=${messageID} data-reaction="0"><i class="bi bi-hand-thumbs-down fa-0.75x"></i></a>
+        <button type="button" class="tts-btn btn btn-sm" data-dom-id="${uniqueDomId}" title="Read aloud" style="background:none;border:none;color:#800000;font-size:16px;padding:0 6px;cursor:pointer;"><i class="fas fa-volume-up"></i></button>
         
         <!--  <span class="reaction" data-toggle="tooltip" data-placement="top" title="Could be better" data-bs-toggle="modal" data-messageid=${messageID} data-bs-target="#modal-${uniqueDomId}" data-reaction="0"><i class="bi bi-hand-thumbs-down fa-0.75x"></i></span> -->
         <!-- <button type="button" class = "btn btn-sm followup-buttons fw-bold" id="shortButton">
@@ -731,7 +757,7 @@ function displayBotMessage(botResponse, messageID, onComplete) {
     `;
   botMessage.setAttribute("data-unique-dom-id", uniqueDomId);
   chatHistory.appendChild(botMessage);
-  messageInterval(botResponse, uniqueDomId, function () {
+  messageInterval(linkifyUrls(botResponse), uniqueDomId, function () {
     window.responseInProgress = false;
     const footer = document.getElementById("reactions-footer-" + uniqueDomId);
     if (footer) footer.style.display = "";
