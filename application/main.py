@@ -738,7 +738,7 @@ async def translate_post(request: Request):
 
 NO_SOURCES_MESSAGE = {"en": "Sources are not available for this reply.", "es": "Las fuentes no están disponibles para esta respuesta."}
 EXAMPLES_FALLBACK_EN = "I don't have specific examples for this response. Is there something else I can clarify?"
-EXAMPLES_FALLBACK_ES = "No tengo ejemplos especificos para esta respuesta. Puedo aclararte algo mas?"
+EXAMPLES_FALLBACK_ES = "No tengo ejemplos específicos para esta respuesta. ¿Puedo aclararte algo más?"
 
 LEGAL_CITATION_PATTERNS = [
     re.compile(r"\d+\s+U\.?S\.?\s+\d+"),
@@ -1050,7 +1050,7 @@ async def chat_examples_api_post(
     if looks_like_citations(response_content):
         response_content = EXAMPLES_FALLBACK_ES if response_language == 'es' else EXAMPLES_FALLBACK_EN
 
-    instruction_text = "Dame 2 o 3 ejemplos de la respuesta anterior." if response_language == 'es' else "Give me 2-3 examples for the prior response."
+    instruction_text = "Dame un ejemplo" if response_language == 'es' else "Give an example"
     generated_user_query = f'{custom_tags.tags["EXAMPLES_REQUEST"][0]}{instruction_text}{custom_tags.tags["EXAMPLES_REQUEST"][1]}'
     generated_user_query += f'{custom_tags.tags["OG_QUERY"][0]}{user_query}{custom_tags.tags["OG_QUERY"][1]}'
 

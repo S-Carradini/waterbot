@@ -144,82 +144,96 @@ Adhere to the rules strictly. Non-compliance will result in termination.
     async def get_examples_prompt(self, kb_data, language='en'):
         if language == 'es':
             system_prompt = """
-        Tu tarea es proporcionar 2-3 EJEMPLOS DEL MUNDO REAL que ilustren la respuesta anterior, usando UNICAMENTE el material fuente provisto abajo.
+        Tu tarea es proporcionar 2-3 EJEMPLOS DEL MUNDO REAL que ilustren la respuesta anterior, usando ÚNICAMENTE el material fuente provisto abajo.
 
         <what_counts_as_an_example>
-            Un ejemplo valido es UNA INSTANCIA CONCRETA del concepto discutido, por ejemplo:
-            - Un proyecto, programa o iniciativa real con nombre.
-            - Una comunidad, ciudad, condado o tribu especifica de Arizona y lo que hace/experimenta.
-            - Un evento, sequia o decision especificos con fecha y lugar.
-            - Una persona u organizacion especifica y su accion.
+            Un ejemplo válido es UNA INSTANCIA CONCRETA del concepto discutido — es decir:
+            - Un proyecto, programa o iniciativa real con nombre (ej.: "Central Arizona Project", "Drought Contingency Plan de 2019").
+            - Una comunidad, ciudad, condado o tribu específica de Arizona y lo que hace/experimenta (ej.: "Pinal County reduce el bombeo agrícola en X%").
+            - Un evento, sequía o decisión específicos con fecha y lugar.
+            - Una persona u organización específica y su acción.
         </what_counts_as_an_example>
 
         <what_does_NOT_count>
-            NO devuelvas ninguno de los siguientes como "ejemplo":
-            - Citas de casos legales, nombres de leyes o referencias bibliograficas.
-            - Definiciones generales sin un sujeto concreto.
-            - Material de lugares fuera de Arizona, salvo que la respuesta anterior los mencione.
-            - Consejos genericos sin un actor real nombrado.
+            NO devuelvas ninguno de los siguientes como un "ejemplo":
+            - Citas de casos legales, nombres de leyes o referencias bibliográficas (ej.: "Arizona v. California, 373 U.S. 546" NO es un ejemplo, es una cita).
+            - Definiciones o reformulaciones generales del tema sin un sujeto concreto.
+            - Material sobre lugares fuera de Arizona, A MENOS que la respuesta anterior los mencione específicamente.
+            - Consejos genéricos o lecciones aprendidas sin un actor real nombrado.
         </what_does_NOT_count>
 
         <decision>
-            1. Identifica el tema especifico de la respuesta anterior.
-            2. Busca en el material fuente instancias concretas directamente relacionadas.
-            3. Si no hay al menos 2 ejemplos genuinos, devuelve el mensaje de respaldo exacto.
-            4. No inventes ni sustituyas con citas legales.
+            Antes de generar ejemplos:
+            1. Identifica el TEMA ESPECÍFICO de la respuesta anterior (ej.: "derechos de agua tribales en Arizona", no solo "agua").
+            2. Busca en el material fuente instancias del mundo real DIRECTAMENTE relacionadas con ese tema.
+            3. Si no encuentras al menos 2 ejemplos genuinos del mundo real que coincidan con el tema, devuelve el mensaje de respaldo. NO inventes, NO sustituyas con citas legales, NO uses material no relacionado.
+            Algunas respuestas son inherentemente sin ejemplos (saludos, rechazos, sí/no simples) — devuelve el respaldo en esos casos.
         </decision>
 
         <output_when_examples_apply>
             <formatting>
-                1. Debe tener menos de 512 caracteres.
-                2. Usa lista numerada.
-                3. Envuelve cada numero y su texto en <b> y </b>.
-                4. Agrega dos <br> antes de cada numero.
-                5. Cada elemento debe nombrar el actor real y describir su accion/experiencia en una oracion.
+                1. El total debe estar por debajo de 512 caracteres.
+                2. Usa una lista numerada.
+                3. Envuelve cada número y su texto en etiquetas <b> y </b>.
+                4. Agrega dos etiquetas <br> antes de cada número.
+                5. Cada elemento debe nombrar el actor del mundo real (lugar, organización, programa) Y describir lo que hizo/experimentó en una oración.
             </formatting>
+
+            <example_format>
+                Aquí hay algunos ejemplos concretos:
+                <br><br><b>1. Pinal County (2023)</b> - los agricultores recibieron asignaciones reducidas de CAP debido al primer recorte oficial de Tier 1.
+                <br><br><b>2. Central Arizona Project</b> - desvía agua del Río Colorado a Phoenix, Tucson y áreas tribales del centro de Arizona.
+            </example_format>
         </output_when_examples_apply>
 
         <output_when_examples_dont_apply>
-            Devuelve EXACTAMENTE este texto y nada mas:
-            "No tengo ejemplos especificos para esta respuesta. Puedo aclararte algo mas?"
+            Devuelve EXACTAMENTE este texto y nada más:
+            "No tengo ejemplos específicos para esta respuesta. ¿Puedo aclararte algo más?"
         </output_when_examples_dont_apply>
 
         Material fuente: {kb_data}"""
         else:
             system_prompt = """
-        Your task is to provide 2-3 REAL-WORLD EXAMPLES that illustrate the previous answer, using ONLY the source material below.
+        Your task is to provide 2-3 REAL-WORLD EXAMPLES that illustrate the previous answer, using ONLY the source material provided below.
 
         <what_counts_as_an_example>
-            A valid example is a CONCRETE INSTANCE, such as:
-            - A real named project, program, or initiative.
-            - A specific Arizona community, city, county, or tribe and what it did/experienced.
-            - A specific event, drought year, or decision with date/place.
+            A valid example is a CONCRETE INSTANCE of the concept being discussed — meaning:
+            - A real named project, program, or initiative (e.g., "Central Arizona Project", "2019 Drought Contingency Plan").
+            - A specific Arizona community, city, county, or tribe and what they do/experience (e.g., "Pinal County cut agricultural pumping by X%").
+            - A specific event, drought year, or decision with a date and place.
             - A specific person or organization and what they did.
         </what_counts_as_an_example>
 
         <what_does_NOT_count>
-            DO NOT return any of these as examples:
-            - Legal case citations, statute names, or bibliographic references.
-            - Generic definitions without a concrete actor.
-            - Places outside Arizona unless directly relevant to the prior response.
-            - Generic advice without named real-world actors.
+            DO NOT return any of the following as an "example":
+            - Legal case citations, statute names, or bibliographic references (e.g., "Arizona v. California, 373 U.S. 546" is NOT an example — it's a citation).
+            - General definitions or restatements of the topic without a concrete subject.
+            - Material about places outside Arizona, UNLESS the previous answer specifically mentioned them.
+            - Generic advice or lessons-learned without a named real-world actor.
         </what_does_NOT_count>
 
         <decision>
-            1. Identify the specific topic of the previous answer.
-            2. Find directly related real-world instances in the source material.
-            3. If fewer than 2 genuine examples exist, return the fallback message exactly.
-            4. Do not invent examples or substitute legal citations.
+            Before generating examples:
+            1. Identify the SPECIFIC topic of the previous answer (e.g., "tribal water rights in Arizona", not just "water").
+            2. Search the source material for real-world instances DIRECTLY related to that topic.
+            3. If you cannot find at least 2 genuine real-world examples that match the topic, return the fallback message. Do NOT invent, do NOT substitute legal citations, do NOT use unrelated material.
+            Some answers are inherently example-free (greetings, refusals, simple yes/no) — return the fallback in those cases.
         </decision>
 
         <output_when_examples_apply>
             <formatting>
-                1. Keep under 512 characters total.
+                1. Must be less than 512 characters total.
                 2. Use a numbered list.
-                3. Wrap each number and text in <b> and </b>.
+                3. Wrap each number and its text in <b> and </b> tags.
                 4. Include two <br> tags prior to each number.
-                5. Each item must name a real-world actor and what it did/experienced in one sentence.
+                5. Each item must name the real-world actor (place, organization, program) AND describe what it did/experiences in one sentence.
             </formatting>
+
+            <example_format>
+                Here are a few concrete examples:
+                <br><br><b>1. Pinal County (2023)</b> - farmers received reduced CAP allocations after the first official Tier 1 shortage declaration.
+                <br><br><b>2. Central Arizona Project</b> - delivers Colorado River water to Phoenix, Tucson, and tribal lands across central Arizona.
+            </example_format>
         </output_when_examples_apply>
 
         <output_when_examples_dont_apply>
@@ -230,4 +244,5 @@ Adhere to the rules strictly. Non-compliance will result in termination.
         Source material: {kb_data}"""
 
         system_prompt = system_prompt.format(kb_data=kb_data)
+
         return system_prompt
