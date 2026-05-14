@@ -764,6 +764,13 @@ waterdrop5 {
   background-color: #eee !important;
 }
 
+textarea.input-chatbot-question {
+  resize: none;
+  overflow-y: hidden;
+  line-height: 1.5;
+  transition: height 0.1s ease;
+}
+
 .user-icon-background {
   color: #254C63;
 }

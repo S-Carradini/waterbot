@@ -210,19 +210,18 @@
               <form autocomplete="off" onsubmit="return false" action="/chat_api" method="post" id="userBox"
                 style="display: flex; align-items: center">
                 <div class="input-group mt-3" style="position: relative; flex-grow: 1">
-                  <input autocomplete="nope" type="text" id="user_query" name="user_query"
+                  <textarea autocomplete="nope" rows="1" id="user_query" name="user_query"
                     class="input-chatbot-question form-control" placeholder="Type your question here"
                     aria-label="Type your question here" aria-describedby="basic-addon2" style="
                           padding-right: 90px;
                           border-radius: 10px;
-                          height: 48px;
-                        " />
+                          min-height: 48px;
+                        "></textarea>
 
                   <button class="btn btn-submit" id="submit-button" type="button" style="
                           position: absolute;
                           right: 0;
-                          top: 50%;
-                          transform: translateY(-50%);
+                          bottom: 8px;
                           background: none;
                           border: none;
                           z-index: 99;
@@ -297,6 +296,7 @@
         transcript += event.results[i][0].transcript + " ";
       }
       transcriptionDiv.value = transcript.trim();
+      transcriptionDiv.dispatchEvent(new Event("input"));
     };
 
     recognition.onerror = function (event) {

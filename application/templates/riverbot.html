@@ -230,17 +230,17 @@
                 class="input-group mt-3"
                 style="position: relative; flex-grow: 1"
               >
-                <input
+                <textarea
                   autocomplete="nope"
-                  type="text"
+                  rows="1"
                   id="user_query"
                   name="user_query"
                   class="input-chatbot-question form-control"
                   placeholder="Type your question here"
                   aria-label="Type your question here"
                   aria-describedby="basic-addon2"
-                  style="padding-right: 90px; border-radius: 16px; height: 60px"
-                />
+                  style="padding-right: 90px; border-radius: 16px; min-height: 60px"
+                ></textarea>
 
                 <button
                   class="btn btn-mic"
@@ -249,8 +249,7 @@
                   style="
                     position: absolute;
                     right: 50px;
-                    top: 50%;
-                    transform: translateY(-50%);
+                    bottom: 12px;
                     background: none;
                     border: none;
                   "
@@ -265,8 +264,7 @@
                   style="
                     position: absolute;
                     right: 0;
-                    top: 50%;
-                    transform: translateY(-50%);
+                    bottom: 12px;
                     background: none;
                     border: none;
                     z-index: 99;

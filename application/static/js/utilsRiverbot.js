@@ -549,15 +549,37 @@ $(document).ready(function () {
     scrollToBottom();
 
     // Clear the input field after sending the query
-    document.getElementById("user_query").value = "";
+    var uqEl = document.getElementById("user_query");
+    uqEl.value = "";
+    uqEl.dispatchEvent(new Event("input"));
   }
 
-  $("#user_query").on("keyup", function (e) {
-    e.preventDefault();
-    if (e.key === "Enter" || e.keyCode === 13) {
+  $("#user_query").on("keydown", function (e) {
+    if ((e.key === "Enter" || e.keyCode === 13) && !e.shiftKey) {
+      e.preventDefault();
       sendUserQuery(e);
     }
   });
+
+  (function () {
+    var el = document.getElementById("user_query");
+    if (el && el.tagName === "TEXTAREA") {
+      el.addEventListener("input", function () {
+        this.style.height = "auto";
+        var lh = parseFloat(getComputedStyle(this).lineHeight) || 24;
+        var pt = parseFloat(getComputedStyle(this).paddingTop) || 0;
+        var pb = parseFloat(getComputedStyle(this).paddingBottom) || 0;
+        var maxH = lh * 4 + pt + pb;
+        if (this.scrollHeight <= maxH) {
+          this.style.height = this.scrollHeight + "px";
+          this.style.overflowY = "hidden";
+        } else {
+          this.style.height = maxH + "px";
+          this.style.overflowY = "auto";
+        }
+      });
+    }
+  })();
 
   $("#submit-button").on("click", function (e) {
     e.preventDefault();

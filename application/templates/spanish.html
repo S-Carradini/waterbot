@@ -167,13 +167,13 @@
           <!-- Add transcription div here -->
           <div id="transcription" style="display:none;"></div>
 
-          <form autocomplete="off" onsubmit="return false" action="/chat_api" method="post" id="userBox" style="display: flex; align-items: center;">
+          <form autocomplete="off" onsubmit="return false" action="/chat_api" method="post" id="userBox" style="display: flex; align-items: flex-end;">
             <div class="input-group mt-3" style="position: relative; flex-grow: 1;">
-              <input autocomplete="nope" type="text" id="user_query" name="user_query"
+              <textarea autocomplete="nope" rows="1" id="user_query" name="user_query"
                      class="input-chatbot-question form-control" placeholder="Type your question here"
-                     aria-label="Type your question here" aria-describedby="basic-addon2" style="padding-right: 50px; border-radius: 25px; height: 48px;">
+                     aria-label="Type your question here" aria-describedby="basic-addon2" style="padding-right: 50px; border-radius: 25px; min-height: 48px;"></textarea>
               <button class="btn btn-mic" id="mic-button" type="button"
-                      style="display : none; position: absolute; right: -5px; top: 50%; transform: translateY(-50%); background: none; border: none;">
+                      style="display : none; position: absolute; right: -5px; bottom: 8px; background: none; border: none;">
                 <svg xmlns="http://www.w3.org/2000/svg" width="35" height="35" viewBox="0 0 35 35" fill="none">
                   <circle cx="17.5" cy="17.4999" r="16.2931" fill="url(#paint0_linear_96_2391)" fill-opacity="0.9"/>
                   <path d="M21.5707 17.6195C21.6254 17.2613 21.9126 16.9657 22.2749 16.9657C22.6373 16.9657 22.9359 17.2607 22.8913 17.6203C22.7613 18.6672 22.3128 19.605 21.5459 20.4337C20.9258 21.1052 20.2131 21.5914 19.4079 21.8923C18.7715 22.1302 18.2655 22.6882 18.2655 23.3676V23.9758C18.2655 24.3986 17.9227 24.7413 17.5 24.7413C17.0773 24.7413 16.7346 24.3986 16.7346 23.9758V23.3676C16.7346 22.6882 16.2288 22.1296 15.5918 21.8935C14.7801 21.5927 14.0554 21.1061 13.4176 20.4337C12.6709 19.605 12.2343 18.6672 12.1077 17.6204C12.0642 17.2606 12.3627 16.9657 12.7251 16.9657C13.0874 16.9657 13.3748 17.2612 13.4279 17.6197C13.5549 18.4763 13.9402 19.2074 14.584 19.8131C15.4102 20.5432 16.3822 20.9083 17.5 20.9083C18.6178 20.9083 19.5776 20.5432 20.3795 19.8131C21.0429 19.2074 21.4399 18.4762 21.5707 17.6195ZM16.5523 12.2201V17.0387C16.5523 17.2821 16.6374 17.5011 16.8075 17.6958C17.0019 17.8662 17.2327 17.9514 17.5 17.9514C17.743 17.9514 17.9496 17.8662 18.1197 17.6958C18.3141 17.5255 18.4113 17.3064 18.4113 17.0387L18.4477 12.2201C18.4477 11.9524 18.3505 11.7334 18.1561 11.563C17.9617 11.3683 17.743 11.271 17.5 11.271C17.257 11.271 17.0383 11.3683 16.8439 11.563C16.6495 11.7334 16.5523 11.9524 16.5523 12.2201ZM19.1402 18.6084C18.6786 19.0708 18.1318 19.302 17.5 19.302C16.8682 19.302 16.3215 19.0708 15.8598 18.6084C15.3981 18.1461 15.1672 17.5985 15.1672 16.9657V12.2931C15.1672 11.6603 15.3981 11.1128 15.8598 10.6504C16.3215 10.188 16.8682 9.95679 17.5 9.95679C18.1318 9.95679 18.6786 10.188 19.1402 10.6504C19.6019 11.1128 19.8328 11.6603 19.8328 12.2931V16.9657C19.8328 17.5985 19.6019 18.1461 19.1402 18.6084Z" fill="#FEFEFF"/>
