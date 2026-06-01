@@ -529,6 +529,24 @@ $(document).ready(function () {
   }
 
 
+  function getFemaleVoice() {
+    const femaleNames = ["Samantha", "Zira", "Google US English", "Victoria", "Karen", "Moira", "Tessa", "Fiona"];
+    function pick(voices) {
+      return voices.find(v =>
+        v.lang.startsWith("en") &&
+        femaleNames.some(name => v.name.includes(name))
+      ) || null;
+    }
+    return new Promise(resolve => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length) {
+        resolve(pick(voices));
+      } else {
+        window.speechSynthesis.onvoiceschanged = () => resolve(pick(window.speechSynthesis.getVoices()));
+      }
+    });
+  }
+
   $(document).on("click", ".tts-btn", function () {
     const domId = $(this).data("dom-id");
     const $btn = $(this);
@@ -545,7 +563,10 @@ $(document).ready(function () {
     utterance.onend = function() { $icon.removeClass("fa-stop").addClass("fa-volume-up"); };
     utterance.onerror = function() { $icon.removeClass("fa-stop").addClass("fa-volume-up"); };
     $icon.removeClass("fa-volume-up").addClass("fa-stop");
-    window.speechSynthesis.speak(utterance);
+    getFemaleVoice().then(voice => {
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    });
   });
 
   $(document).on("click", ".reaction", function () {
