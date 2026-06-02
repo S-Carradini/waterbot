@@ -276,7 +276,7 @@ const InputWrapper = React.forwardRef(function InputWrapper({ onSendMessage, isL
     <div className="input-wrapper">
       {/* Text Input Box */}
       <div className="input-container">
-        <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'flex-end', width: '100%', height: 'auto' }}>
+        <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'center', width: '100%', height: 'auto' }}>
           <textarea
             rows="1"
             ref={textareaRef}
