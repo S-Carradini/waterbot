@@ -740,6 +740,30 @@ NO_SOURCES_MESSAGE = {"en": "Sources are not available for this reply.", "es": "
 EXAMPLES_FALLBACK_EN = "I don't have specific examples for this response. Is there something else I can clarify?"
 EXAMPLES_FALLBACK_ES = "No tengo ejemplos específicos para esta respuesta. ¿Puedo aclararte algo más?"
 
+NO_CONTEXT_MESSAGE = {
+    "en": "Please ask a water-related question first — then I can elaborate further!",
+    "es": "¡Primero haz una pregunta relacionada con el agua y luego te cuento más!"
+}
+
+_GREETING_WORDS = {
+    "hi", "hello", "hey", "yo", "yoo", "heya", "heyaa", "howdy", "sup",
+    "greetings", "morning", "evening", "afternoon", "namaste", "hola",
+    "bonjour", "ciao", "aloha", "salut", "what's up", "whats up",
+    "how are you", "how r you", "how are u"
+}
+
+def is_greeting_only(text: str) -> bool:
+    """True when the entire message is just a greeting with no substantive content."""
+    if not text or not text.strip():
+        return True
+    normalized = text.strip().lower().rstrip("!.,?")
+    if normalized in _GREETING_WORDS:
+        return True
+    words = normalized.split()
+    if len(words) <= 3 and words[0] in _GREETING_WORDS:
+        return True
+    return False
+
 LEGAL_CITATION_PATTERNS = [
     re.compile(r"\d+\s+U\.?S\.?\s+\d+"),
     re.compile(r"\d+\s+F\.?\s*\d?d\s+\d+"),
@@ -905,8 +929,12 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
 
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
-    
+
     language = detect_language(user_query)
+
+    if is_greeting_only(user_query):
+        await memory.increment_message_count(session_uuid)
+        return {"resp": NO_CONTEXT_MESSAGE["en"], "msgID": await memory.get_message_count(session_uuid)}
 
     if not knowledge_base:
         raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
@@ -961,11 +989,14 @@ async def chat_action_items_api_post(
 
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
-    
+
     detected_language = detect_language(user_query)
     language = resolve_language(language_preference, detected_language)
-    
     response_language = determine_prompt_language(language, language_preference)
+
+    if is_greeting_only(user_query):
+        await memory.increment_message_count(session_uuid)
+        return {"resp": NO_CONTEXT_MESSAGE["es" if language == "es" else "en"], "msgID": await memory.get_message_count(session_uuid)}
 
     if not knowledge_base:
         raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
@@ -1023,6 +1054,10 @@ async def chat_examples_api_post(
     detected_language = detect_language(user_query)
     language = resolve_language(language_preference, detected_language)
     response_language = determine_prompt_language(language, language_preference)
+
+    if is_greeting_only(user_query):
+        await memory.increment_message_count(session_uuid)
+        return {"resp": NO_CONTEXT_MESSAGE["es" if language == "es" else "en"], "msgID": await memory.get_message_count(session_uuid)}
 
     if not knowledge_base:
         raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
@@ -1093,8 +1128,12 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
 
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
-    
+
     language = detect_language(user_query)
+
+    if is_greeting_only(user_query):
+        await memory.increment_message_count(session_uuid)
+        return {"resp": NO_CONTEXT_MESSAGE["en"], "msgID": await memory.get_message_count(session_uuid)}
 
     if not knowledge_base:
         raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
@@ -1149,11 +1188,14 @@ async def chat_detailed_api_post(
 
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
-    
+
     detected_language = detect_language(user_query)
     language = resolve_language(language_preference, detected_language)
-
     response_language = determine_prompt_language(language, language_preference)
+
+    if is_greeting_only(user_query):
+        await memory.increment_message_count(session_uuid)
+        return {"resp": NO_CONTEXT_MESSAGE["es" if language == "es" else "en"], "msgID": await memory.get_message_count(session_uuid)}
 
     if not knowledge_base:
         raise HTTPException(503, "RAG is not available. Configure PostgreSQL with pgvector.")
