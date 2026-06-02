@@ -1,9 +1,9 @@
-name: Deploy to Railway (test-railway-deployment)
+name: Deploy to Railway
 
 on:
   push:
     branches:
-      - test-railway-deployment
+      - main
   workflow_dispatch:
     inputs:
       skip_tests:
