@@ -11,6 +11,10 @@ export default function Composer({ onSend, onVoice, disabled, t }) {
     if (hasText && !disabled) {
       onSend(value.trim());
       setValue('');
+      if (inputRef.current) {
+        inputRef.current.style.height = 'auto';
+        inputRef.current.style.overflowY = 'hidden';
+      }
     }
   };
 
@@ -25,14 +29,31 @@ export default function Composer({ onSend, onVoice, disabled, t }) {
     if (!disabled && inputRef.current) inputRef.current.focus();
   }, [disabled]);
 
+  useEffect(() => {
+    const el = inputRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const lh = parseFloat(getComputedStyle(el).lineHeight) || 24;
+    const pt = parseFloat(getComputedStyle(el).paddingTop) || 0;
+    const pb = parseFloat(getComputedStyle(el).paddingBottom) || 0;
+    const maxH = lh * 4 + pt + pb;
+    if (el.scrollHeight <= maxH) {
+      el.style.height = el.scrollHeight + 'px';
+      el.style.overflowY = 'hidden';
+    } else {
+      el.style.height = maxH + 'px';
+      el.style.overflowY = 'auto';
+    }
+  }, [value]);
+
   return (
     <form className={`composer${disabled ? ' composer--disabled' : ''}`} onSubmit={handleSubmit}>
       <button type="button" className="composer__btn-mic" onClick={onVoice} disabled={disabled} aria-label="Start voice input">
         <Mic size={20} />
       </button>
-      <input
+      <textarea
         ref={inputRef}
-        type="text"
+        rows="1"
         className="composer__input"
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -40,6 +61,7 @@ export default function Composer({ onSend, onVoice, disabled, t }) {
         placeholder={t.askPlaceholder}
         disabled={disabled}
         aria-label="Message input"
+        style={{ resize: 'none', overflowY: 'hidden' }}
       />
       <button
         type="submit"

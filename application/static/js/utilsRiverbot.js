@@ -463,13 +463,35 @@ $(document).ready(function () {
 
     scrollToBottom();
 
-    // Clear the input field after sending the query
-    document.getElementById("user_query").value = "";
+    // Clear the input field and reset height after sending the query
+    const ta = document.getElementById("user_query");
+    ta.value = "";
+    ta.style.height = "auto";
+    ta.style.overflowY = "hidden";
   }
 
-  $("#user_query").on("keyup", function (e) {
-    e.preventDefault();
-    if (e.key === "Enter" || e.keyCode === 13) {
+  function autoResizeRiverbot() {
+    const el = document.getElementById("user_query");
+    if (!el) return;
+    el.style.height = "auto";
+    const lh = parseFloat(getComputedStyle(el).lineHeight) || 24;
+    const pt = parseFloat(getComputedStyle(el).paddingTop) || 0;
+    const pb = parseFloat(getComputedStyle(el).paddingBottom) || 0;
+    const maxH = lh * 4 + pt + pb;
+    if (el.scrollHeight <= maxH) {
+      el.style.height = el.scrollHeight + "px";
+      el.style.overflowY = "hidden";
+    } else {
+      el.style.height = maxH + "px";
+      el.style.overflowY = "auto";
+    }
+  }
+
+  $("#user_query").on("input", autoResizeRiverbot);
+
+  $("#user_query").on("keydown", function (e) {
+    if ((e.key === "Enter" || e.keyCode === 13) && !e.shiftKey) {
+      e.preventDefault();
       sendUserQuery(e);
     }
   });

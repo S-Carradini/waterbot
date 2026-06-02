@@ -1,10 +1,15 @@
 import React, { useState, useEffect, useMemo } from 'react';
-import { ThumbsUp, ThumbsDown } from 'lucide-react';
+import { ThumbsUp, ThumbsDown, Volume2, Square } from 'lucide-react';
 import { marked } from 'marked';
 import { useTypewriter } from '../../hooks/useTypewriter';
 import blueCharacter from '../../assets/blue-character.png';
 
 marked.setOptions({ breaks: false, gfm: true });
+
+const renderer = new marked.Renderer();
+renderer.link = ({ href, title, text }) =>
+  `<a href="${href}" target="_blank" rel="noopener noreferrer"${title ? ` title="${title}"` : ''}>${text}</a>`;
+marked.use({ renderer });
 
 function cleanMarkdown(text) {
   if (!text) return '';
@@ -42,6 +47,7 @@ export default function ChatBubble({
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [shouldStartTyping, setShouldStartTyping] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
 
   const textContent = typeof answerText === 'string' ? answerText : '';
 
@@ -78,6 +84,45 @@ export default function ChatBubble({
     setShowFeedback(true);
     onRating(messageId, 0);
   };
+
+  const getFemaleVoice = () => {
+    const femaleNames = ['Samantha', 'Zira', 'Google US English', 'Victoria', 'Karen', 'Moira', 'Tessa', 'Fiona'];
+    const pick = (voices) =>
+      voices.find(v => v.lang.startsWith('en') && femaleNames.some(n => v.name.includes(n))) || null;
+    return new Promise(resolve => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length) resolve(pick(voices));
+      else window.speechSynthesis.onvoiceschanged = () => resolve(pick(window.speechSynthesis.getVoices()));
+    });
+  };
+
+  const handleSpeak = () => {
+    if (!window.speechSynthesis) return;
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    const tmp = document.createElement('div');
+    tmp.innerHTML = renderedContent;
+    const plainText = (tmp.textContent || tmp.innerText || '').replace(/undefined/g, '').trim();
+    if (!plainText) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(plainText);
+    utterance.lang = language === 'es' ? 'es-ES' : 'en-US';
+    utterance.rate = 1;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    getFemaleVoice().then(voice => {
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    });
+  };
+
+  useEffect(() => {
+    return () => { if (isSpeaking) window.speechSynthesis.cancel(); };
+  }, [isSpeaking]);
 
   const handleFeedbackSubmit = () => {
     const comment = feedbackSelection === 'other' ? feedbackText : feedbackSelection;
@@ -125,6 +170,13 @@ export default function ChatBubble({
                 {selectedReaction === 0 ? <ThumbsDown size={16} /> : null}
               </button>
             )}
+            <button
+              className={`reaction-btn${isSpeaking ? ' selected' : ''}`}
+              onClick={handleSpeak}
+              title={isSpeaking ? 'Stop reading' : 'Read aloud'}
+            >
+              {isSpeaking ? <Square size={16} /> : <Volume2 size={16} />}
+            </button>
           </div>
         )}
 

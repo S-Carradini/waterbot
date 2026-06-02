@@ -12,6 +12,7 @@ const InputWrapper = React.forwardRef(function InputWrapper({ onSendMessage, isL
   const languageRef = useRef(language);
   const finalTranscriptRef = useRef(''); // Store accumulated final transcripts
   const silenceTimeoutRef = useRef(null); // Timeout for auto-stop on silence
+  const textareaRef = useRef(null);
 
   // Expose toggleListening function to parent via ref
   React.useImperativeHandle(ref, () => ({
@@ -154,6 +155,23 @@ const InputWrapper = React.forwardRef(function InputWrapper({ onSendMessage, isL
     }
   }, [language]);
 
+  useEffect(() => {
+    const el = textareaRef.current;
+    if (!el) return;
+    el.style.height = 'auto';
+    const lh = parseFloat(getComputedStyle(el).lineHeight) || 24;
+    const pt = parseFloat(getComputedStyle(el).paddingTop) || 0;
+    const pb = parseFloat(getComputedStyle(el).paddingBottom) || 0;
+    const maxH = lh * 4 + pt + pb;
+    if (el.scrollHeight <= maxH) {
+      el.style.height = el.scrollHeight + 'px';
+      el.style.overflowY = 'hidden';
+    } else {
+      el.style.height = maxH + 'px';
+      el.style.overflowY = 'auto';
+    }
+  }, [inputValue]);
+
   const handleSubmit = (e) => {
     e.preventDefault();
     if (inputValue.trim() && !isLoading) {
@@ -258,14 +276,15 @@ const InputWrapper = React.forwardRef(function InputWrapper({ onSendMessage, isL
     <div className="input-wrapper">
       {/* Text Input Box */}
       <div className="input-container">
-        <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'center', width: '100%', height: '100%' }}>
-          <input
-            type="text"
+        <form onSubmit={handleSubmit} style={{ display: 'flex', alignItems: 'center', width: '100%', height: 'auto' }}>
+          <textarea
+            rows="1"
+            ref={textareaRef}
             className="text-input"
             placeholder={(uiText[language] || uiText.en).inputPlaceholder}
             value={inputValue}
             onChange={(e) => setInputValue(e.target.value)}
-            onKeyPress={handleKeyPress}
+            onKeyDown={handleKeyPress}
             disabled={isLoading}
             autoComplete="off"
           />

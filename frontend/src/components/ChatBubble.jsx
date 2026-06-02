@@ -25,6 +25,7 @@ export default function ChatBubble({
   const [feedbackOtherText, setFeedbackOtherText] = useState('');
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [shouldStartTyping, setShouldStartTyping] = useState(false);
+  const [isSpeaking, setIsSpeaking] = useState(false);
   
   // Convert answerText to string for typewriter effect
   const textContent = typeof answerText === 'string' 
@@ -177,14 +178,63 @@ export default function ChatBubble({
     onActionButton(actionType);
   };
 
+  const stripHtml = (html) => {
+    const tmp = document.createElement('div');
+    tmp.innerHTML = html;
+    return tmp.textContent || tmp.innerText || '';
+  };
+
+  const getFemaleVoice = () => {
+    const femaleNames = ['Samantha', 'Zira', 'Google US English', 'Victoria', 'Karen', 'Moira', 'Tessa', 'Fiona'];
+    const pick = (voices) =>
+      voices.find(v => v.lang.startsWith('en') && femaleNames.some(n => v.name.includes(n))) || null;
+    return new Promise(resolve => {
+      const voices = window.speechSynthesis.getVoices();
+      if (voices.length) resolve(pick(voices));
+      else window.speechSynthesis.onvoiceschanged = () => resolve(pick(window.speechSynthesis.getVoices()));
+    });
+  };
+
+  const handleSpeak = () => {
+    if (!window.speechSynthesis) return;
+    if (isSpeaking) {
+      window.speechSynthesis.cancel();
+      setIsSpeaking(false);
+      return;
+    }
+    const rawText = typeof answerText === 'string' ? answerText : cleanTextContent;
+    const plainText = stripHtml(rawText).replace(/undefined/g, '').trim();
+    if (!plainText) return;
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(plainText);
+    utterance.lang = language === 'es' ? 'es-ES' : 'en-US';
+    utterance.rate = 1;
+    utterance.onend = () => setIsSpeaking(false);
+    utterance.onerror = () => setIsSpeaking(false);
+    setIsSpeaking(true);
+    getFemaleVoice().then(voice => {
+      if (voice) utterance.voice = voice;
+      window.speechSynthesis.speak(utterance);
+    });
+  };
+
+  React.useEffect(() => {
+    return () => {
+      if (isSpeaking) window.speechSynthesis.cancel();
+    };
+  }, [isSpeaking]);
+
+  const linkifyUrls = (text) => {
+    const urlRegex = /(?<!['"=])(https?:\/\/[^\s<>"']+)/g;
+    return text.replace(urlRegex, (url) => `<a href="${url}" target="_blank" rel="noopener noreferrer">${url}</a>`);
+  };
+
   // Parse HTML content for typewriter effect
   const createMarkup = () => {
     if (typeof answerText === 'string') {
-      // Clean up the displayed text - remove any undefined strings
       let cleanText = isTypewriterEnabled ? (displayedText || '&nbsp;') : (cleanTextContent || '&nbsp;');
-      // Remove any "undefined" strings that might have been concatenated
       cleanText = cleanText.replace(/undefined/g, '');
-      // Use non-breaking space to prevent collapse when empty
+      cleanText = linkifyUrls(cleanText);
       return { __html: cleanText };
     }
     return null;
@@ -241,6 +291,17 @@ export default function ChatBubble({
                 </div>
               </div>
             )}
+
+            {/* Speaker Button */}
+            <button
+              type="button"
+              className={`tts-button ${isSpeaking ? 'tts-button--speaking' : ''}`}
+              onClick={handleSpeak}
+              aria-label={isSpeaking ? 'Stop reading' : 'Read aloud'}
+              disabled={disableActions}
+            >
+              <i className={`fas ${isSpeaking ? 'fa-stop' : 'fa-volume-up'}`}></i>
+            </button>
 
             {/* Action Buttons - disabled until response has completed */}
             <div className="buttons-container">
