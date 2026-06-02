@@ -1,13 +1,12 @@
 import { test, expect } from '@playwright/test';
 
 test.describe('WaterBot Logo', () => {
-  test('splash page - logo text is visible', async ({ page }) => {
+  test('splash page - enter button is visible', async ({ page }) => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
-    const logo = page.locator('.splash__topbar .wb-logo');
-    await expect(logo).toBeVisible();
-    await expect(logo).toContainText('Waterbot');
+    const btn = page.getByRole('button', { name: 'CHAT WITH BLUE' });
+    await expect(btn).toBeVisible();
 
     await page.screenshot({ path: 'test-results/logo-home.png' });
   });
