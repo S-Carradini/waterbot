@@ -23,6 +23,7 @@ from managers.pgvector_store import PgVectorStore
 from managers.s3_manager import LocalTranscriptManager
 
 from adapters.openai import OpenAIAdapter
+from openai import OpenAI
 from starlette.middleware.sessions import SessionMiddleware
 from langdetect import detect, DetectorFactory
 
@@ -1510,6 +1511,22 @@ async def settings_page(request: Request):
 async def riverbot_page(request: Request):
     """Serve the riverbot page (Jinja template)"""
     return templates.TemplateResponse("riverbot.html", {"request": request})
+
+@app.post('/api/tts')
+async def text_to_speech(request: Request):
+    body = await request.json()
+    text = (body.get('text') or '').strip()[:4000]
+    if not text:
+        raise HTTPException(status_code=400, detail="No text provided")
+    client = OpenAI()
+    response = await asyncio.to_thread(
+        client.audio.speech.create,
+        model="tts-1",
+        voice="nova",
+        input=text,
+    )
+    return StreamingResponse(io.BytesIO(response.content), media_type="audio/mpeg")
+
 
 # React SPA at /museum
 @app.get("/museum", response_class=HTMLResponse)

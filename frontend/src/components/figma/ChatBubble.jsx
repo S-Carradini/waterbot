@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useMemo } from 'react';
+import React, { useState, useEffect, useMemo, useRef } from 'react';
 import { ThumbsUp, ThumbsDown, Volume2, Square } from 'lucide-react';
 import { marked } from 'marked';
 import { useTypewriter } from '../../hooks/useTypewriter';
@@ -48,6 +48,8 @@ export default function ChatBubble({
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [shouldStartTyping, setShouldStartTyping] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const audioRef = useRef(null);
 
   const textContent = typeof answerText === 'string' ? answerText : '';
 
@@ -85,44 +87,47 @@ export default function ChatBubble({
     onRating(messageId, 0);
   };
 
-  const getFemaleVoice = () => {
-    const femaleNames = ['Samantha', 'Zira', 'Google US English', 'Victoria', 'Karen', 'Moira', 'Tessa', 'Fiona'];
-    const pick = (voices) =>
-      voices.find(v => v.lang.startsWith('en') && femaleNames.some(n => v.name.includes(n))) || null;
-    return new Promise(resolve => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length) resolve(pick(voices));
-      else window.speechSynthesis.onvoiceschanged = () => resolve(pick(window.speechSynthesis.getVoices()));
-    });
-  };
-
-  const handleSpeak = () => {
-    if (!window.speechSynthesis) return;
+  const handleSpeak = async () => {
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      audioRef.current?.pause();
       setIsSpeaking(false);
+      return;
+    }
+    if (audioRef.current) {
+      audioRef.current.play();
+      setIsSpeaking(true);
       return;
     }
     const tmp = document.createElement('div');
     tmp.innerHTML = renderedContent;
     const plainText = (tmp.textContent || tmp.innerText || '').replace(/undefined/g, '').trim();
     if (!plainText) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(plainText);
-    utterance.lang = language === 'es' ? 'es-ES' : 'en-US';
-    utterance.rate = 1;
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    setIsSpeaking(true);
-    getFemaleVoice().then(voice => {
-      if (voice) utterance.voice = voice;
-      window.speechSynthesis.speak(utterance);
-    });
+    setTtsLoading(true);
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: plainText }),
+      });
+      if (!res.ok) throw new Error('TTS request failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { setIsSpeaking(false); audioRef.current = null; URL.revokeObjectURL(url); };
+      audio.onerror = () => { setIsSpeaking(false); audioRef.current = null; URL.revokeObjectURL(url); };
+      setTtsLoading(false);
+      setIsSpeaking(true);
+      audio.play();
+    } catch {
+      setTtsLoading(false);
+      setIsSpeaking(false);
+    }
   };
 
   useEffect(() => {
-    return () => { if (isSpeaking) window.speechSynthesis.cancel(); };
-  }, [isSpeaking]);
+    return () => { audioRef.current?.pause(); audioRef.current = null; };
+  }, []);
 
   const handleFeedbackSubmit = () => {
     const comment = feedbackSelection === 'other' ? feedbackText : feedbackSelection;
@@ -173,9 +178,12 @@ export default function ChatBubble({
             <button
               className={`reaction-btn${isSpeaking ? ' selected' : ''}`}
               onClick={handleSpeak}
-              title={isSpeaking ? 'Stop reading' : 'Read aloud'}
+              disabled={ttsLoading}
+              title={ttsLoading ? 'Loading audio...' : isSpeaking ? 'Pause' : 'Read aloud'}
             >
-              {isSpeaking ? <Square size={16} /> : <Volume2 size={16} />}
+              {ttsLoading
+                ? <span className="tts-spinner" />
+                : isSpeaking ? <Square size={16} /> : <Volume2 size={16} />}
             </button>
           </div>
         )}

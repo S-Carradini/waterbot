@@ -26,7 +26,9 @@ export default function ChatBubble({
   const [feedbackSubmitted, setFeedbackSubmitted] = useState(false);
   const [shouldStartTyping, setShouldStartTyping] = useState(false);
   const [isSpeaking, setIsSpeaking] = useState(false);
-  
+  const [ttsLoading, setTtsLoading] = useState(false);
+  const audioRef = useRef(null);
+
   // Convert answerText to string for typewriter effect
   const textContent = typeof answerText === 'string' 
     ? answerText 
@@ -184,45 +186,46 @@ export default function ChatBubble({
     return tmp.textContent || tmp.innerText || '';
   };
 
-  const getFemaleVoice = () => {
-    const femaleNames = ['Samantha', 'Zira', 'Google US English', 'Victoria', 'Karen', 'Moira', 'Tessa', 'Fiona'];
-    const pick = (voices) =>
-      voices.find(v => v.lang.startsWith('en') && femaleNames.some(n => v.name.includes(n))) || null;
-    return new Promise(resolve => {
-      const voices = window.speechSynthesis.getVoices();
-      if (voices.length) resolve(pick(voices));
-      else window.speechSynthesis.onvoiceschanged = () => resolve(pick(window.speechSynthesis.getVoices()));
-    });
-  };
-
-  const handleSpeak = () => {
-    if (!window.speechSynthesis) return;
+  const handleSpeak = async () => {
     if (isSpeaking) {
-      window.speechSynthesis.cancel();
+      audioRef.current?.pause();
       setIsSpeaking(false);
+      return;
+    }
+    if (audioRef.current) {
+      audioRef.current.play();
+      setIsSpeaking(true);
       return;
     }
     const rawText = typeof answerText === 'string' ? answerText : cleanTextContent;
     const plainText = stripHtml(rawText).replace(/undefined/g, '').trim();
     if (!plainText) return;
-    window.speechSynthesis.cancel();
-    const utterance = new SpeechSynthesisUtterance(plainText);
-    utterance.lang = language === 'es' ? 'es-ES' : 'en-US';
-    utterance.rate = 1;
-    utterance.onend = () => setIsSpeaking(false);
-    utterance.onerror = () => setIsSpeaking(false);
-    setIsSpeaking(true);
-    getFemaleVoice().then(voice => {
-      if (voice) utterance.voice = voice;
-      window.speechSynthesis.speak(utterance);
-    });
+    setTtsLoading(true);
+    try {
+      const res = await fetch('/api/tts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ text: plainText }),
+      });
+      if (!res.ok) throw new Error('TTS request failed');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const audio = new Audio(url);
+      audioRef.current = audio;
+      audio.onended = () => { setIsSpeaking(false); audioRef.current = null; URL.revokeObjectURL(url); };
+      audio.onerror = () => { setIsSpeaking(false); audioRef.current = null; URL.revokeObjectURL(url); };
+      setTtsLoading(false);
+      setIsSpeaking(true);
+      audio.play();
+    } catch {
+      setTtsLoading(false);
+      setIsSpeaking(false);
+    }
   };
 
-  React.useEffect(() => {
-    return () => {
-      if (isSpeaking) window.speechSynthesis.cancel();
-    };
-  }, [isSpeaking]);
+  useEffect(() => {
+    return () => { audioRef.current?.pause(); audioRef.current = null; };
+  }, []);
 
   const linkifyUrls = (text) => {
     const urlRegex = /(?<!['"=])(https?:\/\/[^\s<>"']+)/g;
@@ -297,10 +300,12 @@ export default function ChatBubble({
               type="button"
               className={`tts-button ${isSpeaking ? 'tts-button--speaking' : ''}`}
               onClick={handleSpeak}
-              aria-label={isSpeaking ? 'Stop reading' : 'Read aloud'}
-              disabled={disableActions}
+              aria-label={ttsLoading ? 'Loading audio...' : isSpeaking ? 'Stop reading' : 'Read aloud'}
+              disabled={disableActions || ttsLoading}
             >
-              <i className={`fas ${isSpeaking ? 'fa-stop' : 'fa-volume-up'}`}></i>
+              {ttsLoading
+                ? <i className="fas fa-spinner fa-spin"></i>
+                : <i className={`fas ${isSpeaking ? 'fa-stop' : 'fa-volume-up'}`}></i>}
             </button>
 
             {/* Action Buttons - disabled until response has completed */}

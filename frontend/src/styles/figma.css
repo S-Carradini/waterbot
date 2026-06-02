@@ -212,6 +212,12 @@
 .reaction-btn:hover { border-color: var(--wb-accent); background: rgba(127,180,203,0.1); }
 .reaction-btn.selected { background: var(--wb-accent); color: var(--wb-white); border-color: var(--wb-accent); }
 .reaction-btn:disabled { opacity: 0.5; cursor: default; }
+.tts-spinner {
+  display: inline-block; width: 14px; height: 14px;
+  border: 2px solid var(--wb-border); border-top-color: var(--wb-accent);
+  border-radius: 50%; animation: tts-spin 0.7s linear infinite;
+}
+@keyframes tts-spin { to { transform: rotate(360deg); } }
 
 /* ---- Follow-up Chips ---- */
 .follow-up-chips {
