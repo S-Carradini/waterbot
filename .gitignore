@@ -193,3 +193,4 @@ frontend/test-results/
 # Local IDE/tool config (may contain secrets)
 .claude/
 .playwright-mcp/
+iac/
