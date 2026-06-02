@@ -35,7 +35,7 @@ class OpenAIAdapter(ModelAdapter):
                 'content':system_prompt
             }
         )
-        inject_user_query="<NEXTSTEPS_REQUEST>Provide me the action items<NEXTSTEPS_REQUEST>"
+        inject_user_query="<MOREDETAIL_REQUEST>Provide me a more detailed response.</MOREDETAIL_REQUEST>"
         messages=await self.build_message_chain_for_action(user_query=user_query,bot_response=bot_response,inject_user_query=inject_user_query,messages=messages)
 
         openai_payload = await self.generate_llm_payload(messages=messages, temperature=temperature)
