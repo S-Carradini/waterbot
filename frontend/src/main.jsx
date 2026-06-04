@@ -1,12 +1,12 @@
 import React from 'react'
 import ReactDOM from 'react-dom/client'
-import { BrowserRouter, Routes, Route } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 // New Figma design pages
 import FigmaSplashScreen from './components/figma/SplashScreen'
 import ChatPage from './components/figma/ChatPage'
 import TranscriptPage from './components/figma/TranscriptPage'
 import SettingsPage from './components/figma/SettingsPage'
-// Museum (legacy) pages
+// Museum (legacy) pages — kept for future use, not exposed to users
 import App from './App'
 import SplashScreen from './components/SplashScreen'
 import Home from './components/Home'
@@ -23,10 +23,9 @@ ReactDOM.createRoot(document.getElementById('root')).render(
         <Route path="/chat" element={<ChatPage />} />
         <Route path="/transcript" element={<TranscriptPage />} />
         <Route path="/settings" element={<SettingsPage />} />
-        {/* Museum (legacy) routes */}
-        <Route path="/museum" element={<SplashScreen />} />
-        <Route path="/museum/home" element={<Home />} />
-        <Route path="/museum/chat" element={<App />} />
+        {/* Museum (legacy) — redirect all /museum/* to /chat */}
+        <Route path="/museum" element={<Navigate to="/chat" replace />} />
+        <Route path="/museum/*" element={<Navigate to="/chat" replace />} />
         <Route path="/mobile" element={<MobileChatbot />} />
       </Routes>
     </BrowserRouter>

@@ -130,17 +130,21 @@ export default function SettingsPage() {
                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(23,162,219,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <User size={18} style={{ color: 'var(--wb-primary)' }} />
                 </div>
-                <p style={{ fontSize: 14, color: 'var(--wb-dark)', margin: 0 }}>
-                  {t.contactPlaceholder1 || 'Project Lead — project@example.edu'}
-                </p>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--wb-dark)', margin: 0 }}>Project Lead</p>
+                  <p style={{ fontSize: 13, color: 'var(--wb-muted)', margin: 0 }}>Dr. Stephen Carradini</p>
+                  <a href="mailto:sacarrad@asu.edu" style={{ fontSize: 13, color: 'var(--wb-primary)', textDecoration: 'none' }}>sacarrad@asu.edu</a>
+                </div>
               </div>
               <div style={{ display: 'flex', alignItems: 'center', gap: 12, padding: 12, background: 'var(--wb-light-bg)', borderRadius: 12 }}>
                 <div style={{ width: 40, height: 40, borderRadius: '50%', background: 'rgba(86,126,132,0.1)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
                   <Mail size={18} style={{ color: 'var(--wb-teal)' }} />
                 </div>
-                <p style={{ fontSize: 14, color: 'var(--wb-dark)', margin: 0 }}>
-                  {t.contactPlaceholder2 || 'Technical Support — support@example.edu'}
-                </p>
+                <div>
+                  <p style={{ fontSize: 14, fontWeight: 600, color: 'var(--wb-dark)', margin: 0 }}>Support</p>
+                  <p style={{ fontSize: 13, color: 'var(--wb-muted)', margin: 0 }}>Srinivasan Ravichandran</p>
+                  <a href="mailto:sravic30@asu.edu" style={{ fontSize: 13, color: 'var(--wb-primary)', textDecoration: 'none' }}>sravic30@asu.edu</a>
+                </div>
               </div>
             </div>
           </section>
