@@ -1,6 +1,7 @@
 import { test, expect } from '@playwright/test';
 
-test.describe('Microphone Button Animation', () => {
+// Museum routes are redirected to /chat — these tests are skipped until museum is re-enabled
+test.describe.skip('Microphone Button Animation', () => {
   test.beforeEach(async ({ page, context }) => {
     // Mock Speech Recognition — no onresult fired so auto-submit never triggers
     await context.addInitScript(() => {
