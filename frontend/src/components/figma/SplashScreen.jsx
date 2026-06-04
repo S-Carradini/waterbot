@@ -1,6 +1,13 @@
 import React, { useState, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
+import { Info } from 'lucide-react';
+import LanguageToggle from './LanguageToggle';
+import HowItWorksModal from './HowItWorksModal';
+import AboutModal from './AboutModal';
+import { uiText } from '../../i18n/uiText';
+import blueCharacter from '../../assets/blue-character.png';
+import '../../styles/figma.css';
 
 function RainDrop({ delay, x, speed, height, width, sway }) {
   return (
@@ -52,7 +59,12 @@ function SplashRipple({ delay, x }) {
 
 export default function FigmaSplashScreen() {
   const navigate = useNavigate();
+  const [lang, setLang] = useState('en');
+  const [showHowItWorks, setShowHowItWorks] = useState(false);
+  const [showAbout, setShowAbout] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
+
+  const t = uiText[lang] || uiText.en;
 
   const rainDrops = useMemo(() => {
     return Array.from({ length: 150 }).map((_, i) => ({
@@ -72,30 +84,12 @@ export default function FigmaSplashScreen() {
   }, [navigate]);
 
   return (
-    <div style={{ position: 'fixed', inset: 0, background: 'black', overflow: 'hidden' }}>
-      {/* Fullscreen background video */}
-      <video
-        autoPlay
-        loop
-        muted
-        playsInline
-        style={{
-          position: 'absolute',
-          top: 0,
-          left: 0,
-          width: '100%',
-          height: '100%',
-          objectFit: 'cover',
-          zIndex: 1,
-        }}
-      >
-        <source src="/static/video/background.mp4" type="video/mp4" />
-      </video>
-
+    <div className="figma-root">
       {/* Rain transition overlay */}
       <AnimatePresence>
         {transitioning && (
           <>
+            {/* Rain drops layer */}
             <motion.div
               style={{
                 position: 'fixed',
@@ -124,6 +118,7 @@ export default function FigmaSplashScreen() {
               ))}
             </motion.div>
 
+            {/* Blue gradient overlay */}
             <motion.div
               style={{
                 position: 'fixed',
@@ -137,6 +132,7 @@ export default function FigmaSplashScreen() {
               transition={{ duration: 0.8, delay: 0.4 }}
             />
 
+            {/* White fade-out overlay */}
             <motion.div
               style={{
                 position: 'fixed',
@@ -153,34 +149,65 @@ export default function FigmaSplashScreen() {
         )}
       </AnimatePresence>
 
-      {/* CHAT WITH BLUE button */}
-      <button
-        onClick={handleEnter}
-        disabled={transitioning}
-        style={{
-          position: 'fixed',
-          bottom: 20,
-          left: '50%',
-          transform: 'translateX(-50%)',
-          width: 268,
-          height: 76,
-          background: 'rgba(255, 255, 255, 0.8)',
-          color: '#000000',
-          fontWeight: 'bold',
-          fontSize: 20,
-          border: 'none',
-          borderRadius: 40,
-          cursor: transitioning ? 'default' : 'pointer',
-          zIndex: 10,
-          boxShadow: '0px 4px 12px rgba(0, 0, 0, 0.15)',
-          transition: 'background 0.3s ease, color 0.3s ease',
-          opacity: transitioning ? 0.7 : 1,
-        }}
-        onMouseEnter={e => { if (!transitioning) { e.target.style.background = '#0a92f3'; e.target.style.color = '#ffffff'; }}}
-        onMouseLeave={e => { e.target.style.background = 'rgba(255, 255, 255, 0.8)'; e.target.style.color = '#000000'; }}
-      >
-        CHAT WITH BLUE
-      </button>
+      <div className="splash">
+        {/* Content fades out during transition */}
+        <motion.div
+          style={{ display: 'flex', flexDirection: 'column', height: '100%' }}
+          animate={transitioning ? { opacity: 0 } : { opacity: 1 }}
+          transition={{ duration: 0.6, delay: transitioning ? 0.6 : 0 }}
+        >
+          {/* Top bar */}
+          <div className="splash__topbar">
+            <button className="wb-logo" aria-label="Waterbot">
+              <span className="water">Water</span><span className="bot">bot</span>
+            </button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+              <LanguageToggle lang={lang} onLangChange={setLang} t={t} />
+              <button className="btn-icon-wb" onClick={() => setShowAbout(true)} aria-label={t.aboutTitle}>
+                <Info size={20} />
+              </button>
+            </div>
+          </div>
+
+          {/* Center */}
+          <div className="splash__center">
+            <div className="splash__mascot">
+              <img src={blueCharacter} alt="Blue - Waterbot mascot" />
+            </div>
+            <h1 className="splash__title">
+              <span className="water">Water</span><span className="bot">bot</span>
+            </h1>
+            <p className="splash__subtitle">{t.splashSubline}</p>
+            <div className="splash__actions">
+              <button
+                className="btn-primary-wb"
+                onClick={handleEnter}
+                disabled={transitioning}
+                style={transitioning ? { opacity: 0.8 } : undefined}
+              >
+                {t.enterChat}
+              </button>
+              <button className="btn-link-wb" onClick={() => setShowHowItWorks(true)}>
+                {t.howItWorks}
+              </button>
+            </div>
+          </div>
+
+          {/* Disclaimer */}
+          <div className="splash__disclaimer">
+            <p>{t.disclaimer}</p>
+            <p>{t.partnerLine}</p>
+          </div>
+        </motion.div>
+      </div>
+
+      <HowItWorksModal
+        isOpen={showHowItWorks}
+        onClose={() => setShowHowItWorks(false)}
+        onStart={() => { setShowHowItWorks(false); navigate('/chat'); }}
+        t={t}
+      />
+      <AboutModal isOpen={showAbout} onClose={() => setShowAbout(false)} t={t} />
     </div>
   );
 }
