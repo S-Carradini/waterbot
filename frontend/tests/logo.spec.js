@@ -5,7 +5,7 @@ test.describe('WaterBot Logo', () => {
     await page.goto('/');
     await page.waitForLoadState('domcontentloaded');
 
-    const btn = page.getByRole('button', { name: 'CHAT WITH BLUE' });
+    const btn = page.getByRole('button', { name: 'Enter Chat' });
     await expect(btn).toBeVisible();
 
     await page.screenshot({ path: 'test-results/logo-home.png' });
