@@ -84,7 +84,7 @@ async def run_suite():
     else:
         print(f"SUCCESS: Hallucination on Negatives Rate: {hallucination_rate:.4f} <= {h_max:.4f}")
         
-    # 4. Append to history
+    # 4. Append to history and check for regressions
     results_dir = os.path.join(_script_dir, "results")
     os.makedirs(results_dir, exist_ok=True)
     history_path = os.path.join(results_dir, "eval_history.jsonl")
@@ -100,18 +100,84 @@ async def run_suite():
         }
     }
     
+    # Regression detection: compare against last N runs
+    regression_threshold = 0.05  # Warn if any metric drops by more than 5%
+    history_lookback = 3  # Compare against last 3 runs
+    
+    if os.path.exists(history_path):
+        with open(history_path, "r", encoding="utf-8") as f:
+            history_lines = f.readlines()
+        
+        if history_lines:
+            recent_runs = []
+            for line in history_lines[-history_lookback:]:
+                try:
+                    recent_runs.append(json.loads(line.strip()))
+                except json.JSONDecodeError:
+                    continue
+            
+            if recent_runs:
+                print(f"\n--- Regression Check (vs last {len(recent_runs)} run(s)) ---")
+                
+                # Compute average of recent runs for each metric
+                avg_metrics = {}
+                for run in recent_runs:
+                    for k, v in run.get("metrics", {}).items():
+                        if k not in avg_metrics:
+                            avg_metrics[k] = []
+                        avg_metrics[k].append(v)
+                
+                for k in avg_metrics:
+                    avg_metrics[k] = sum(avg_metrics[k]) / len(avg_metrics[k])
+                
+                regressions_found = False
+                current_metrics = history_record["metrics"]
+                for metric_name, current_val in current_metrics.items():
+                    if metric_name in avg_metrics:
+                        prev_avg = avg_metrics[metric_name]
+                        # For hallucination rate, regression means INCREASE; for everything else, regression means DECREASE
+                        if metric_name == "hallucination_on_negatives_rate":
+                            delta = current_val - prev_avg
+                            if delta > regression_threshold:
+                                print(f"  REGRESSION: {metric_name} increased by {delta:.4f} (now {current_val:.4f}, was avg {prev_avg:.4f})")
+                                regressions_found = True
+                            else:
+                                print(f"  OK: {metric_name} = {current_val:.4f} (avg was {prev_avg:.4f})")
+                        else:
+                            delta = prev_avg - current_val
+                            if delta > regression_threshold:
+                                print(f"  REGRESSION: {metric_name} dropped by {delta:.4f} (now {current_val:.4f}, was avg {prev_avg:.4f})")
+                                regressions_found = True
+                            else:
+                                print(f"  OK: {metric_name} = {current_val:.4f} (avg was {prev_avg:.4f})")
+                
+                if not regressions_found:
+                    print("  No regressions detected.")
+    
     with open(history_path, "a", encoding="utf-8") as f:
         f.write(json.dumps(history_record) + "\n")
         
     print(f"\nHistory appended to {history_path}")
     
+    # Generate report
+    try:
+        from eval.report_generator import generate_report
+        report = generate_report()
+        report_path = os.path.join(results_dir, "evaluation_report.md")
+        with open(report_path, "w", encoding="utf-8") as f:
+            f.write(report)
+        print(f"Report generated: {report_path}")
+    except Exception as e:
+        print(f"WARN: Could not generate report: {e}")
+    
     if passed:
-        print("\n All evaluation gates passed!")
+        print("\nSUCCESS: All evaluation gates passed!")
         sys.exit(0)
     else:
-        print("\n Evaluation Failed! Thresholds not met.")
+        print("\nFAIL: Evaluation thresholds not met.")
         sys.exit(1)
 
 
 if __name__ == "__main__":
     asyncio.run(run_suite())
+

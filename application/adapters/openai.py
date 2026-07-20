@@ -188,6 +188,15 @@ class OpenAIAdapter(ModelAdapter):
             stream=False,
         )
 
+        # Store usage for cost tracking in eval harness
+        if hasattr(response, "usage") and response.usage:
+            self.last_usage = {
+                "prompt_tokens": response.usage.prompt_tokens or 0,
+                "completion_tokens": response.usage.completion_tokens or 0,
+            }
+        else:
+            self.last_usage = {}
+
         response_body = response.choices[0].message.content
 
         response_content = re.sub(r'\n', '<br>', response_body)

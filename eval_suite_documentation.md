@@ -32,16 +32,22 @@ Interpreting the Results:
 
 After running the scripts, you'll see the results printed to your console, and detailed summaries will be saved in the eval/results directory. 
 
-For the retrieval metrics, the most important number is Recall@4. This tells you what percentage of the required documents were actually found in the top 4 search results. If this number is low, the LLM won't have the context it needs to generate a good answer. You don't need to worry as much about precision, as long as the correct documents are being found.
+For the retrieval metrics, the most important number is Recall@4. This tells you what percentage of the required documents were actually found in the top 4 search results. If this number is low, the LLM won't have the context it needs to generate a good answer. We also compute NDCG@4, which is the industry standard for measuring ranking quality. Unlike recall, which only checks "did we find the right document", NDCG tells you whether the right documents appeared near the top of the results or were buried at the bottom. For questions that include gold_passage_keywords in the benchmark file, we also report a Keyword Hit Rate, which tells you whether the specific passage containing the answer (not just the general document) was actually retrieved.
 
-For the generation metrics, you want to look closely at Faithfulness and Answer Correctness. Faithfulness measures whether the bot's answer is strictly based on the provided documents. If it's low, the bot is hallucinating. Answer Correctness just measures how accurately it answered the original question. We also track the Hallucination on Negatives Rate, which should ideally be zero, meaning the bot successfully refused to answer all out-of-scope questions.
+For the generation metrics, you want to look closely at Faithfulness and Answer Correctness. Faithfulness measures whether the bot's answer is strictly based on the provided documents. If it's low, the bot is hallucinating. Answer Correctness just measures how accurately it answered the original question. We also track the Hallucination on Negatives Rate, which should ideally be zero, meaning the bot successfully refused to answer all out-of-scope questions. The hallucination check uses an LLM-as-a-judge approach where a second LLM call evaluates whether the bot actually refused or tried to answer, which is much more robust than simple keyword matching.
+
+Both the retrieval and generation summaries now include a per-category breakdown, so you can see exactly which question types the system handles well and which it struggles with. The generation metrics also include a cost section showing total token usage and estimated API spend for the run.
+
+When you run the full CI suite with run_eval_suite.py, it will also perform a regression check. It compares the current run's scores against the average of the last 3 historical runs and flags any metric that dropped by more than 5 percentage points. This prevents silent quality degradation over time.
+
+After each full suite run, the system also automatically generates evaluation_report.md in the results folder. This is a clean, shareable Markdown document with formatted tables that you can send directly to stakeholders without any manual formatting.
 
 Files Involved:
 
 Everything related to this suite is contained in the eval directory.
 
-The benchmark_dataset.json file holds all our test questions and expected sources. The main testing logic lives in retrieval_metrics.py and generation_metrics.py. 
+The benchmark_dataset.json file holds all our test questions and expected sources, including optional gold_passage_keywords for chunk-level validation. The main testing logic lives in retrieval_metrics.py and generation_metrics.py. 
 
-For automation and comparison, run_eval_suite.py handles the CI checks using the rules in thresholds.yaml. We also have an ablation_runner.py script that lets us run A/B tests to compare different database configurations, like seeing how the system performs before and after adding new PDFs. 
+For automation and comparison, run_eval_suite.py handles the CI checks using the rules in thresholds.yaml and includes regression detection against eval_history.jsonl. We also have an ablation_runner.py script that lets us run A/B tests to compare different database configurations, like seeing how the system performs before and after adding new PDFs.
 
-The config.py file handles some shared setup like database connections, and load_test.py is there for performance benchmarking. All the results get dumped into the results folder.
+The config.py file handles shared setup like database connections, load_test.py is there for performance benchmarking, and report_generator.py produces the structured evaluation_report.md after each run. All the results get dumped into the results folder.

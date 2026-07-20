@@ -220,6 +220,7 @@
       "question": "How many acre-feet of water are being held back in Lake Powell from December 2025 through April 2026 according to the 24-Month Studies?",
       "gold_answer": "According to the 24-Month Studies, a total of 0.598 million acre-feet (maf) is being held back in Lake Powell from December 2025 through April 2026, with the same amount to be released later in the water year.",
       "gold_source_ids": ["USBR 24-Month Studies.pdf"],
+      "gold_passage_keywords": ["0.598", "million acre-feet", "Lake Powell", "December 2025"],
       "category": "numeric_extraction",
       "notes": "[NEW_CORPUS] Tests extraction of specific numeric data from USBR report"
     },
@@ -228,6 +229,7 @@
       "question": "What is the projected water year release volume from Lake Powell in 2026?",
       "gold_answer": "The projected water year 2026 release from Lake Powell is 7.48 million acre-feet (maf), under the Mid-Elevation Release Tier, to protect a target elevation of 3,525 feet.",
       "gold_source_ids": ["USBR 24-Month Studies.pdf"],
+      "gold_passage_keywords": ["7.48", "million acre-feet", "Mid-Elevation Release Tier", "3,525"],
       "category": "numeric_extraction",
       "notes": "[NEW_CORPUS] Tests extraction of specific operational tier data"
     },
@@ -260,6 +262,7 @@
       "question": "What operational tier is Lake Powell under for water year 2026?",
       "gold_answer": "Lake Powell is operating under the Mid-Elevation Release Tier for water year 2026, which determines the release volumes from Glen Canyon Dam.",
       "gold_source_ids": ["USBR 24-Month Studies.pdf"],
+      "gold_passage_keywords": ["Mid-Elevation Release Tier", "water year 2026", "Glen Canyon Dam"],
       "category": "numeric_extraction",
       "notes": "[NEW_CORPUS] Tests retrieval of specific operational data"
     },
@@ -268,6 +271,7 @@
       "question": "What target elevation is being protected at Lake Powell according to the 24-Month Studies?",
       "gold_answer": "The 24-Month Studies indicate a target elevation of 3,525 feet is being protected at Lake Powell for water year 2026.",
       "gold_source_ids": ["USBR 24-Month Studies.pdf"],
+      "gold_passage_keywords": ["3,525", "target elevation", "Lake Powell"],
       "category": "numeric_extraction",
       "notes": "[NEW_CORPUS] Tests specific elevation number extraction"
     },
@@ -284,6 +288,7 @@
       "question": "What are the current NOAA CBRFC river forecasts for the Colorado River Basin?",
       "gold_answer": "The NOAA Colorado Basin River Forecast Center provides precipitation and temperature forecasts for the CBRFC area, including 7-day precipitation forecasts and 8-14 day climate outlooks. The specific forecast details change regularly as new data becomes available.",
       "gold_source_ids": ["NOAA CBRFC River Forecast.pdf"],
+      "gold_passage_keywords": ["CBRFC", "precipitation", "forecast"],
       "category": "temporal_realtime",
       "notes": "[NEW_CORPUS] Tests retrieval of time-sensitive forecast data"
     },
