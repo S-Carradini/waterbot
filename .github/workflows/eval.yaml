@@ -1,0 +1,42 @@
+name: RAG Evaluation Suite
+
+on:
+  workflow_dispatch: # Allows manual trigger from GitHub UI
+  pull_request:
+    paths:
+      - 'application/**'
+      - 'eval/**'
+      
+jobs:
+  evaluate:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        
+      - name: Set up Python
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.11.9'
+          
+      - name: Install Application Dependencies
+        run: pip install -r application/requirements_full.txt -r application/requirements.txt
+          
+      - name: Install Evaluation Dependencies
+        run: pip install -r eval/requirements-eval.txt pyyaml
+        
+      - name: Run RAG Evaluation Suite
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          DATABASE_URL: ${{ secrets.DATABASE_URL }}
+        run: |
+          python eval/run_eval_suite.py
+          
+      - name: Upload Results Artifact
+        uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: evaluation-results
+          path: eval/results/
+          retention-days: 30

@@ -1,0 +1,504 @@
+{
+  "_meta": {
+    "version": "0.1.0-draft",
+    "status": "DRAFT — REQUIRES HUMAN REVIEW BEFORE USE",
+    "created": "2026-07-12",
+    "total_questions": 60,
+    "category_distribution": {
+      "general_policy": 15,
+      "entity_grounding": 10,
+      "numeric_extraction": 8,
+      "temporal_realtime": 7,
+      "multi_hop": 8,
+      "out_of_scope_negative": 12
+    },
+    "notes": "gold_source_ids use PDF filenames matching chunk metadata['name']. Gold answers are approximate — review and correct for factual accuracy. Questions marked [NEW_CORPUS] specifically test the 6 newly added PDFs."
+  },
+  "questions": [
+    {
+      "id": "q001",
+      "question": "What is the Central Arizona Project and what does it do?",
+      "gold_answer": "The Central Arizona Project (CAP) is a 336-mile long water delivery system that brings Colorado River water from Lake Havasu to central and southern Arizona, serving Phoenix, Tucson, and tribal communities. It is the largest and most expensive aqueduct system ever constructed in the United States.",
+      "gold_source_ids": ["CAP-FactSheet-January2024.pdf", "cap-fact-sheet-know-your-water-2022.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: tests fundamental knowledge present in old corpus"
+    },
+    {
+      "id": "q002",
+      "question": "What are Active Management Areas in Arizona?",
+      "gold_answer": "Active Management Areas (AMAs) are designated areas in Arizona where groundwater use is actively regulated and managed by the Arizona Department of Water Resources. There are five AMAs: Phoenix, Tucson, Prescott, Pinal, and Santa Cruz, established under the 1980 Groundwater Management Act to reduce groundwater overdraft.",
+      "gold_source_ids": ["AMAs.pdf", "arizona_groundwatermanagement.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: core AZ water governance concept"
+    },
+    {
+      "id": "q003",
+      "question": "What is the Arizona Groundwater Management Code?",
+      "gold_answer": "The Arizona Groundwater Management Code, enacted in 1980 as part of the Groundwater Management Act, establishes a comprehensive regulatory framework for groundwater use in Arizona. It created the Department of Water Resources and the Active Management Area system to address groundwater overdraft and ensure long-term water supply sustainability.",
+      "gold_source_ids": ["OVERVIEW OF THE ARIZONA GROUNDWATER MANAGEMENT CODE.pdf", "arizona_groundwatermanagement.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: legal framework test"
+    },
+    {
+      "id": "q004",
+      "question": "What is the Drought Contingency Plan for the Colorado River?",
+      "gold_answer": "The Drought Contingency Plan (DCP) is an agreement among the seven Colorado River Basin states and the federal government to reduce the risk of Colorado River reservoirs (Lake Mead and Lake Powell) declining to critically low elevations. It establishes additional voluntary conservation measures and shortage sharing protocols beyond the 2007 Interim Guidelines.",
+      "gold_source_ids": ["the_arizona_dcp_-_a_tribal_perspective.pdf", "AMWUA_droughtandshortage.pdf", "Drought Contingency Plan.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: major policy framework"
+    },
+    {
+      "id": "q005",
+      "question": "What is the CAGRD and how does it work?",
+      "gold_answer": "The Central Arizona Groundwater Replenishment District (CAGRD) is a mechanism that allows member developments to use groundwater while ensuring its long-term replenishment. Member lands and service areas enroll in CAGRD, which then replenishes the groundwater pumped by its members through various water storage and recharge projects, funded by fees assessed on its members.",
+      "gold_source_ids": ["CAGRD.pdf", "Summary-of CAGRD-History-and-Operations.pdf", "CAP-FactSheet-CAGRD-2024.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: complex policy mechanism"
+    },
+    {
+      "id": "q006",
+      "question": "What is the Assured Water Supply program?",
+      "gold_answer": "The Assured Water Supply program requires developers and water providers in Arizona's Active Management Areas to demonstrate a 100-year assured water supply before new development can proceed. This program ensures that sufficient water resources exist to support long-term growth and that the water supply is physically, legally, and continuously available.",
+      "gold_source_ids": ["kyl_center_elusive_concept_assured_water_supply.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: development regulation"
+    },
+    {
+      "id": "q007",
+      "question": "How does Arizona manage water for agricultural use?",
+      "gold_answer": "Arizona manages agricultural water use through various mechanisms including the Active Management Areas, which regulate groundwater pumping for irrigation. The state also promotes conservation agriculture practices, monitors water use through metering and reporting requirements, and has seen a shift from agricultural to municipal water use over time as urbanization increases.",
+      "gold_source_ids": ["Conservation: Agriculture.pdf", "arizona_groundwatermanagement.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: agricultural sector policy"
+    },
+    {
+      "id": "q008",
+      "question": "What is the Tier 1 shortage on the Colorado River?",
+      "gold_answer": "A Tier 1 shortage on the Colorado River is triggered when Lake Mead's water level drops below 1,075 feet. Under the 2007 Interim Guidelines, this results in mandatory water delivery reductions to Arizona, Nevada, and Mexico. Arizona bears the largest cuts, primarily affecting Central Arizona Project agricultural water users in Pinal County.",
+      "gold_source_ids": ["Tier 1 Colorado River Shortage 2024.pdf", "cap-fact-sheet-shortage-milestones.pdf", "2022-11-colorado-river-shortage-faq.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: shortage mechanics"
+    },
+    {
+      "id": "q009",
+      "question": "What is xeriscaping and how does it conserve water?",
+      "gold_answer": "Xeriscaping is a landscaping approach designed for arid and semi-arid climates that reduces or eliminates the need for supplemental water from irrigation. It involves using drought-tolerant native plants, efficient irrigation systems, appropriate soil preparation, and mulching to minimize water use while maintaining an attractive landscape.",
+      "gold_source_ids": ["howToXeriscape.pdf", "Make Low-Water Use Plants a High Priority.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: consumer conservation practice"
+    },
+    {
+      "id": "q010",
+      "question": "How does reclaimed water work in Arizona?",
+      "gold_answer": "Reclaimed water in Arizona is treated wastewater that has been processed to meet specific quality standards for non-potable reuse. It is commonly used for irrigation of parks, golf courses, and agricultural land, as well as for industrial cooling and groundwater recharge. Arizona has a regulatory framework that classifies reclaimed water into different quality classes based on its intended use.",
+      "gold_source_ids": ["reclaimed_wastewater.pdf", "Arizona Department of Environmental Quality Recycled Water Work Groups Final Report.pdf", "Recycled Water.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: water reuse policy"
+    },
+    {
+      "id": "q011",
+      "question": "What is the role of the Arizona Water Bank Authority?",
+      "gold_answer": "The Arizona Water Bank Authority (AWBA) stores surplus Colorado River water underground for future use by Arizona, Nevada, and the federal government. It utilizes various recharge facilities to bank water during years of surplus and generates long-term storage credits that can be recovered during times of shortage.",
+      "gold_source_ids": ["Final_AWBA_2022_Annual_Report-10_Year_Plan_with_letter_0.pdf", "AWBA 2023 Plan of Operation.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: institutional function"
+    },
+    {
+      "id": "q012",
+      "question": "What is desalination and could it help Arizona's water supply?",
+      "gold_answer": "Desalination is the process of removing dissolved salts and minerals from seawater or brackish water to produce freshwater. While it is technically feasible for Arizona, the high energy costs, distance from ocean sources, and environmental concerns regarding brine disposal present significant challenges. Some brackish groundwater desalination projects exist within Arizona.",
+      "gold_source_ids": ["desalination.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: technology option test"
+    },
+    {
+      "id": "q013",
+      "question": "What is direct potable reuse and what is Arizona doing about it?",
+      "gold_answer": "Direct potable reuse (DPR) is the process of treating wastewater to drinking water standards and introducing it directly into a drinking water system without an environmental buffer. Arizona has been developing a guidance framework for DPR to help communities consider it as a viable water supply option to augment limited water resources.",
+      "gold_source_ids": ["Guidance Framework for Direct Potable Reuse in Arizona.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: emerging policy"
+    },
+    {
+      "id": "q014",
+      "question": "What are long-term storage credits in Arizona?",
+      "gold_answer": "Long-term storage credits are earned by entities that store water underground through Arizona's water banking system. For each acre-foot of water recharged into an aquifer, the entity receives a storage credit that can be recovered at a later time. These credits are a key component of Arizona's water management strategy and can be bought, sold, or transferred.",
+      "gold_source_ids": ["Long-term Storage Credits.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: water banking mechanism"
+    },
+    {
+      "id": "q015",
+      "question": "What is the myth of safe-yield in Arizona water management?",
+      "gold_answer": "The concept of safe-yield in Arizona water management refers to the goal of balancing groundwater withdrawals with natural and artificial recharge so that aquifer levels are maintained. Critics argue this is a myth because achieving true safe-yield is extremely difficult due to ongoing population growth, climate change, and the complex hydrogeology of Arizona's aquifers.",
+      "gold_source_ids": ["the_myth_of_safe-yield_0.pdf"],
+      "category": "general_policy",
+      "notes": "Baseline: contested policy concept"
+    },
+    {
+      "id": "q016",
+      "question": "What is the Ten Tribes Partnership and which tribes are involved?",
+      "gold_answer": "The Ten Tribes Partnership is a coalition of ten federally recognized tribes within the Colorado River Basin that collaborate on water resource issues. The partnership works to protect tribal water rights and ensure tribes have a voice in Colorado River management decisions.",
+      "gold_source_ids": ["The Ten Tribes Partnership.pdf", "Tribal Water Study Report.pdf"],
+      "category": "entity_grounding",
+      "notes": "Baseline: specific tribal organization"
+    },
+    {
+      "id": "q017",
+      "question": "What is the Gila River Indian Community water settlement?",
+      "gold_answer": "The Gila River Indian Community Water Rights Settlement Act resolved long-standing water claims of the Gila River Indian Community. The settlement provides the Community with substantial water allocations from the Central Arizona Project, the Gila River, and groundwater sources to support agricultural and other uses on their reservation.",
+      "gold_source_ids": ["Gila river - water settlement.pdf", "Regain our Water (article).pdf"],
+      "category": "entity_grounding",
+      "notes": "Baseline: specific tribal water rights"
+    },
+    {
+      "id": "q018",
+      "question": "What is the Pima-Maricopa Irrigation Project?",
+      "gold_answer": "The Pima-Maricopa Irrigation Project (PMIP) is a federally authorized project that constructs and rehabilitates irrigation infrastructure for the Gila River Indian Community. The project delivers water to farmland within the Community's reservation, helping restore agricultural practices that were disrupted when upstream water diversions dried up the Gila River.",
+      "gold_source_ids": ["The pima-maricopa irrigation project nation-building through irrigation infrastructure - Irrigation.pdf"],
+      "category": "entity_grounding",
+      "notes": "Baseline: specific infrastructure project"
+    },
+    {
+      "id": "q019",
+      "question": "What does the Tohono O'odham Nation's water resources department manage?",
+      "gold_answer": "The Tohono O'odham Nation's Water Resources Department manages the tribe's water resources including groundwater monitoring, water quality testing, water infrastructure maintenance, and water rights protection. The department works to ensure safe drinking water for communities across the reservation.",
+      "gold_source_ids": ["Tohono O'odham Nation.pdf", "Brief History of Water Resources.pdf"],
+      "category": "entity_grounding",
+      "notes": "Baseline: specific tribal government entity"
+    },
+    {
+      "id": "q020",
+      "question": "What is the Kyl Center Shortage Impacts Tool?",
+      "gold_answer": "The Kyl Center Shortage Impacts Tool is a tool developed by the Kyl Center for Water Policy at Arizona State University. It helps stakeholders in the Colorado River Basin understand and visualize the potential impacts of water shortages on various sectors and regions within the basin, providing data visualizations and scenarios to inform decision-making.",
+      "gold_source_ids": ["Kyl Center Shortage Impacts Tool.pdf"],
+      "category": "entity_grounding",
+      "notes": "[NEW_CORPUS] Tests retrieval from newly added Kyl Center PDF"
+    },
+    {
+      "id": "q021",
+      "question": "What is the Arizona Water Innovation Initiative (AWII)?",
+      "gold_answer": "The Arizona Water Innovation Initiative (AWII) is a program based at Arizona State University that works to advance water sustainability through research, technology development, and stakeholder engagement. It supports innovation in water management practices and technologies for Arizona.",
+      "gold_source_ids": ["AWII.pdf"],
+      "category": "entity_grounding",
+      "notes": "Baseline: specific ASU program"
+    },
+    {
+      "id": "q022",
+      "question": "What water conservation programs does the City of Phoenix offer?",
+      "gold_answer": "The City of Phoenix offers various water conservation programs including rebates for water-efficient appliances, free water audits, landscape conversion programs, and educational resources. The city promotes low-water-use landscaping and provides tips for reducing indoor and outdoor water consumption.",
+      "gold_source_ids": ["City of Phoenix Water Conservation.pdf", "City of Phoenix Drinking Water.pdf"],
+      "category": "entity_grounding",
+      "notes": "Baseline: specific municipality"
+    },
+    {
+      "id": "q023",
+      "question": "What is AMWUA and what issues does it address?",
+      "gold_answer": "The Arizona Municipal Water Users Association (AMWUA) represents ten major cities in the Phoenix metropolitan area on water policy issues. AMWUA advocates for its members on Colorado River shortage, drought management, groundwater sustainability, and other water resource challenges facing the region.",
+      "gold_source_ids": ["AMWUA_coloradoshortage.pdf", "AMWUA_droughtandshortage.pdf"],
+      "category": "entity_grounding",
+      "notes": "Baseline: specific advocacy organization"
+    },
+    {
+      "id": "q024",
+      "question": "What does the Fort Mojave Indian Tribe do with its Colorado River water rights?",
+      "gold_answer": "The Fort Mojave Indian Tribe holds significant water rights to the Colorado River and uses its water allocation primarily for agriculture and community purposes on its reservation, which spans Arizona, Nevada, and California. The tribe is part of the Ten Tribes Partnership and actively participates in Colorado River basin water management discussions.",
+      "gold_source_ids": ["Fort Mojave Indian Tribe.pdf", "Fort Mojave Indian Tribe-2.pdf", "Ch.-5.6-Ft.-Mojave-Current-Future-Water-Use-12-13-2018.pdf"],
+      "category": "entity_grounding",
+      "notes": "Baseline: specific tribal water rights"
+    },
+    {
+      "id": "q025",
+      "question": "How does the City of Tucson manage its water resources?",
+      "gold_answer": "The City of Tucson manages its water resources through a combination of Colorado River water delivered via the Central Arizona Project, groundwater pumping, and reclaimed water. The city operates within the Tucson Active Management Area and has implemented various conservation programs to reduce per-capita water use.",
+      "gold_source_ids": ["Tucson Fifth Active Management Plan.pdf", "2022 tuscon water quality report.pdf"],
+      "category": "entity_grounding",
+      "notes": "Baseline: major city water management"
+    },
+    {
+      "id": "q026",
+      "question": "How many acre-feet of water are being held back in Lake Powell from December 2025 through April 2026 according to the 24-Month Studies?",
+      "gold_answer": "According to the 24-Month Studies, a total of 0.598 million acre-feet (maf) is being held back in Lake Powell from December 2025 through April 2026, with the same amount to be released later in the water year.",
+      "gold_source_ids": ["USBR 24-Month Studies.pdf"],
+      "gold_passage_keywords": ["0.598", "million acre-feet", "Lake Powell", "December 2025"],
+      "category": "numeric_extraction",
+      "notes": "[NEW_CORPUS] Tests extraction of specific numeric data from USBR report"
+    },
+    {
+      "id": "q027",
+      "question": "What is the projected water year release volume from Lake Powell in 2026?",
+      "gold_answer": "The projected water year 2026 release from Lake Powell is 7.48 million acre-feet (maf), under the Mid-Elevation Release Tier, to protect a target elevation of 3,525 feet.",
+      "gold_source_ids": ["USBR 24-Month Studies.pdf"],
+      "gold_passage_keywords": ["7.48", "million acre-feet", "Mid-Elevation Release Tier", "3,525"],
+      "category": "numeric_extraction",
+      "notes": "[NEW_CORPUS] Tests extraction of specific operational tier data"
+    },
+    {
+      "id": "q028",
+      "question": "How many Active Management Areas are there in Arizona and what are their names?",
+      "gold_answer": "There are five Active Management Areas in Arizona: Phoenix, Tucson, Prescott, Pinal, and Santa Cruz.",
+      "gold_source_ids": ["AMAs.pdf", "arizona_groundwatermanagement.pdf"],
+      "category": "numeric_extraction",
+      "notes": "Baseline: simple count plus enumeration"
+    },
+    {
+      "id": "q029",
+      "question": "At what elevation does Lake Mead trigger a Tier 1 shortage?",
+      "gold_answer": "Lake Mead triggers a Tier 1 shortage when its water level drops below 1,075 feet.",
+      "gold_source_ids": ["Tier 1 Colorado River Shortage 2024.pdf", "cap-fact-sheet-shortage-milestones.pdf"],
+      "category": "numeric_extraction",
+      "notes": "Baseline: specific threshold number"
+    },
+    {
+      "id": "q030",
+      "question": "How long is the Central Arizona Project canal system?",
+      "gold_answer": "The Central Arizona Project canal system is approximately 336 miles long.",
+      "gold_source_ids": ["CAP-FactSheet-January2024.pdf"],
+      "category": "numeric_extraction",
+      "notes": "Baseline: specific measurement from old corpus"
+    },
+    {
+      "id": "q031",
+      "question": "What operational tier is Lake Powell under for water year 2026?",
+      "gold_answer": "Lake Powell is operating under the Mid-Elevation Release Tier for water year 2026, which determines the release volumes from Glen Canyon Dam.",
+      "gold_source_ids": ["USBR 24-Month Studies.pdf"],
+      "gold_passage_keywords": ["Mid-Elevation Release Tier", "water year 2026", "Glen Canyon Dam"],
+      "category": "numeric_extraction",
+      "notes": "[NEW_CORPUS] Tests retrieval of specific operational data"
+    },
+    {
+      "id": "q032",
+      "question": "What target elevation is being protected at Lake Powell according to the 24-Month Studies?",
+      "gold_answer": "The 24-Month Studies indicate a target elevation of 3,525 feet is being protected at Lake Powell for water year 2026.",
+      "gold_source_ids": ["USBR 24-Month Studies.pdf"],
+      "gold_passage_keywords": ["3,525", "target elevation", "Lake Powell"],
+      "category": "numeric_extraction",
+      "notes": "[NEW_CORPUS] Tests specific elevation number extraction"
+    },
+    {
+      "id": "q033",
+      "question": "What percentage of Arizona's water comes from groundwater versus surface water?",
+      "gold_answer": "Arizona relies on a combination of groundwater and surface water. Approximately 40% of Arizona's water supply comes from groundwater, with the remainder from surface water sources including the Colorado River, in-state rivers, and reclaimed water. These proportions vary by region.",
+      "gold_source_ids": ["arizonawaterfacts.pdf", "doWeHaveEnough.pdf"],
+      "category": "numeric_extraction",
+      "notes": "Baseline: percentage extraction"
+    },
+    {
+      "id": "q034",
+      "question": "What are the current NOAA CBRFC river forecasts for the Colorado River Basin?",
+      "gold_answer": "The NOAA Colorado Basin River Forecast Center provides precipitation and temperature forecasts for the CBRFC area, including 7-day precipitation forecasts and 8-14 day climate outlooks. The specific forecast details change regularly as new data becomes available.",
+      "gold_source_ids": ["NOAA CBRFC River Forecast.pdf"],
+      "gold_passage_keywords": ["CBRFC", "precipitation", "forecast"],
+      "category": "temporal_realtime",
+      "notes": "[NEW_CORPUS] Tests retrieval of time-sensitive forecast data"
+    },
+    {
+      "id": "q035",
+      "question": "What are the current reservoir conditions reported by ADWR?",
+      "gold_answer": "The Arizona Department of Water Resources (ADWR) monitors and reports current reservoir conditions including storage levels and capacity percentages for major reservoirs across Arizona.",
+      "gold_source_ids": ["ADWR Current Reservoir Conditions.pdf"],
+      "category": "temporal_realtime",
+      "notes": "[NEW_CORPUS] Tests retrieval of current conditions data"
+    },
+    {
+      "id": "q036",
+      "question": "What precipitation is expected in the CBRFC area in the near-term forecast?",
+      "gold_answer": "The CBRFC forecast indicates limited precipitation chances with warm, convective showers and storms mainly expected over eastern areas. Specific forecast details vary based on the most recent data.",
+      "gold_source_ids": ["NOAA CBRFC River Forecast.pdf"],
+      "category": "temporal_realtime",
+      "notes": "[NEW_CORPUS] Tests specific forecast detail extraction"
+    },
+    {
+      "id": "q037",
+      "question": "What is the latest operational tier for Glen Canyon Dam releases?",
+      "gold_answer": "The operational tier for Glen Canyon Dam in water year 2026 is the Mid-Elevation Release Tier, which determines the release volumes from Lake Powell.",
+      "gold_source_ids": ["USBR 24-Month Studies.pdf"],
+      "category": "temporal_realtime",
+      "notes": "[NEW_CORPUS] Tests current operational status retrieval"
+    },
+    {
+      "id": "q038",
+      "question": "What did the 2023 Arizona Drought Preparedness Report find?",
+      "gold_answer": "The 2023 Arizona Drought Preparedness Annual Report provides an overview of drought conditions, impacts, and response activities across Arizona. It assesses current drought status and evaluates the state's drought preparedness measures.",
+      "gold_source_ids": ["Arizona Drought Preparedness Report 2023.pdf", "ADPAR_2023_FINAL.pdf"],
+      "category": "temporal_realtime",
+      "notes": "Baseline: recent but not real-time report"
+    },
+    {
+      "id": "q039",
+      "question": "What is the current shortage status for the Colorado River?",
+      "gold_answer": "The Colorado River has been under shortage conditions, with Tier 1 shortage declared based on Lake Mead's elevation. Arizona has been subject to delivery reductions, primarily affecting agricultural water users.",
+      "gold_source_ids": ["Colorado River Shortage Status 2023.pdf", "Tier 1 Colorado River Shortage 2024.pdf"],
+      "category": "temporal_realtime",
+      "notes": "Tests current status — answer depends on what is in the corpus"
+    },
+    {
+      "id": "q040",
+      "question": "What is happening with post-2026 Colorado River operations according to USBR?",
+      "gold_answer": "The Bureau of Reclamation is developing new operating guidelines to replace the 2007 Interim Guidelines and the Drought Contingency Plan, which expire in 2026. The post-2026 framework will establish new rules for managing the Colorado River, including shortage sharing, surplus conditions, and coordinated operations between Lake Powell and Lake Mead.",
+      "gold_source_ids": ["USBR Post-2026.pdf"],
+      "category": "temporal_realtime",
+      "notes": "[NEW_CORPUS] Tests retrieval of forward-looking policy content"
+    },
+    {
+      "id": "q041",
+      "question": "How do tribal water rights settlements interact with the Central Arizona Project's delivery obligations?",
+      "gold_answer": "Several tribal water rights settlements include provisions for delivery of water through the Central Arizona Project system. Tribes like the Gila River Indian Community receive CAP water as part of their settlement agreements, and these deliveries are prioritized differently than municipal or agricultural subcontracts, which affects how shortages are distributed.",
+      "gold_source_ids": ["Gila river - water settlement.pdf", "the_arizona_dcp_-_a_tribal_perspective.pdf", "CAP-FactSheet-January2024.pdf"],
+      "category": "multi_hop",
+      "notes": "Requires connecting tribal settlements with CAP operations"
+    },
+    {
+      "id": "q042",
+      "question": "How does the Colorado River shortage affect tap water deliveries in central Arizona cities?",
+      "gold_answer": "Colorado River shortages primarily affect Central Arizona Project deliveries, which cities in central Arizona rely on. However, most municipal water providers have diversified their supplies through groundwater, banked water credits, and reclaimed water, so the immediate impact on tap water is buffered compared to agricultural users.",
+      "gold_source_ids": ["impacts_of_colorado_river_shortage_to_tap_water_deliveries_in_central_arizona.pdf", "AMWUA_droughtandshortage.pdf"],
+      "category": "multi_hop",
+      "notes": "Requires connecting shortage mechanics with municipal water supply"
+    },
+    {
+      "id": "q043",
+      "question": "How do groundwater regulations and housing affordability interact in Arizona?",
+      "gold_answer": "Groundwater regulations, including the Assured Water Supply requirement, can affect housing affordability by adding costs to new development. Developers must demonstrate a 100-year assured water supply, which may require purchasing water rights or enrolling in the CAGRD, adding costs that can be passed on to homebuyers.",
+      "gold_source_ids": ["Housing Affordability and Groundwater Regulation.pdf", "kyl_center_elusive_concept_assured_water_supply.pdf"],
+      "category": "multi_hop",
+      "notes": "Requires connecting water policy with economic impact"
+    },
+    {
+      "id": "q044",
+      "question": "What role does climate change play in both Lake Powell operations and NOAA's river forecasts?",
+      "gold_answer": "Climate change affects Lake Powell operations by reducing snowpack and streamflow into the reservoir, leading to lower inflows and potentially triggering different operational tiers. NOAA CBRFC forecasts incorporate climate data and models that reflect changing precipitation patterns, temperature trends, and their impacts on river flows throughout the Colorado River Basin.",
+      "gold_source_ids": ["USBR 24-Month Studies.pdf", "NOAA CBRFC River Forecast.pdf", "CAP-FactSheet-ClimateChange-2024.pdf"],
+      "category": "multi_hop",
+      "notes": "[NEW_CORPUS] Requires connecting climate impacts across multiple new and old sources"
+    },
+    {
+      "id": "q045",
+      "question": "How does the Verde River watershed health relate to Phoenix's water supply?",
+      "gold_answer": "The Verde River is a significant surface water source that contributes to the Salt River Project system, which supplies water to the Phoenix metropolitan area. The health of the Verde River watershed, including factors like forest management, land use, and precipitation patterns, directly affects water availability for Phoenix-area cities.",
+      "gold_source_ids": ["verde_water_scorecard.pdf", "Water and Land Use in Central Arizona.pdf"],
+      "category": "multi_hop",
+      "notes": "Requires connecting watershed health with municipal supply chain"
+    },
+    {
+      "id": "q046",
+      "question": "What is the relationship between the 2007 Interim Guidelines expiration and the post-2026 operational framework being developed by USBR?",
+      "gold_answer": "The 2007 Interim Guidelines established operating rules for Lake Powell and Lake Mead that are set to expire at the end of 2026. The Bureau of Reclamation is developing a post-2026 operational framework to replace these guidelines, which will need to address updated shortage tiers, coordinated reservoir operations, and adaptation to more severe drought conditions than originally anticipated.",
+      "gold_source_ids": ["USBR Post-2026.pdf", "interim guidelines for operation of lake powell and lake maed.pdf"],
+      "category": "multi_hop",
+      "notes": "[NEW_CORPUS] Requires connecting old policy document with new post-2026 analysis"
+    },
+    {
+      "id": "q047",
+      "question": "How does the Kyl Center Shortage Impacts Tool help stakeholders understand drought impacts across different sectors?",
+      "gold_answer": "The Kyl Center Shortage Impacts Tool helps stakeholders in the Colorado River Basin visualize and understand the potential impacts of water shortages on various sectors and regions. It provides data visualizations and scenario analysis to inform decision-making and planning in response to water shortages.",
+      "gold_source_ids": ["Kyl Center Shortage Impacts Tool.pdf", "kyl_center_elusive_concept_assured_water_supply.pdf"],
+      "category": "multi_hop",
+      "notes": "[NEW_CORPUS] Tests connection between new tool PDF and existing Kyl Center research"
+    },
+    {
+      "id": "q048",
+      "question": "How do tribal water rights relate to the post-2026 Colorado River framework?",
+      "gold_answer": "Tribal water rights are a critical consideration in the post-2026 Colorado River framework. Many tribes hold senior water rights but have historically been underrepresented in river management decisions. The new framework must address tribal water rights settlements, ensure tribes can fully utilize their allocations, and include tribal nations as equal partners in future management decisions.",
+      "gold_source_ids": ["USBR Post-2026.pdf", "the_arizona_dcp_-_a_tribal_perspective.pdf", "The Ten Tribes Partnership.pdf"],
+      "category": "multi_hop",
+      "notes": "[NEW_CORPUS] Requires connecting new post-2026 source with existing tribal water rights sources"
+    },
+    {
+      "id": "q049",
+      "question": "What is the current water quality in the Mississippi River?",
+      "gold_answer": "I don't have information about the Mississippi River. I focus on Arizona and Colorado River Basin water topics.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "Geographic out-of-scope: completely unrelated river"
+    },
+    {
+      "id": "q050",
+      "question": "Who will win the next presidential election?",
+      "gold_answer": "I can only help with questions about water resources and policy in Arizona. I don't have information about elections or politics.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "Topic out-of-scope: completely unrelated domain"
+    },
+    {
+      "id": "q051",
+      "question": "What is the best restaurant near Lake Havasu?",
+      "gold_answer": "I focus on water resources and policy in Arizona. I don't have information about restaurants or local businesses.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "Topic out-of-scope: mentions AZ water feature but asks non-water question"
+    },
+    {
+      "id": "q052",
+      "question": "What are the specific water rights allocations for individual homeowners in Scottsdale?",
+      "gold_answer": "I don't have detailed information about individual homeowner water rights allocations in Scottsdale. For specific information about your water rights, I'd recommend contacting the City of Scottsdale Water Services or the Arizona Department of Water Resources.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "On-topic but too granular: the corpus has city-level overviews but not individual allocation data"
+    },
+    {
+      "id": "q053",
+      "question": "What is the real-time flow rate of the Colorado River at Lee's Ferry right now?",
+      "gold_answer": "I don't have access to real-time streamflow data. For current flow rates at Lee's Ferry, I'd recommend checking the USGS National Water Information System website.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "On-topic but requires live sensor data the corpus does not have"
+    },
+    {
+      "id": "q054",
+      "question": "Can you explain quantum computing and its applications?",
+      "gold_answer": "I specialize in water resources and policy in Arizona. I don't have information about quantum computing.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "Topic out-of-scope: completely unrelated scientific domain"
+    },
+    {
+      "id": "q055",
+      "question": "What is the water situation in Mumbai, India?",
+      "gold_answer": "I focus on water resources and policy in Arizona and the Colorado River Basin. I don't have information about water conditions in Mumbai, India.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "Geographic out-of-scope: international location"
+    },
+    {
+      "id": "q056",
+      "question": "What will the water level at Lake Mead be in 2030?",
+      "gold_answer": "I cannot predict future water levels at Lake Mead with certainty. Projections depend on many variables including snowpack, precipitation, upstream releases, and consumption patterns. For the latest projections, I'd recommend checking the Bureau of Reclamation's modeling reports.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "On-topic but asks for prediction beyond what the corpus can support"
+    },
+    {
+      "id": "q057",
+      "question": "Should I invest in water stocks and which water companies are best to invest in?",
+      "gold_answer": "I provide information about water resources and policy, not financial or investment advice. For investment decisions, please consult a financial advisor.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "On-topic-adjacent but asks for financial advice"
+    },
+    {
+      "id": "q058",
+      "question": "What are the names of all the employees at the Arizona Department of Water Resources?",
+      "gold_answer": "I don't have a directory of individual employees at the Arizona Department of Water Resources. For staff information, please visit the ADWR website or contact them directly.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "On-topic entity but asks for personal or directory data not in corpus"
+    },
+    {
+      "id": "q059",
+      "question": "Write me a Python script to scrape water data from the USGS website.",
+      "gold_answer": "I'm designed to answer questions about water resources and policy in Arizona, not to write code.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "Wrong task type: asks for code generation instead of information"
+    },
+    {
+      "id": "q060",
+      "question": "What private well drilling companies do you recommend in Maricopa County?",
+      "gold_answer": "I don't provide recommendations for specific private companies or vendors. For information about well drilling permits and regulations in Maricopa County, I'd suggest contacting the Arizona Department of Water Resources.",
+      "gold_source_ids": [],
+      "category": "out_of_scope_negative",
+      "notes": "On-topic-adjacent but asks for commercial recommendation"
+    }
+  ]
+}

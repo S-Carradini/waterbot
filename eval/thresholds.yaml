@@ -1,0 +1,7 @@
+# Evaluation Thresholds
+# If metrics fall below these gates, the CI job will fail.
+
+faithfulness_min: 0.75
+answer_correctness_min: 0.60
+retrieval_recall_at_4_min: 0.50
+hallucination_on_negatives_max: 0.15

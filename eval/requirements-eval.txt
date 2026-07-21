@@ -1,0 +1,6 @@
+# RAG Evaluation Dependencies
+# Install with: pip install -r eval/requirements-eval.txt
+# These are isolated from production — not included in Dockerfile or requirements.txt
+
+ragas>=0.2.0
+datasets>=2.14.0
