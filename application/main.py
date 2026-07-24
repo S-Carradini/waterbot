@@ -1507,10 +1507,21 @@ async def settings_page(request: Request):
     """Serve React SPA for settings page (new Figma design)"""
     return await _serve_react_spa()
 
+# @app.get("/riverbot", response_class=HTMLResponse)
+# async def riverbot_page(request: Request):
+#     """Serve the riverbot page (Jinja template)"""
+#     return templates.TemplateResponse("riverbot.html", {"request": request})
+
+RIVERBOT_CANONICAL_HOST = "www.azwaterbot.org"
+
 @app.get("/riverbot", response_class=HTMLResponse)
 async def riverbot_page(request: Request):
-    """Serve the riverbot page (Jinja template)"""
+    """Serve the riverbot page (Jinja template), canonicalizing to the www host"""
+    if request.url.hostname == "azwaterbot.org":
+        target = request.url.replace(scheme="https", netloc=RIVERBOT_CANONICAL_HOST)
+        return RedirectResponse(url=str(target), status_code=301)
     return templates.TemplateResponse("riverbot.html", {"request": request})
+
 
 @app.post('/api/tts')
 async def text_to_speech(request: Request):
