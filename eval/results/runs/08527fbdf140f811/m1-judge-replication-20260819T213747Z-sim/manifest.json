@@ -1,0 +1,31 @@
+{
+  "bootstrap_resamples": 2000,
+  "call_ledger": {
+    "attempts": 300,
+    "completion_tokens": 300,
+    "error_samples": [],
+    "errors": 0,
+    "noncanonical_replies": 0,
+    "noncanonical_samples": [],
+    "prompt_tokens": 83400
+  },
+  "contaminated_runs": [],
+  "corpus_fingerprint": "08527fbdf140f811",
+  "created_at": "2026-08-19T21:37:47.186899+00:00",
+  "dataset_version": "benchmark_dataset.json",
+  "experiment": "m1_judge_replication",
+  "git_sha": "2417fbf",
+  "judge_source_path": "eval/generation_metrics.py",
+  "judge_source_sha256": "cacc23b372bedbfe",
+  "measurement_version": 2,
+  "model_id": "fake-judge-v0/one-item-flip",
+  "n_items": 12,
+  "n_replicates": 25,
+  "responses_path": "eval/results/generation_metrics.csv",
+  "run_id": "m1-judge-replication-20260819T213747Z-sim",
+  "scenario": "one-item-flip",
+  "seed": 0,
+  "simulated": true,
+  "spec_section": "0.7",
+  "temperature": 0.0
+}
