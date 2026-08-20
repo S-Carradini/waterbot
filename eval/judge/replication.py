@@ -43,40 +43,10 @@ import math
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional, Sequence, Tuple
 
-# z for a two-sided 95% interval. Hard-coded rather than pulled from scipy so
-# this module has no scientific-stack import at all; the value is checked
-# against scipy in the tests.
-Z_95 = 1.959963984540054
-
-
-# ---------------------------------------------------------------------------
-# Wilson
-# ---------------------------------------------------------------------------
-def wilson_interval(successes: int, trials: int, z: float = Z_95) -> Tuple[float, float]:
-    """Wilson score interval for a binomial proportion.
-
-    Wilson (1927). Chosen over the Wald interval because at the counts this
-    experiment produces - 12 items, proportions that may sit at or near 1.0 -
-    Wald degenerates to zero width and is simply wrong. Wilson stays inside
-    [0, 1] and does not collapse at the boundary.
-
-    Assumes independent trials. On the pooled R x N verdict count that
-    assumption is violated; see the module docstring.
-    """
-    if trials < 0:
-        raise ValueError("trials must be non-negative")
-    if not 0 <= successes <= trials:
-        raise ValueError(f"successes ({successes}) must be in [0, trials] ({trials})")
-    if trials == 0:
-        # No information. The honest interval is the whole parameter space.
-        return (0.0, 1.0)
-
-    n = float(trials)
-    p_hat = successes / n
-    denominator = 1.0 + (z * z) / n
-    centre = (p_hat + (z * z) / (2.0 * n)) / denominator
-    spread = (z / denominator) * math.sqrt(p_hat * (1.0 - p_hat) / n + (z * z) / (4.0 * n * n))
-    return (max(0.0, centre - spread), min(1.0, centre + spread))
+# One implementation of each estimator, in eval/stats.py. Re-exported here so
+# existing callers and tests keep working, and so this module still reads as a
+# self-contained account of the M1 statistics.
+from eval.stats import Z_95, clustered_bootstrap_ci, wilson_interval  # noqa: F401
 
 
 # ---------------------------------------------------------------------------
