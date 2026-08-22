@@ -191,7 +191,12 @@ def test_storing_a_different_verdict_under_an_existing_key_is_refused():
         cache.put("k1", a_verdict(sample_index=0, overall_confidence="low"))
 
 
-def test_storing_an_identical_verdict_again_is_fine():
+def test_storing_a_semantically_identical_verdict_again_is_fine():
+    """Two separately built verdicts differ only in created_at, which is provenance not content.
+
+    This is the resume case: a run re-judging an item it already judged must hit the cache, not
+    raise a key collision because the clock moved.
+    """
     cache = VerdictCache()
     cache.put("k1", a_verdict())
     cache.put("k1", a_verdict())

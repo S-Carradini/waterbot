@@ -155,8 +155,21 @@ class VerdictCache:
                 self.stats.hits += 1
             return verdict
 
+    @staticmethod
+    def _content(verdict: Verdict) -> Dict:
+        """A verdict's judgement, without the metadata that records when it was made.
+
+        ``created_at`` is provenance, not content. Two runs of the same configuration produce
+        semantically identical verdicts stamped at different moments, and comparing whole objects
+        would report that as a key collision - so resuming a run would raise instead of hitting
+        the cache, which is exactly the case the cache exists to serve.
+        """
+        payload = verdict.model_dump(mode="json")
+        payload.pop("created_at", None)
+        return payload
+
     def put(self, key: str, verdict: Verdict) -> None:
-        """Store a verdict. Storing a different verdict under an existing key is refused.
+        """Store a verdict. Storing a *different* verdict under an existing key is refused.
 
         If two verdicts collide on a key they disagree about something the key does not capture,
         which means the key is incomplete. Overwriting would hide that; raising surfaces it while
@@ -164,7 +177,7 @@ class VerdictCache:
         """
         with self._lock:
             existing = self._entries.get(key)
-            if existing is not None and existing != verdict:
+            if existing is not None and self._content(existing) != self._content(verdict):
                 raise CacheError(
                     f"cache key {key[:12]}... already holds a different verdict. Two verdicts "
                     "sharing a key means the key omits something that changed the result."
