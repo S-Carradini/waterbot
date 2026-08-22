@@ -1,0 +1,198 @@
+# Judge rubric for Arizona water-policy assistants.
+#
+# DESIGN RULES (see AI_as_Judge_Architecture.docx section 5)
+#
+# 1. Anchors describe OBSERVABLE CONDITIONS, not adjectives. "cites a passage
+#    that does not contain the claim" is checkable by a second person;
+#    "somewhat grounded" is not. Every anchor below should be verifiable by
+#    reading the response and the evidence, with no taste involved.
+#
+# 2. Four levels, deliberately even. An odd scale gives judges a safe middle
+#    to retreat to, which compresses the distribution and destroys resolution.
+#
+# 3. Dimensions fail INDEPENDENTLY. A fluent, well-cited, completely wrong
+#    answer should score high on citation_validity and low on correctness.
+#    If two dimensions always move together, one of them is redundant and
+#    should be removed rather than kept for appearances.
+#
+# 4. applies_to controls scoring scope. A dimension is scored only where it is
+#    meaningful; elsewhere it is null, NOT zero. Scoring an inapplicable
+#    dimension as zero silently penalises the system for our bookkeeping.
+#
+# Pilot this rubric on ~20 items with two human annotators BEFORE building the
+# judge. If two people cannot agree using these anchors, no model will, and the
+# anchors need rewriting first.
+
+version: "1.0.0-draft"
+status: "DRAFT - NOT YET PILOTED WITH HUMAN ANNOTATORS"
+scale:
+  levels: [1, 2, 3, 4]
+  direction: higher_is_better
+  null_meaning: "dimension does not apply to this item, or judge abstained"
+
+# Categories from benchmark_dataset.json, used by applies_to.
+categories:
+  - general_policy
+  - entity_grounding
+  - numeric_extraction
+  - temporal_realtime
+  - multi_hop
+  - out_of_scope_negative
+
+dimensions:
+
+  - name: grounding
+    question: "Is every factual claim in the response supported by the retrieved evidence?"
+    applies_to: answerable          # all categories except out_of_scope_negative
+    requires_evidence: true
+    anchors:
+      4: >-
+        Every factual claim traces to a specific retrieved passage. No claims
+        are added beyond what the evidence supports.
+      3: >-
+        All major claims are supported. Minor uncontroversial framing (e.g. a
+        general definition) is unsupported but does not alter the answer.
+      2: >-
+        At least one substantive claim is unsupported by any retrieved passage,
+        or generalises well beyond what a passage states.
+      1: >-
+        Central claims are unsupported or contradict the retrieved passages.
+    notes: >-
+      Judge against EVIDENCE only. A claim that is true in the world but absent
+      from the evidence still scores low here - that is the point of separating
+      grounding from correctness.
+
+  - name: correctness
+    question: "Is the answer factually right?"
+    applies_to: answerable
+    requires_evidence: false
+    anchors:
+      4: >-
+        Fully correct, including entity names, numeric values, and units.
+      3: >-
+        Substantively correct; a peripheral detail is wrong or imprecise but
+        the answer would not mislead a reader.
+      2: >-
+        Contains a materially wrong entity, number, unit, or relationship that
+        would mislead a reader acting on it.
+      1: >-
+        The core answer is wrong, or asserts the opposite of the true position.
+    notes: >-
+      Scored against the evidence and, where the gold answer has been verified,
+      against the gold answer. While gold answers remain unverified, prefer the
+      evidence and mark insufficient_evidence rather than deferring to gold.
+
+  - name: refusal_appropriateness
+    question: "Did the system decline when it should have, and answer when it should have?"
+    applies_to: all                 # deliberately scored on EVERY item
+    requires_evidence: false
+    anchors:
+      4: >-
+        Correct decision. Out-of-scope questions are declined with a brief
+        reason and, where possible, a useful redirect. In-scope questions are
+        answered.
+      3: >-
+        Correct decision, but poorly executed - declines without explanation,
+        or answers while hedging so heavily the answer is hard to use.
+      2: >-
+        Partially wrong decision: answers an out-of-scope question while
+        signalling uncertainty, or refuses an in-scope question it had
+        sufficient evidence to answer.
+      1: >-
+        Wrong decision, confidently. Gives a substantive answer to an
+        out-of-scope question, or flatly refuses a question the evidence
+        clearly supports.
+    notes: >-
+      Scored on ALL categories, not only the negatives. Over-refusal on
+      answerable questions is as damaging as under-refusal on out-of-scope
+      ones, and scoring only the negatives makes a system that refuses
+      everything look perfect. This two-sided scoring is what lets us report an
+      over-refusal rate at all.
+
+  - name: citation_validity
+    question: "Do the sources the system displayed actually contain what they are cited for?"
+    applies_to: answerable
+    requires_evidence: true
+    requires_citations: true        # null when the response displayed no citations
+    anchors:
+      4: >-
+        Every displayed citation resolves to a real corpus document AND that
+        document supports the claim it is attached to.
+      3: >-
+        All citations resolve and are topically relevant, but at least one does
+        not directly support the specific claim it accompanies.
+      2: >-
+        At least one citation is irrelevant to the claim, or points to a
+        document that does not discuss the topic.
+      1: >-
+        Citations are fabricated, unresolvable, or systematically unrelated to
+        the response content.
+    notes: >-
+      Partly checkable without a model: whether a cited document exists, and
+      whether the cited passage contains the quoted span, are mechanical checks.
+      Reserve the judge for whether the passage SUPPORTS the claim.
+
+  - name: temporal_integrity
+    question: "Is time-sensitive content correctly dated or hedged?"
+    applies_to: [temporal_realtime]
+    requires_evidence: true
+    anchors:
+      4: >-
+        States the as-of date of the figure, or explicitly flags that
+        conditions may have changed since the source was published.
+      3: >-
+        Implies recency appropriately (e.g. names the source year) without an
+        explicit staleness caveat.
+      2: >-
+        Presents a time-varying figure as current with no date or caveat.
+      1: >-
+        Asserts a superseded value as current, or predicts a future value as
+        though it were established fact.
+    notes: >-
+      This dimension exists because reservoir levels, shortage tiers, and
+      allocation figures change annually, while the corpus is a snapshot. A
+      confidently stated stale number is a distinctive and high-cost failure in
+      this domain.
+
+# Failure modes are labels, not scores. A judge may attach any number of these
+# to an item; they drive triage and error analysis rather than the headline
+# metric. Keeping them separate from the scale means we can add a new failure
+# mode without renumbering anything or invalidating past runs.
+failure_modes:
+
+  - name: entity_substitution
+    description: >-
+      Correct facts attributed to the wrong tribe, city, agency, or Active
+      Management Area.
+    why_it_matters: >-
+      Directly exercised by the corrupted tribal chapters, where ten document
+      names share one body of text. A system cannot distinguish entities its
+      evidence does not distinguish.
+
+  - name: jurisdictional_blurring
+    description: >-
+      Upper Basin rules applied to the Lower Basin, state rules applied to
+      tribal land, or municipal policy generalised to the state.
+
+  - name: superseded_policy
+    description: >-
+      Cites a shortage tier, guideline, or agreement that has been replaced by
+      a later one.
+
+  - name: unit_or_magnitude_drift
+    description: >-
+      Acre-feet confused with acre-feet per year; million confused with
+      billion; percentage of supply confused with percentage of use.
+
+  - name: unsupported_specificity
+    description: >-
+      Invents a precise figure, date, or proper noun that appears nowhere in
+      the evidence.
+
+  - name: overrefusal
+    description: >-
+      Declines a question the retrieved evidence clearly supports.
+
+  - name: evidence_ignored
+    description: >-
+      Retrieved evidence contains the answer but the response does not use it.
