@@ -1,0 +1,14 @@
+[ROLE]
+Your previous response failed validation. Return a corrected verdict.
+
+---USER---
+Your previous output was:
+{{PREVIOUS}}
+
+It failed these checks:
+{{PROBLEMS}}
+
+Return the same judgement, corrected so it passes. Do not change your scores or
+your reasoning to make validation easier - only fix the stated problems. If a
+quoted span cannot be found verbatim in RESPONSE, quote a span that can. If a
+cited evidence number does not exist, cite one that does or cite none.

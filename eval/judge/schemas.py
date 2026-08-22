@@ -48,13 +48,24 @@ Score = Literal[1, 2, 3, 4]
 
 Confidence = Literal["high", "medium", "low"]
 
-# Domain failure modes worth encoding, from architecture section 5. Kept as a closed set so a
-# typo cannot invent a new failure mode that then reads as zero occurrences.
+# Domain failure modes worth encoding. A closed set, so a typo cannot invent a new mode that
+# then reads as zero occurrences of a real one.
+#
+# MUST stay identical to the failure_modes block in rubric.yaml, which is the human-facing
+# authority and the thing annotators are trained against. test_prompting.py asserts the two sets
+# match, so they cannot drift apart silently.
+#
+# The first four are architecture section 5. The last three were added in the rubric: overrefusal
+# is what makes the refusal dimension two-sided rather than one-sided, and the other two name
+# grounding failures that the four original modes do not cover.
 FailureMode = Literal[
     "entity_substitution",
     "jurisdictional_blurring",
     "superseded_policy",
-    "unit_magnitude_drift",
+    "unit_or_magnitude_drift",
+    "unsupported_specificity",
+    "overrefusal",
+    "evidence_ignored",
 ]
 
 

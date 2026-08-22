@@ -285,7 +285,7 @@ def test_unknown_failure_mode_is_rejected():
 
 
 def test_known_failure_modes_are_accepted():
-    verdict = a_verdict(failure_modes=["entity_substitution", "unit_magnitude_drift"])
+    verdict = a_verdict(failure_modes=["entity_substitution", "unit_or_magnitude_drift"])
     assert len(verdict.failure_modes) == 2
 
 
