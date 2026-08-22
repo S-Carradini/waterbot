@@ -1,0 +1,49 @@
+# Dependabot config — DRAFT (review before moving to .github/dependabot.yml)
+#
+# Automates weekly dependency scanning across every surface this project has.
+# Dependabot opens PRs when a dependency is outdated or has a security advisory.
+# PRs do NOT auto-deploy (deploy only fires on merge to main), so this is safe to enable.
+#
+# To activate: move this file to `.github/dependabot.yml` and commit.
+version: 2
+updates:
+  # ── Backend Python ────────────────────────────────────────────────
+  # NOTE: points at requirements_full.txt because that is the version source of
+  # truth prod actually installs (see DEPENDENCY_AUDIT_REPORT.md, Finding 1).
+  - package-ecosystem: "pip"
+    directory: "/application"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      # Bundle low-risk patch/minor bumps into one PR to reduce noise
+      python-minor-and-patch:
+        update-types: ["minor", "patch"]
+
+  # ── Frontend npm ──────────────────────────────────────────────────
+  - package-ecosystem: "npm"
+    directory: "/frontend"
+    schedule:
+      interval: "weekly"
+    open-pull-requests-limit: 10
+    groups:
+      npm-minor-and-patch:
+        update-types: ["minor", "patch"]
+    ignore:
+      # Major bumps are breaking (React 19, router majors) — handle deliberately, not via bot
+      - dependency-name: "react"
+        update-types: ["version-update:semver-major"]
+      - dependency-name: "react-dom"
+        update-types: ["version-update:semver-major"]
+
+  # ── GitHub Actions ────────────────────────────────────────────────
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+
+  # ── Docker base images ────────────────────────────────────────────
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
