@@ -246,14 +246,17 @@ def verdict_json_schema(dimensions: Sequence[str], failure_modes: Sequence[str])
     if not dimensions:
         raise PromptError("a verdict schema needs at least one dimension")
 
+    # EVIDENCE-LOCKING. Models emit properties in schema order, so this order forces the judge to
+    # commit to what it looked at before it can justify anything, and to justify before it can
+    # score. Rationale-first alone left both free to be written after the verdict was decided.
     dimension_schema = {
         "type": "object",
         "additionalProperties": False,
-        "required": ["rationale", "quoted_span", "evidence_ids", "insufficient_evidence", "score"],
+        "required": ["evidence_ids", "quoted_span", "rationale", "insufficient_evidence", "score"],
         "properties": {
-            "rationale": {"type": "string", "minLength": 1},
-            "quoted_span": {"type": "string"},
             "evidence_ids": {"type": "array", "items": {"type": "integer", "minimum": 1}},
+            "quoted_span": {"type": "string"},
+            "rationale": {"type": "string", "minLength": 1},
             "insufficient_evidence": {"type": "boolean"},
             "score": {"type": ["integer", "null"], "enum": [1, 2, 3, 4, None]},
         },
@@ -290,3 +293,13 @@ def pairwise_json_schema() -> Dict:
             "winner": {"type": "string", "enum": ["first", "second", "tie"]},
         },
     }
+
+
+def verdict_schema_hash(dimensions: Sequence[str], failure_modes: Sequence[str]) -> str:
+    """Identity of the verdict SHAPE, for the measurement version.
+
+    Covers the field order as well as the field set, because order is what evidence-locking
+    changes and order changes what judges emit. Without this in the measurement version, that
+    change would be invisible to the comparison guard.
+    """
+    return stable_hash(verdict_json_schema(dimensions, failure_modes))

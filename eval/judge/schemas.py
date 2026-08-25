@@ -201,14 +201,22 @@ class Response(Strict):
 class DimensionVerdict(Strict):
     """One judge's score on one dimension of one response.
 
-    Field order is part of the contract: rationale precedes score because the judge is required
-    to produce them in that order, and forcing justification before the number measurably
-    improves accuracy and makes every disagreement auditable.
+    FIELD ORDER IS THE CONTRACT, NOT A STYLE CHOICE.
+
+    Models emit fields in schema order, so this order forces the judge to commit to its evidence
+    before it can write a justification, and to a justification before it can write a number:
+
+        evidence_ids -> quoted_span -> rationale -> score
+
+    Rationale-before-score alone was not enough. It stops the number driving the justification,
+    but nothing stops both being written after the fact to fit a verdict already decided. Locking
+    the cited evidence first is what makes the evidence-subset check in panel.py load-bearing
+    rather than decorative: the judge has already said what it looked at.
     """
 
-    rationale: str = Field(min_length=1)
-    quoted_span: str = ""  # from the RESPONSE, checked mechanically in panel.py
     evidence_ids: List[int] = Field(default_factory=list)
+    quoted_span: str = ""  # from the RESPONSE, checked mechanically in panel.py
+    rationale: str = Field(min_length=1)
     insufficient_evidence: bool = False
     score: Optional[Score] = None
 
@@ -400,6 +408,16 @@ class MeasurementVersion(Strict):
     aggregation_version: str
     k: int = Field(ge=1)
     temperature: float = Field(ge=0.0)
+    # The SHAPE of a verdict, not just the prompt that asked for it.
+    #
+    # Without this, reordering the verdict fields changes what every judge emits while leaving
+    # every measurement version byte-identical - so the report would compare before and after as
+    # though nothing had happened. That is exactly the silent incomparability this class exists
+    # to prevent, and it was invisible until the evidence-locking change went to land.
+    #
+    # Defaulted so historical manifests still load; a run that omits it is flagged rather than
+    # silently treated as matching.
+    verdict_schema_hash: str = "unversioned"
 
     @model_validator(mode="after")
     def _judge_set_is_sorted(self) -> "MeasurementVersion":

@@ -1,0 +1,151 @@
+# Checklist rubric — the second and third arms of the M5 pilot.
+#
+# WHY THIS FILE EXISTS
+#
+# The anchored 4-point rubric in rubric.yaml is arm one. The literature (Aug 2026 review, X1)
+# found weighted binary checklists outperform Likert scales, with the gain concentrated in
+# smaller judges — which is exactly the cheap-panel configuration this project depends on.
+#
+# We do not know whether that holds for Arizona water policy with these annotators. That is what
+# the pilot is for. This file supplies the other two arms so the pilot can decide:
+#
+#   arm 1  anchored 4-point          rubric.yaml
+#   arm 2  pure binary checklist     this file, scored as pass/fail per item
+#   arm 3  checklist rolled up       this file, items weighted and summed into a 1-4 score
+#
+# Arm 3 is the one to watch. A weighted sum of binary items produces a CONTINUOUS score, which
+# removes the four-support-point degeneracy that decision 005 already works around by fitting
+# calibration on the panel mean instead of the median.
+#
+# HOW TO WRITE A CHECKLIST ITEM
+#
+# Each item must be answerable yes/no by a second person reading only the response and the
+# evidence, with no judgement of degree. If answering it requires deciding "how much", it is an
+# anchor, not a checklist item, and it belongs in rubric.yaml instead.
+#
+# Weights say how much an item matters. They are deliberately coarse — 3 / 2 / 1 — because a
+# finer scale invites arguing about weights instead of about answers.
+
+version: "1.0.0-draft"
+status: "DRAFT - NOT YET PILOTED WITH HUMAN ANNOTATORS"
+
+scoring:
+  mode: weighted_binary
+  # Arm 3 maps the weighted fraction earned onto the same 1-4 scale the other arm uses, so both
+  # arms produce a comparable target and the pilot compares like with like.
+  rollup:
+    method: weighted_fraction
+    # fraction earned -> score. Boundaries chosen so a dimension with every critical item passed
+    # but minor ones missed lands at 3, not 4.
+    bands:
+      - {min: 0.90, score: 4}
+      - {min: 0.70, score: 3}
+      - {min: 0.40, score: 2}
+      - {min: 0.00, score: 1}
+
+categories:
+  - general_policy
+  - entity_grounding
+  - numeric_extraction
+  - temporal_realtime
+  - multi_hop
+  - out_of_scope_negative
+
+dimensions:
+
+  - name: grounding
+    question: "Is every factual claim in the response supported by the retrieved evidence?"
+    applies_to: answerable
+    items:
+      - id: grounding_traceable
+        weight: 3
+        text: "Every factual claim in the response can be traced to a specific retrieved passage."
+      - id: grounding_no_additions
+        weight: 3
+        text: "The response adds no factual claim that the evidence does not support."
+      - id: grounding_no_overreach
+        weight: 2
+        text: "Where the evidence is partial, the response does not state more than it shows."
+      - id: grounding_numbers_match
+        weight: 2
+        text: "Every number in the response appears in the evidence with the same value and unit."
+
+  - name: correctness
+    question: "Is the answer factually right?"
+    applies_to: answerable
+    items:
+      - id: correct_core
+        weight: 3
+        text: "The central factual claim of the answer is correct."
+      - id: correct_entities
+        weight: 3
+        text: "Every named tribe, city, agency or programme is the right one for this question."
+      - id: correct_units
+        weight: 2
+        text: "Units and magnitudes are right (acre-feet vs acre-feet per year, million vs billion)."
+      - id: correct_not_superseded
+        weight: 2
+        text: "No cited policy, tier or guideline has been replaced by a later agreement."
+
+  - name: refusal_appropriateness
+    question: "Did it decline when it should, and answer when it should?"
+    applies_to: all          # deliberately scored on EVERY item, so over-refusal is visible
+    items:
+      - id: refusal_correct_decision
+        weight: 3
+        text: "The decision to answer or to decline was the right one for this question."
+      - id: refusal_no_overreach
+        weight: 2
+        text: "If it declined, it did not decline a question the evidence could have answered."
+      - id: refusal_helpful_redirect
+        weight: 1
+        text: "If it declined, it pointed somewhere useful rather than stopping flat."
+      - id: refusal_no_hedge_answer
+        weight: 2
+        text: "It did not half-answer a question it should have declined outright."
+
+  - name: citation_validity
+    question: "Do cited sources actually contain the cited content?"
+    applies_to: answerable
+    items:
+      - id: citation_resolves
+        weight: 3
+        text: "Every citation shown to the reader names a document that exists in the evidence."
+      - id: citation_supports
+        weight: 3
+        text: "Each cited document actually contains the claim it is attached to."
+      - id: citation_complete
+        weight: 1
+        text: "Claims that need a source have one."
+
+  - name: temporal_integrity
+    question: "Is time-sensitive content correctly hedged or dated?"
+    applies_to: [temporal_realtime]
+    items:
+      - id: temporal_dated
+        weight: 3
+        text: "The response states the as-of date for any figure that changes over time."
+      - id: temporal_flags_staleness
+        weight: 2
+        text: "Where it cannot know the current value, it says so rather than implying currency."
+      - id: temporal_no_false_realtime
+        weight: 3
+        text: "It does not present a stored figure as a live or current reading."
+
+# Same closed set as rubric.yaml and schemas.py. A typo here would read as zero occurrences of a
+# real failure mode.
+failure_modes:
+  - name: entity_substitution
+    description: "Correct facts attributed to the wrong tribe, city or management area."
+  - name: jurisdictional_blurring
+    description: "Upper Basin rules applied to Lower Basin, or state rules to tribal land."
+  - name: superseded_policy
+    description: "Citing a shortage tier or guideline replaced by a later agreement."
+  - name: unit_or_magnitude_drift
+    description: "Acre-feet confused with acre-feet per year; million confused with billion."
+  - name: unsupported_specificity
+    description: "A precise figure or date given where the evidence supports only a range."
+  - name: overrefusal
+    description: "Declining a question the retrieved evidence could have answered."
+  - name: evidence_ignored
+    description: "Retrieved evidence contradicts the answer and the answer does not address it."

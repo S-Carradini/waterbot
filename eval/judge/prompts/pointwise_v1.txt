@@ -27,12 +27,16 @@ Report any of these you observe, by name:
 [TASK]
 Score these dimensions, and only these: {{DIMENSIONS}}
 
-For each one:
-  1. Quote the specific span of RESPONSE you are judging, verbatim.
-  2. Cite the EVIDENCE passage number that supports or contradicts it.
-  3. Then assign the level. The rationale must come before the score.
-  4. If EVIDENCE is insufficient to judge the dimension, set
+For each one, in this order and no other:
+  1. Cite the EVIDENCE passage numbers you are judging against. Commit to them
+     first, before you have formed a view.
+  2. Quote the specific span of RESPONSE you are judging, verbatim.
+  3. Only then write your reasoning, against the evidence you already cited.
+  4. Only then assign the level.
+  5. If EVIDENCE is insufficient to judge the dimension, set
      insufficient_evidence to true and score to null, rather than guessing.
+
+Do not decide the level first and then choose evidence that fits it.
 
 Cite only passage numbers that appear in the EVIDENCE block above.
 Quote only text that appears verbatim in RESPONSE.

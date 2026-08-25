@@ -544,6 +544,112 @@ def withhold_evidence(response: Response, donor: Response) -> Response:
     return response.model_copy(update={"passages": renumbered})
 
 
+def strip_evidence(response: Response) -> Response:
+    """Same question and answer, NO evidence at all. The tripwire.
+
+    Distinct from ``withhold_evidence``, and they answer different questions:
+
+    * ``withhold_evidence`` swaps in another item's passages, asking "does the judge reason from
+      what it already knows when the evidence is wrong?"
+    * ``strip_evidence`` removes evidence entirely, asking "is this metric measuring anything?"
+
+    The second is the sharper test. A controlled study measured reference-free faithfulness at
+    0.978 with no context at all, against 0.893-0.902 with real retrieval - the metric scored
+    HIGHER on nothing than on evidence, because it was rewarding fluent, self-consistent prose
+    rather than grounding.
+
+    If panel scores on stripped responses land near full-system scores, the configuration is not
+    measuring grounding and no result from it is publishable. That is a finding about the method,
+    and it is the demonstration the evidence layer's whole argument rests on.
+    """
+    return response.model_copy(update={"passages": [], "citations": []})
+
+
+@dataclass(frozen=True)
+class TripwireResult:
+    """What the no-context run showed, and whether the metric survived it."""
+
+    n_items: int
+    full_mean: Optional[float]
+    stripped_mean: Optional[float]
+    stripped_abstention_rate: float
+    threshold: float = 0.5
+
+    @property
+    def drop(self) -> Optional[float]:
+        """How far scores fell when the evidence was taken away. Should be large."""
+        if self.full_mean is None or self.stripped_mean is None:
+            return None
+        return self.full_mean - self.stripped_mean
+
+    @property
+    def metric_survived(self) -> bool:
+        """True when removing the evidence actually cost the system something.
+
+        Either scores drop by more than the threshold, or the judge abstains on most stripped
+        items - both are correct behaviour. Scoring confidently on nothing is the failure.
+        """
+        if self.stripped_abstention_rate >= 0.5:
+            return True
+        return self.drop is not None and self.drop >= self.threshold
+
+    @property
+    def verdict(self) -> str:
+        if self.full_mean is None or self.stripped_mean is None:
+            return "not enough scored items to judge the metric"
+        if self.metric_survived:
+            return (
+                f"metric survives: removing the evidence cost {self.drop:.2f} levels "
+                f"({self.full_mean:.2f} -> {self.stripped_mean:.2f}), abstention rose to "
+                f"{self.stripped_abstention_rate:.0%}"
+            )
+        return (
+            f"METRIC IS BROKEN: scoring {self.stripped_mean:.2f} with no evidence against "
+            f"{self.full_mean:.2f} with it, a drop of only {self.drop:.2f} levels, and the judge "
+            f"abstained on just {self.stripped_abstention_rate:.0%}. This configuration is not "
+            "measuring grounding, and no result from it is publishable."
+        )
+
+    def to_dict(self) -> Dict[str, Any]:
+        return {
+            "n_items": self.n_items,
+            "full_mean": self.full_mean,
+            "stripped_mean": self.stripped_mean,
+            "drop": self.drop,
+            "stripped_abstention_rate": self.stripped_abstention_rate,
+            "threshold": self.threshold,
+            "metric_survived": self.metric_survived,
+            "verdict": self.verdict,
+        }
+
+
+def _mean_score(verdicts: Sequence[Verdict]) -> Optional[float]:
+    scores = [
+        d.score
+        for v in verdicts
+        for d in v.dimensions.values()
+        if d.score is not None
+    ]
+    return sum(scores) / len(scores) if scores else None
+
+
+def evaluate_tripwire(
+    full_verdicts: Sequence[Verdict],
+    stripped_verdicts: Sequence[Verdict],
+    threshold: float = 0.5,
+) -> TripwireResult:
+    """Compare panel scores with and without evidence. The whole tripwire, in one number."""
+    total = sum(len(v.dimensions) for v in stripped_verdicts)
+    abstained = sum(len(v.abstained_dimensions) for v in stripped_verdicts)
+    return TripwireResult(
+        n_items=len({v.response_id for v in stripped_verdicts}),
+        full_mean=_mean_score(full_verdicts),
+        stripped_mean=_mean_score(stripped_verdicts),
+        stripped_abstention_rate=abstained / total if total else 0.0,
+        threshold=threshold,
+    )
+
+
 def parametric_reliance(verdicts: Sequence[Verdict]) -> Dict[str, float]:
     """Share of withheld-evidence verdicts that still scored confidently.
 
