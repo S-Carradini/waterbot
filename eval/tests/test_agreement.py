@@ -239,10 +239,18 @@ def test_gwet_ac1_survives_high_prevalence():
 
 
 def test_the_report_flags_a_suspected_kappa_paradox():
+    """The flag stays active even though AC2 is deferred - it is the warning, not the fix."""
     a, b = paradox_table()
     report = agreement_report([a, b], label="refusal")
     assert report.kappa_paradox_suspected is True
-    assert report.gwet_ac2 > 0.9
+    assert report.gwet_ac2 is None  # deferred by decision 028
+
+
+def test_the_deferred_ac2_still_answers_the_paradox_when_asked():
+    """Kept working and tested, so activating it later is a one-line change."""
+    a, b = paradox_table()
+    report = agreement_report([a, b], label="refusal", include_deferred=True)
+    assert report.kappa_quadratic < 0.4 < report.gwet_ac2
 
 
 def test_a_balanced_set_does_not_trip_the_paradox_flag():
@@ -324,14 +332,34 @@ def test_balanced_accuracy_punishes_ignoring_the_rare_class():
 # ---------------------------------------------------------------------------
 # The report
 # ---------------------------------------------------------------------------
-def test_the_report_computes_every_statistic_together():
+def test_only_the_active_metrics_are_computed_by_default():
+    """Decision 028: kappa is in use; the other four are built but not reported."""
     a = [1, 2, 3, 4, 2, 3]
     b = [1, 2, 3, 3, 2, 4]
-    report = agreement_report([a, b], label="grounding")
-    payload = report.to_dict()
-    for key in ("raw_agreement", "kappa_quadratic", "gwet_ac2", "alpha_ordinal",
-                "spearman", "mae_levels"):
+    payload = agreement_report([a, b], label="grounding").to_dict()
+
+    for key in ("raw_agreement", "kappa_quadratic", "kappa_unweighted", "mean_pairwise_kappa"):
+        assert payload[key] is not None, f"{key} is active and must be computed"
+    for key in ("gwet_ac2", "alpha_ordinal", "spearman", "mae_levels"):
+        assert payload[key] is None, f"{key} is deferred and must not be reported by default"
+    assert payload["includes_deferred"] is False
+
+
+def test_the_deferred_metrics_can_still_be_computed_deliberately():
+    """The flag is for the analysis that decides whether to activate them, not for reporting."""
+    a = [1, 2, 3, 4, 2, 3]
+    b = [1, 2, 3, 3, 2, 4]
+    payload = agreement_report([a, b], label="grounding", include_deferred=True).to_dict()
+    for key in ("gwet_ac2", "alpha_ordinal", "spearman", "mae_levels"):
         assert payload[key] is not None
+    assert payload["includes_deferred"] is True
+
+
+def test_the_report_names_which_metrics_are_active():
+    """So a deferred number can never be mistaken for a chosen one."""
+    payload = agreement_report([[1, 2, 3], [1, 2, 4]]).to_dict()
+    assert "cohens_kappa" in payload["active_metrics"]
+    assert "krippendorff_alpha" in payload["deferred_metrics"]
 
 
 def test_the_report_records_how_much_was_missing():
@@ -369,6 +397,23 @@ def test_a_judge_below_the_humans_is_reported_as_such():
     comparison = compare_to_ceiling(humans, judges, "grounding")
     assert comparison.fraction_of_ceiling < 0.5
     assert "below the human ceiling" in comparison.verdict
+
+
+def test_the_ceiling_is_computed_from_kappa_while_alpha_is_deferred():
+    """Decision 028's knock-on: the ceiling was alpha-based and is now kappa-based."""
+    humans = [[1, 2, 3, 4, 2, 3, 1, 4], [1, 2, 3, 3, 2, 4, 1, 4]]
+    comparison = compare_to_ceiling(humans, humans, "grounding")
+    assert comparison.ceiling == comparison.human.mean_pairwise_kappa
+    assert comparison.human.alpha_ordinal is None
+
+
+def test_three_annotators_are_not_reduced_to_the_first_two():
+    """Cohen's kappa is pairwise; without alpha, a third annotator would otherwise be ignored."""
+    three = [[1, 2, 3, 4, 1, 2], [1, 2, 3, 3, 1, 2], [1, 3, 3, 4, 1, 3]]
+    report = agreement_report(three)
+    assert report.n_raters == 3
+    assert report.n_rater_pairs == 3
+    assert report.mean_pairwise_kappa is not None
 
 
 def test_a_modest_judge_score_can_still_be_near_ceiling():

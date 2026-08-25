@@ -15,9 +15,16 @@ kappa paradox. The out-of-scope negative set is exactly that: heavily imbalanced
 dimension the current judge handles best. Reporting kappa alone there would make a good judge
 look broken.
 
-So agreement is always reported as a set: raw agreement, quadratic weighted kappa, Gwet's AC2,
-and - for anything with three or more raters, ordinal scores or missing data - Krippendorff's
-alpha. ``AgreementReport`` bundles them so no single number can travel alone.
+The architecture's answer was to report agreement as a set so no single number travels alone.
+**Decision 028 narrows that for now**: only raw agreement and Cohen's kappa are active, and the
+other four metrics from the architecture's table - alpha, Spearman, MAE in levels, balanced
+accuracy - plus Gwet's AC2 are built, tested, and deliberately not reported pending further
+analysis.
+
+That scoping has a live risk attached, recorded here rather than in a commit message: on the
+out-of-scope negative set, kappa alone is the number most likely to mislead. It is the exact
+shape - high prevalence, high raw agreement - where kappa collapses. `AgreementReport` still
+computes `kappa_paradox_suspected` so the condition is at least visible when it happens.
 
 ABSTENTIONS ARE MISSING, NEVER IMPUTED
 --------------------------------------
@@ -37,6 +44,25 @@ from typing import Dict, List, Optional, Sequence, Tuple
 
 Rating = Optional[float]
 Matrix = Sequence[Sequence[Rating]]  # rows = raters, columns = units
+
+# ---------------------------------------------------------------------------
+# Scope: which metrics are in use
+# ---------------------------------------------------------------------------
+# Decision 028. The architecture document lists five agreement metrics. Only Cohen's kappa is
+# in use for now; the other four are built and tested but not reported, pending further
+# analysis.
+#
+# Everything remains implemented and covered by tests, so activating one later is a one-line
+# change rather than a rewrite. What the scoping prevents is a deferred metric appearing in a
+# report by default and being read as though it had been chosen.
+ACTIVE_METRICS = ("raw_agreement", "cohens_kappa")
+DEFERRED_METRICS = (
+    "krippendorff_alpha",
+    "spearman_rho",
+    "mae_levels",
+    "balanced_accuracy",
+    "gwet_ac2",
+)
 
 
 class AgreementError(ValueError):
@@ -394,6 +420,36 @@ def raw_agreement(a: Sequence[Rating], b: Sequence[Rating]) -> Optional[float]:
     return sum(1 for x, y in pairs if x == y) / len(pairs)
 
 
+def mean_pairwise_kappa(
+    matrix: Matrix, weights: Optional[str] = "quadratic"
+) -> Tuple[Optional[float], int]:
+    """Mean Cohen's kappa across every pair of raters. Returns ``(mean, n_pairs)``.
+
+    WHY THIS EXISTS. Cohen's kappa is defined for exactly two raters. Krippendorff's alpha is
+    what the architecture chose for three or more, and alpha is currently deferred (decision
+    028) - so with three annotators, a kappa-only scope would otherwise report agreement between
+    the first two and quietly ignore the third.
+
+    Averaging over all pairs keeps the multi-annotator design working within the kappa-only
+    scope. It is not equivalent to alpha: it has no principled handling of missing data, and a
+    pair that shares too few complete items is dropped rather than downweighted. Both facts are
+    reasons to revisit the scoping, not reasons to paper over them - ``n_pairs`` is returned so
+    the denominator is visible.
+    """
+    if len(matrix) < 2:
+        return (None, 0)
+
+    values: List[float] = []
+    for i in range(len(matrix)):
+        for j in range(i + 1, len(matrix)):
+            kappa = cohens_kappa(matrix[i], matrix[j], weights)
+            if kappa is not None:
+                values.append(kappa)
+    if not values:
+        return (None, 0)
+    return (sum(values) / len(values), len(values))
+
+
 # ---------------------------------------------------------------------------
 # The human ceiling
 # ---------------------------------------------------------------------------
@@ -411,14 +467,20 @@ class AgreementReport:
     n_raters: int
     n_pairs: int
     n_missing: int
+    # -- active (decision 028) --------------------------------------------
     raw: Optional[float] = None
     kappa_quadratic: Optional[float] = None
     kappa_unweighted: Optional[float] = None
+    mean_pairwise_kappa: Optional[float] = None
+    n_rater_pairs: int = 0
+
+    # -- deferred: computed only when explicitly asked for -----------------
     gwet_ac2: Optional[float] = None
     alpha_ordinal: Optional[float] = None
     spearman: Optional[float] = None
     mae: Optional[float] = None
     balanced_accuracy: Optional[float] = None
+    includes_deferred: bool = False
 
     @property
     def missing_rate(self) -> float:
@@ -447,21 +509,37 @@ class AgreementReport:
             "raw_agreement": self.raw,
             "kappa_quadratic": self.kappa_quadratic,
             "kappa_unweighted": self.kappa_unweighted,
+            "mean_pairwise_kappa": self.mean_pairwise_kappa,
+            "n_rater_pairs": self.n_rater_pairs,
+            "kappa_paradox_suspected": self.kappa_paradox_suspected,
+            "active_metrics": list(ACTIVE_METRICS),
+            "deferred_metrics": list(DEFERRED_METRICS),
+            "includes_deferred": self.includes_deferred,
+            # Present only when include_deferred was set; None otherwise, and None here means
+            # "not computed", never "computed and came out empty".
             "gwet_ac2": self.gwet_ac2,
             "alpha_ordinal": self.alpha_ordinal,
             "spearman": self.spearman,
             "mae_levels": self.mae,
             "balanced_accuracy": self.balanced_accuracy,
-            "kappa_paradox_suspected": self.kappa_paradox_suspected,
         }
 
 
-def agreement_report(matrix: Matrix, label: str = "") -> AgreementReport:
-    """Every agreement statistic that applies to this matrix, computed together.
+def agreement_report(
+    matrix: Matrix,
+    label: str = "",
+    include_deferred: bool = False,
+) -> AgreementReport:
+    """Agreement statistics for a raters-by-units matrix.
 
-    Pairwise statistics are computed on the first two raters; multi-rater statistics use all of
-    them. With three or more raters, alpha and AC2 are the interpretable ones and the pairwise
-    numbers are there for comparability with prior work.
+    By default computes only the ACTIVE metrics (decision 028): raw agreement and Cohen's kappa,
+    plus the mean pairwise kappa that keeps three-annotator designs working while alpha is
+    deferred.
+
+    ``include_deferred=True`` additionally computes alpha, Gwet's AC2, Spearman, MAE and balanced
+    accuracy. That flag is for the analysis that decides whether to activate them - it is not for
+    reporting, and the report records which set it used so a deferred number can never be mistaken
+    for a chosen one.
     """
     if not matrix:
         raise AgreementError("cannot report agreement on an empty matrix")
@@ -480,8 +558,9 @@ def agreement_report(matrix: Matrix, label: str = "") -> AgreementReport:
         if second is not None
         else 0
     )
+    pairwise_mean, n_pairs = mean_pairwise_kappa(matrix, "quadratic")
 
-    return AgreementReport(
+    report = AgreementReport(
         label=label,
         n_units=n_units,
         n_raters=n_raters,
@@ -490,11 +569,18 @@ def agreement_report(matrix: Matrix, label: str = "") -> AgreementReport:
         raw=raw_agreement(first, second) if second is not None else None,
         kappa_quadratic=cohens_kappa(first, second, "quadratic") if second is not None else None,
         kappa_unweighted=cohens_kappa(first, second) if second is not None else None,
-        gwet_ac2=gwet_ac(matrix, "quadratic"),
-        alpha_ordinal=krippendorff_alpha(matrix, "ordinal"),
-        spearman=spearman_rho(first, second) if second is not None else None,
-        mae=mae_in_levels(first, second) if second is not None else None,
+        mean_pairwise_kappa=pairwise_mean,
+        n_rater_pairs=n_pairs,
+        includes_deferred=include_deferred,
     )
+
+    if include_deferred:
+        report.gwet_ac2 = gwet_ac(matrix, "quadratic")
+        report.alpha_ordinal = krippendorff_alpha(matrix, "ordinal")
+        if second is not None:
+            report.spearman = spearman_rho(first, second)
+            report.mae = mae_in_levels(first, second)
+    return report
 
 
 @dataclass
@@ -513,11 +599,19 @@ class CeilingComparison:
 
     @property
     def ceiling(self) -> Optional[float]:
-        return self.human.alpha_ordinal
+        """Inter-human agreement, from mean pairwise Cohen's kappa.
+
+        Was Krippendorff's alpha until decision 028 deferred it. The switch is not cosmetic:
+        alpha handles three annotators and missing data natively, and mean pairwise kappa does
+        neither. With abstentions in the label set the two will not agree, and kappa drops the
+        incomplete pairs that alpha would have used. Revisit when the deferred metrics are
+        reconsidered.
+        """
+        return self.human.mean_pairwise_kappa
 
     @property
     def attained(self) -> Optional[float]:
-        return self.judge.alpha_ordinal
+        return self.judge.mean_pairwise_kappa
 
     @property
     def fraction_of_ceiling(self) -> Optional[float]:
@@ -562,6 +656,7 @@ def compare_to_ceiling(
     human_matrix: Matrix,
     judge_matrix: Matrix,
     dimension: str,
+    include_deferred: bool = False,
 ) -> CeilingComparison:
     """Compute the human ceiling and the judge's attainment against it.
 
@@ -572,6 +667,8 @@ def compare_to_ceiling(
     """
     return CeilingComparison(
         dimension=dimension,
-        human=agreement_report(human_matrix, label=f"{dimension} (humans)"),
-        judge=agreement_report(judge_matrix, label=f"{dimension} (judges)"),
+        human=agreement_report(human_matrix, label=f"{dimension} (humans)",
+                               include_deferred=include_deferred),
+        judge=agreement_report(judge_matrix, label=f"{dimension} (judges)",
+                               include_deferred=include_deferred),
     )

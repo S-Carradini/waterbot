@@ -316,7 +316,9 @@ def test_human_labels_flow_into_calibration_and_the_ceiling(tmp_path):
     assert len(items) == 40
 
     human = agreement_report(rows, label="grounding (humans)")
-    assert human.alpha_ordinal is not None
+    # Decision 028: kappa is the active metric; alpha is built but not reported.
+    assert human.kappa_quadratic is not None
+    assert human.alpha_ordinal is None
 
     # A judge that tracks the humans imperfectly.
     judge_rows = [
