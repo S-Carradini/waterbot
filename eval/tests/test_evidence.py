@@ -26,6 +26,7 @@ from eval.judge.evidence import (
     minhash_signature,
     normalize_text,
     run_evidence_gate,
+    UNKNOWN_DATE,
     snapshot_from_mapping,
 )
 
@@ -452,3 +453,52 @@ def test_gate_fingerprint_matches_a_direct_computation():
     )
     report = run_evidence_gate(corpus, {}, canonical_map=canonical_map)
     assert report.fingerprint == expected
+
+
+# ---------------------------------------------------------------------------
+# Document dates: captured, deliberately not used
+# ---------------------------------------------------------------------------
+# The corpus was built in four batches over five months and its PDFs carry their own creation
+# dates, so both facts are worth recording. Neither is wired into anything yet. These tests pin
+# that down: if someone later feeds a date into the fingerprint, the first test fails loudly
+# rather than silently splitting one corpus into two incomparable ones.
+def test_dates_default_to_unknown_rather_than_a_guess():
+    corpus = docs({"a.pdf": [TRIBAL_REPORT]})
+    assert corpus[0].ingested_at == UNKNOWN_DATE
+    assert corpus[0].document_date == UNKNOWN_DATE
+
+
+def test_dates_are_captured_when_supplied_and_unknown_when_not():
+    corpus = snapshot_from_mapping(
+        {"a.pdf": [TRIBAL_REPORT], "b.pdf": [GROUNDWATER_DOC]},
+        ingested_at={"a.pdf": "2026-03-26"},
+        document_dates={"a.pdf": "2024-01-23"},
+    )
+    by_name = {d.name: d for d in corpus}
+    assert by_name["a.pdf"].ingested_at == "2026-03-26"
+    assert by_name["a.pdf"].document_date == "2024-01-23"
+    # b.pdf was in neither map. It is kept with unknown dates, not dropped and not defaulted to
+    # a.pdf's dates - an absent date is a fact, and inventing one would make a stale document
+    # look dated.
+    assert by_name["b.pdf"].ingested_at == UNKNOWN_DATE
+    assert by_name["b.pdf"].document_date == UNKNOWN_DATE
+
+
+def test_dates_do_not_move_the_fingerprint():
+    plain = docs({"a.pdf": [TRIBAL_REPORT], "b.pdf": [GROUNDWATER_DOC]})
+    dated = snapshot_from_mapping(
+        {"a.pdf": [TRIBAL_REPORT], "b.pdf": [GROUNDWATER_DOC]},
+        ingested_at={"a.pdf": "2026-03-26", "b.pdf": "2026-08-25"},
+        document_dates={"a.pdf": "2024-01-23", "b.pdf": "2019-07-01"},
+    )
+    assert fingerprint_of(dated) == fingerprint_of(plain)
+
+
+def test_dates_do_not_affect_dedup_or_the_canonical_map():
+    # Two byte-identical documents ingested in different batches are still the same document.
+    corpus = snapshot_from_mapping(
+        {"a.pdf": [TRIBAL_REPORT], "copy.pdf": [TRIBAL_REPORT]},
+        ingested_at={"a.pdf": "2026-03-26", "copy.pdf": "2026-08-25"},
+    )
+    canonical_map = build_canonical_map(corpus)
+    assert canonical_map.resolve("a.pdf") == canonical_map.resolve("copy.pdf")

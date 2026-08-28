@@ -147,6 +147,12 @@ def exact_jaccard(a: str, b: str) -> float:
 # ---------------------------------------------------------------------------
 # Corpus snapshot
 # ---------------------------------------------------------------------------
+# Explicit value for a date the corpus does not carry. Never None and never a guess: a document
+# with no recorded date is a different thing from one dated 1970, and both are different from one
+# whose date we simply never looked up.
+UNKNOWN_DATE = "unknown"
+
+
 @dataclass(frozen=True)
 class DocumentSnapshot:
     """One document as the corpus holds it.
@@ -155,10 +161,27 @@ class DocumentSnapshot:
     concatenated chunks, so a document that was re-chunked differently but holds the same text
     still hashes the same - re-chunking changes the fingerprint through the chunk parameters,
     which is where that difference belongs.
+
+    TWO DATES, AND THEY ANSWER DIFFERENT QUESTIONS
+    ----------------------------------------------
+    ``ingested_at``   when this document was loaded into the corpus.
+    ``document_date`` when the document itself says it was created.
+
+    A 2019 PDF loaded last week is fresh by the first and old by the second, so conflating them
+    would answer the wrong question. The database naming invites exactly that confusion -
+    ``rag_chunks.created_at`` is ingestion, while ``metadata.creationdate`` is publication - so
+    the names here are deliberately unambiguous.
+
+    CAPTURED, NOT USED. Neither field feeds the fingerprint, the canonical map, or any
+    comparison. They are recorded now so the data exists when a staleness decision is actually
+    made; until then they are inert, and ``test_evidence.py`` asserts the fingerprint does not
+    move when they change.
     """
 
     name: str
     chunks: Tuple[str, ...]
+    ingested_at: str = UNKNOWN_DATE
+    document_date: str = UNKNOWN_DATE
 
     @property
     def text(self) -> str:
@@ -173,10 +196,27 @@ class DocumentSnapshot:
         return len(self.chunks)
 
 
-def snapshot_from_mapping(documents: Dict[str, Sequence[str]]) -> List[DocumentSnapshot]:
-    """Build a snapshot from ``{name: [chunk, ...]}``, the shape a database query returns."""
+def snapshot_from_mapping(
+    documents: Dict[str, Sequence[str]],
+    ingested_at: Optional[Dict[str, str]] = None,
+    document_dates: Optional[Dict[str, str]] = None,
+) -> List[DocumentSnapshot]:
+    """Build a snapshot from ``{name: [chunk, ...]}``, the shape a database query returns.
+
+    The two date maps are optional and keyed by document name. A document absent from either map
+    gets ``UNKNOWN_DATE`` rather than being skipped or defaulted to something plausible - an
+    absent date is a fact worth keeping, and inventing one would make a stale document look
+    dated.
+    """
+    ingested_at = ingested_at or {}
+    document_dates = document_dates or {}
     return [
-        DocumentSnapshot(name=name, chunks=tuple(chunks))
+        DocumentSnapshot(
+            name=name,
+            chunks=tuple(chunks),
+            ingested_at=ingested_at.get(name, UNKNOWN_DATE),
+            document_date=document_dates.get(name, UNKNOWN_DATE),
+        )
         for name, chunks in sorted(documents.items())
     ]
 
@@ -431,13 +471,26 @@ def corpus_fingerprint(
     chunk_size: int,
     chunk_overlap: int,
     embedding_model: str,
+    collected_at: Optional[str] = None,
 ) -> str:
-    """Hash of everything that determines what the judge and the system can see.
+    """Hash of everything that determines what the judge and the system can see, and WHEN.
 
     Content alone is not enough. The same documents chunked at 500 characters and at 1000 are a
     different evidence base: retrieval returns different spans, so the judge reads different
     text and can reach a different verdict. The chunk parameters and the embedding model are
     therefore inside the fingerprint, not beside it.
+
+    ``collected_at`` closes a different hole. Two corpora with byte-identical content gathered a
+    year apart used to produce the same fingerprint, so a stale evidence base and a fresh one
+    were indistinguishable to every guard in the system. For a domain where designations,
+    shortage tiers and management areas change, that is not a bookkeeping detail: a question can
+    be correctly unanswerable against one and correctly answerable against the other, and
+    nothing would have said which corpus a result came from.
+
+    Pass the corpus's collection or ingestion date, as an ISO date or timestamp string. Omitting
+    it keeps the previous behaviour and is recorded as ``"unrecorded"`` rather than silently
+    dropped - so a fingerprint computed without a date is visibly distinct from one computed
+    with it, instead of accidentally matching an older run.
 
     Distinct from ``eval/preflight.py:corpus_fingerprint``, which hashes names and chunk counts
     only. That one identifies a corpus snapshot for the existing suite's history; this one
@@ -452,6 +505,7 @@ def corpus_fingerprint(
         "chunk_size": chunk_size,
         "chunk_overlap": chunk_overlap,
         "embedding_model": embedding_model,
+        "collected_at": collected_at or "unrecorded",
         "canonical_documents": canonical_content,
     }
     return stable_hash(payload)
@@ -464,6 +518,7 @@ def build_corpus_identity(
     chunk_overlap: int,
     embedding_model: str,
     canonical_map: Optional[CanonicalMap] = None,
+    collected_at: Optional[str] = None,
     **map_kwargs,
 ) -> Tuple[CorpusIdentity, CanonicalMap]:
     """The L0 artifact: identity plus the map that produced it."""
@@ -471,7 +526,8 @@ def build_corpus_identity(
         canonical_map = build_canonical_map(documents, **map_kwargs)
 
     fingerprint = corpus_fingerprint(
-        documents, canonical_map, chunker_version, chunk_size, chunk_overlap, embedding_model
+        documents, canonical_map, chunker_version, chunk_size, chunk_overlap,
+        embedding_model, collected_at,
     )
     identity = CorpusIdentity(
         fingerprint=fingerprint,
@@ -482,6 +538,7 @@ def build_corpus_identity(
         chunk_size=chunk_size,
         chunk_overlap=chunk_overlap,
         embedding_model=embedding_model,
+        collected_at=collected_at or "unrecorded",
         proofs=canonical_map.proofs,
     )
     return identity, canonical_map
@@ -556,6 +613,7 @@ def run_evidence_gate(
     chunk_overlap: int = 200,
     embedding_model: str = "text-embedding-3-small",
     canonical_map: Optional[CanonicalMap] = None,
+    collected_at: Optional[str] = None,
     strict: bool = True,
     allow_known_duplicates: bool = False,
     **map_kwargs,
@@ -583,6 +641,7 @@ def run_evidence_gate(
         chunk_overlap=chunk_overlap,
         embedding_model=embedding_model,
         canonical_map=canonical_map,
+        collected_at=collected_at,
         **map_kwargs,
     )
 
