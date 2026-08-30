@@ -1,8 +1,12 @@
 # Rubric pilot (M5): protocol for two annotators
 
-Two people, twelve questions, three scoring methods, about two and a half hours each. This
-decides which rubric gets used for everything afterwards. Until it is done, no judge score means
-anything, and the panel runner refuses to run without an explicit override.
+Two people, twelve questions, three scoring methods, about two hours each. This decides which
+rubric gets used for everything afterwards. Until it is done, no judge score means anything, and
+the panel runner refuses to run without an explicit override.
+
+**Annotators need nothing from this page.** Send them `pilot_annotator_1.xlsx` and
+`pilot_annotator_2.xlsx`; the instructions are on the first sheet of each. This page is for
+whoever runs the pilot.
 
 ## Why this exists
 
@@ -18,10 +22,16 @@ consistently, and guessing would waste the annotator time we spend later.
 
 - Two annotators. Both need to be comfortable with Arizona water terminology (AMA, assured vs
   adequate water supply, ADWR). They must **not** discuss items while scoring.
-- About two and a half hours each, including breaks and reading the rubrics.
-- The packet: `python -m eval.judge.pilot prepare --out pilot_packet.json`
+- About two hours each, including breaks and reading the rubrics.
+- One workbook per person:
 
-That produces 36 tasks — 12 questions, each scored three ways.
+```bash
+python -m eval.judge.pilot_excel build --annotators alice bob
+```
+
+Each workbook holds 28 score cells (arm 1) and 112 tick boxes (arm 2). Arm 3 fills itself in.
+The JSON packet is still available for anyone who prefers it:
+`python -m eval.judge.pilot prepare --out pilot_packet.json`
 
 The twelve are fixed by hand, not sampled. They cover all five topic categories, four of the five
 questions the system should partly decline, and four well-related questions including the
@@ -29,11 +39,15 @@ exempt / non-exempt pair.
 
 ## The three arms
 
-| Arm | What you do | Scale |
+| Arm | What the annotator does | Scale |
 |---|---|---|
 | `anchored` | Read the anchor descriptions, pick the level that fits | 1–4 |
-| `checklist` | Answer each yes/no item independently | 0 or 1 per item |
-| `rollup` | Same checklist, then convert to a level using the bands | 1–4 |
+| `checklist` | Answer each yes/no item independently | Yes / No |
+| `rollup` | **Nothing** — computed from the checklist ticks | 1–4 |
+
+**Three arms, two passes of work.** Arm 3 is arm 2's ticks weighted and banded, so it costs no
+annotator time. The workbook derives it with live formulas on its own sheet, so it is visible
+rather than taken on trust.
 
 **Do all 12 of one arm before starting the next.** Do not jump between arms on the same
 question. If you score a question 3 on the anchored rubric and then immediately fill in its
@@ -71,23 +85,34 @@ once, and it is genuinely unclear whether the current rubric can score it consis
 find yourself unsure how to score one of these, say so in the notes — that note is as valuable
 as the score.
 
-## Recording your answers
+## What the pilot does and does not test
 
-Write one JSON file per annotator, or one combined file:
+Both arms score the same three dimensions: grounding, correctness, and refusal appropriateness.
+Refusal items get refusal appropriateness only.
 
-```json
-[
-  {"item_id": "q001", "arm": "anchored", "annotator_id": "ann_a", "score": 3, "seconds": 45},
-  {"item_id": "q001", "arm": "anchored", "annotator_id": "ann_b", "score": 3, "seconds": 60}
-]
-```
+Two rubric dimensions go untested, and this belongs in the write-up:
 
-`score` may be `null` for anything you could not judge. Do not invent a number to fill a gap —
-blanks are dropped from the statistics and counted openly, which is the honest treatment.
+- **`citation_validity`** — the answers being scored are prose with no inline citations, so there
+  is nothing to check a citation against. The anchored rubric drops it automatically; the
+  checklist rubric would have kept it, and is aligned to the anchored rubric so the arms stay
+  comparable.
+- **`temporal_integrity`** — it applies only to `temporal_realtime` items, and the gold set has
+  none.
+
+Scoring units are (item × dimension), not items: 28 units per arm rather than 12. That is what
+makes agreement on a twelve-item pilot worth reading at all.
 
 ## Scoring the pilot
 
+```bash
+python -m eval.judge.pilot_excel read --files pilot_alice.xlsx pilot_bob.xlsx
 ```
+
+That reads both workbooks, writes `pilot_labels.json`, and prints the result. Blank and `NA`
+cells become null scores, dropped pairwise and counted openly rather than imputed. If you already
+have labels in JSON:
+
+```bash
 python -m eval.judge.pilot score --labels pilot_labels.json
 ```
 
