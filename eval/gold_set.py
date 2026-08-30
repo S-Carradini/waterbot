@@ -42,7 +42,11 @@ from dataclasses import dataclass, field
 from typing import Dict, Iterable, List, Optional, Sequence, Tuple
 
 _SCRIPT_DIR = os.path.dirname(os.path.abspath(__file__))
-DEFAULT_GOLD_PATH = os.path.join(_SCRIPT_DIR, "gold_set.json")
+_REPO_ROOT = os.path.dirname(_SCRIPT_DIR)
+# The gold set lives at the repo root, not under eval/. Pointed here rather than at a copy so
+# there is exactly one file: two gold sets that drift apart would each look authoritative, and
+# the run manifest records only a fingerprint, not which copy produced it.
+DEFAULT_GOLD_PATH = os.path.join(_REPO_ROOT, "gold_set.json")
 
 REQUIRED_COLUMNS = ("id", "question", "answer", "source_quote", "should_refuse", "category")
 
@@ -51,6 +55,19 @@ QUOTE_MIN, QUOTE_MAX = 10, 500
 
 _WHITESPACE = re.compile(r"\s+")
 _ID = re.compile(r"^q\d{3,}$")
+
+# Typographic characters that a PDF renders one way and a person types another. NFKC does NOT
+# fold these - it leaves a curly apostrophe curly - so a correctly copied quote fails to match
+# purely on punctuation shape. Measured on the real corpus, this alone accounted for several
+# false "quote not found" results.
+_TYPOGRAPHIC = {
+    "‘": "'", "’": "'", "‚": "'", "‛": "'",   # single quotes
+    "“": '"', "”": '"', "„": '"', "‟": '"',   # double quotes
+    "‐": "-", "‑": "-", "‒": "-", "–": "-",   # hyphens and dashes
+    "—": "-", "―": "-", "−": "-",
+    " ": " ", " ": " ", " ": " ", " ": " ",   # non-breaking spaces
+}
+_TYPOGRAPHIC_RE = re.compile("|".join(map(re.escape, _TYPOGRAPHIC)))
 
 
 class GoldSetError(ValueError):
@@ -63,7 +80,8 @@ def normalise(text: str) -> str:
     Unicode form, whitespace and case only. Nothing that would let a paraphrase match - the
     point of a verbatim quote is that it is verbatim.
     """
-    return _WHITESPACE.sub(" ", unicodedata.normalize("NFKC", text)).strip().casefold()
+    folded = _TYPOGRAPHIC_RE.sub(lambda m: _TYPOGRAPHIC[m.group()], text)
+    return _WHITESPACE.sub(" ", unicodedata.normalize("NFKC", folded)).strip().casefold()
 
 
 def _for_matching(quote: str) -> str:
