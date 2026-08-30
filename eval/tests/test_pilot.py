@@ -1,7 +1,7 @@
 """Tests for M5's three-arm rubric pilot.
 
-Two halves are testable without annotators: which twenty items get chosen, and what happens to
-the labels once they come back. The half that is not testable here is the one that needs two
+Two halves are testable without annotators: which items get chosen, and what happens to the
+labels once they come back. The half that is not testable here is the one that needs two
 people, and `test_the_check_is_open_until_humans_have_annotated` pins down that the code says so
 rather than defaulting to a pass.
 """
@@ -16,11 +16,14 @@ import pytest
 from eval.gold_set import load_gold_set
 from eval.judge.pilot import (
     ARMS,
+    PILOT_ITEM_IDS,
     USABLE_AGREEMENT,
     PilotError,
     PilotLabel,
     arm_results,
     build_packet,
+    estimated_minutes_per_annotator,
+    fixed_pilot_items,
     pilot_composition,
     pilot_status,
     select_pilot_items,
@@ -43,6 +46,61 @@ def gold():
 # ---------------------------------------------------------------------------
 # Selection
 # ---------------------------------------------------------------------------
+def test_the_fixed_twelve_are_exactly_what_was_asked_for(gold):
+    chosen = fixed_pilot_items(gold)
+    assert [i.id for i in chosen] == sorted(PILOT_ITEM_IDS)
+    assert len(chosen) == 12
+
+
+def test_the_fixed_pilot_keeps_four_refusal_items(gold):
+    """Four of the gold set's five. q030 is dropped as a near-duplicate of q009."""
+    chosen = fixed_pilot_items(gold)
+    refusal = sorted(i.id for i in chosen if i.should_refuse)
+    assert refusal == ["q008", "q009", "q012", "q023"]
+    assert "q030" not in {i.id for i in chosen}
+
+
+def test_the_fixed_pilot_keeps_the_well_items_including_the_exempt_pair(gold):
+    """The exempt/non-exempt pair is a distinction that is real and easy to blur."""
+    ids = {i.id for i in fixed_pilot_items(gold)}
+    assert {"q017", "q018"} <= ids, "the exempt / non-exempt well pair must travel together"
+    assert {"q020", "q027"} <= ids
+
+
+def test_the_fixed_pilot_still_covers_every_category(gold):
+    chosen = fixed_pilot_items(gold)
+    assert {i.category for i in chosen} == {i.category for i in gold}
+
+
+def test_an_unknown_item_id_is_refused_rather_than_silently_dropped(gold):
+    """A pilot that quietly ran on eleven items would still produce a kappa nobody could trust."""
+    with pytest.raises(PilotError, match="no item"):
+        fixed_pilot_items(gold, ("q004", "q999"))
+
+
+def test_a_repeated_item_id_is_refused(gold):
+    with pytest.raises(PilotError, match="repeated"):
+        fixed_pilot_items(gold, ("q004", "q004"))
+
+
+def test_an_empty_id_list_is_refused(gold):
+    with pytest.raises(PilotError):
+        fixed_pilot_items(gold, ())
+
+
+def test_the_fixed_packet_is_thirty_six_tasks(gold):
+    assert len(build_packet(fixed_pilot_items(gold))) == 36
+
+
+def test_the_time_estimate_reproduces_the_original_twenty_item_figure():
+    """Calibration check: the 20-item plan was about four hours, and it still says so."""
+    assert estimated_minutes_per_annotator(20) == 240
+    twelve = estimated_minutes_per_annotator(12)
+    assert 140 <= twelve <= 170
+    # Onboarding is charged once, so halving the items does not halve the time.
+    assert twelve > estimated_minutes_per_annotator(20) / 2
+
+
 def test_selection_is_twenty_items_and_deterministic(gold):
     first = [i.id for i in select_pilot_items(gold)]
     second = [i.id for i in select_pilot_items(gold)]

@@ -1,8 +1,8 @@
 # Rubric pilot (M5): protocol for two annotators
 
-Half a day, two people, twenty questions, three scoring methods. This decides which rubric gets
-used for everything afterwards. Until it is done, no judge score means anything, and the panel
-runner refuses to run without an explicit override.
+Two people, twelve questions, three scoring methods, about two and a half hours each. This
+decides which rubric gets used for everything afterwards. Until it is done, no judge score means
+anything, and the panel runner refuses to run without an explicit override.
 
 ## Why this exists
 
@@ -18,10 +18,14 @@ consistently, and guessing would waste the annotator time we spend later.
 
 - Two annotators. Both need to be comfortable with Arizona water terminology (AMA, assured vs
   adequate water supply, ADWR). They must **not** discuss items while scoring.
-- About four hours each, including breaks.
+- About two and a half hours each, including breaks and reading the rubrics.
 - The packet: `python -m eval.judge.pilot prepare --out pilot_packet.json`
 
-That produces 60 tasks — 20 questions, each scored three ways.
+That produces 36 tasks — 12 questions, each scored three ways.
+
+The twelve are fixed by hand, not sampled. They cover all five topic categories, four of the five
+questions the system should partly decline, and four well-related questions including the
+exempt / non-exempt pair.
 
 ## The three arms
 
@@ -31,7 +35,7 @@ That produces 60 tasks — 20 questions, each scored three ways.
 | `checklist` | Answer each yes/no item independently | 0 or 1 per item |
 | `rollup` | Same checklist, then convert to a level using the bands | 1–4 |
 
-**Do all 20 of one arm before starting the next.** Do not jump between arms on the same
+**Do all 12 of one arm before starting the next.** Do not jump between arms on the same
 question. If you score a question 3 on the anchored rubric and then immediately fill in its
 checklist, you will fill the checklist to match the 3 — and we will have measured your memory
 instead of the rubric.
@@ -54,9 +58,9 @@ Take a break between arms.
 
 ## One thing to watch: the partial refusals
 
-Four of the twenty questions are ones the system should partly decline. They are not blank
-refusals. Each one declines the part that cannot be answered and then states a correct general
-fact.
+Four of the twelve questions are ones the system should partly decline — a third of the set, so
+you will hit them often. They are not blank refusals. Each one declines the part that cannot be
+answered and then states a correct general fact.
 
 For example — *"Is there an assured water supply at 9972 Cattleman Rd, Holbrook, AZ?"* The right
 answer refuses the address lookup, then correctly notes that Holbrook is outside any AMA, so the
@@ -103,3 +107,9 @@ an absolute number.
 
 All three arms get reported, not just the winner. The losing arms are a publishable methods
 result, not waste.
+
+One caveat on reading the result. Twelve items is a small sample, so each arm's agreement number
+carries real uncertainty. The scorer already treats arms within 0.05 of each other as tied and
+picks the faster one. At this sample size, be sceptical of a slightly larger gap too: a 0.10 lead
+on twelve items is not solid evidence that one rubric beats another, and choosing the faster of
+the two is a sound call.

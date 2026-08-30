@@ -30,10 +30,26 @@ from eval.judge.checklist import ArmResult, compare_arms
 
 ARMS: Tuple[str, ...] = ("anchored", "checklist", "rollup")
 
-# The pilot is a rubric test, not a system test. Twenty items is the architecture's number: enough
-# for kappa to mean something on a 4-point scale, small enough to fit in a morning for two people
-# across three arms.
+# The pilot is a rubric test, not a system test. Twenty was the architecture's number; the pilot
+# actually runs on the twelve below, chosen by hand. `select_pilot_items` still implements the
+# automatic stratified pick and is kept for re-selection if the gold set ever changes.
 DEFAULT_PILOT_SIZE = 20
+
+# The twelve items the pilot runs on, fixed by hand rather than sampled.
+#
+# Hand-picked because the automatic stratified pick optimises for even coverage, and that is not
+# what this pilot needs most. What it needs is the cases where two annotators are most likely to
+# diverge: the partial refusals, and the exempt/non-exempt well pair where the distinction is
+# real but easy to blur.
+#
+# Composition: 4 of the gold set's 5 refusal items, all five topic categories, and four
+# well-related items. q030 is the excluded refusal item - it duplicates q009 almost exactly (both
+# ask about assured supply at an address outside any AMA, off the same source quote), so it would
+# have spent annotator time without testing anything q009 does not.
+PILOT_ITEM_IDS: Tuple[str, ...] = (
+    "q004", "q008", "q009", "q012", "q013", "q017",
+    "q018", "q020", "q021", "q022", "q023", "q027",
+)
 
 # Below this, the arm is not usable as-is and the rubric gets rewritten before any judge work.
 # Chosen as "substantial" on the conventional Landis-Koch reading, and deliberately not the 0.8
@@ -62,6 +78,31 @@ def _stratum(item: GoldItem) -> str:
 def _stable_rank(item_id: str, salt: str) -> str:
     """Deterministic per-item ordering that does not depend on dict iteration or list order."""
     return hashlib.sha256(f"{salt}:{item_id}".encode("utf-8")).hexdigest()
+
+
+def fixed_pilot_items(
+    items: Sequence[GoldItem],
+    item_ids: Sequence[str] = PILOT_ITEM_IDS,
+) -> List[GoldItem]:
+    """Take exactly the named items, in id order.
+
+    The default path for the pilot. Raises on an unknown id rather than quietly returning a
+    shorter list - a pilot that silently ran on eleven items would still produce a kappa, and
+    nobody reading it would know the twelfth was missing.
+    """
+    if not item_ids:
+        raise PilotError("no pilot item ids given")
+
+    by_id = {item.id: item for item in items}
+    missing = [item_id for item_id in item_ids if item_id not in by_id]
+    if missing:
+        raise PilotError(f"gold set has no item(s): {sorted(missing)}")
+
+    duplicates = sorted({i for i in item_ids if list(item_ids).count(i) > 1})
+    if duplicates:
+        raise PilotError(f"repeated pilot item id(s): {duplicates}")
+
+    return sorted((by_id[item_id] for item_id in item_ids), key=lambda i: i.id)
 
 
 def select_pilot_items(
@@ -376,6 +417,21 @@ def pilot_status(labels: Sequence[PilotLabel]) -> PilotStatus:
 
 
 # ---------------------------------------------------------------------------
+# How long it takes
+# ---------------------------------------------------------------------------
+# Calibrated from the original 20-item plan: 60 tasks in about four hours including breaks, so
+# roughly 3.5 minutes of actual scoring per task. Onboarding is charged once - reading the three
+# rubrics before the first arm - and does not shrink with the item count.
+MINUTES_PER_TASK = 3.5
+ONBOARDING_MINUTES = 30
+
+
+def estimated_minutes_per_annotator(n_items: int, n_arms: int = len(ARMS)) -> int:
+    """Rough wall-clock minutes for one annotator, including reading the rubrics."""
+    return int(round(ONBOARDING_MINUTES + n_items * n_arms * MINUTES_PER_TASK))
+
+
+# ---------------------------------------------------------------------------
 # CLI
 # ---------------------------------------------------------------------------
 def main(argv: Optional[Sequence[str]] = None) -> int:
@@ -394,6 +450,11 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     prepare = sub.add_parser("prepare", help="choose the items and write the annotation packet")
     prepare.add_argument("--gold", default=DEFAULT_GOLD_PATH)
     prepare.add_argument("--out", default="pilot_packet.json")
+    prepare.add_argument(
+        "--auto",
+        action="store_true",
+        help="re-select items automatically instead of using the fixed twelve",
+    )
     prepare.add_argument("--n", type=int, default=DEFAULT_PILOT_SIZE)
     prepare.add_argument("--salt", default="pilot-v1")
 
@@ -403,13 +464,20 @@ def main(argv: Optional[Sequence[str]] = None) -> int:
     args = parser.parse_args(argv)
 
     if args.command == "prepare":
-        items = select_pilot_items(load_gold_set(args.gold), n=args.n, salt=args.salt)
+        gold = load_gold_set(args.gold)
+        items = (
+            select_pilot_items(gold, n=args.n, salt=args.salt)
+            if args.auto
+            else fixed_pilot_items(gold)
+        )
         write_packet(build_packet(items), args.out)
         n_refuse = sum(1 for i in items if i.should_refuse)
         print(f"wrote {args.out}: {len(items)} items x {len(ARMS)} arms")
         print(f"  refusal {n_refuse}, answerable {len(items) - n_refuse}")
         for category in sorted({i.category for i in items}):
             print(f"  {sum(1 for i in items if i.category == category):2d}  {category}")
+        # Annotator time is the binding constraint on the whole project, so say it up front.
+        print(f"  ~{estimated_minutes_per_annotator(len(items))} min per annotator")
         return 0
 
     with open(args.labels, encoding="utf-8") as handle:
