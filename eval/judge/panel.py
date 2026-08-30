@@ -391,7 +391,9 @@ class PanelRunner:
             dimensions
             if dimensions is not None
             else self.rubric.applicable_names(
-                response.category, has_citations=bool(response.citations)
+                response.category,
+                has_citations=bool(response.citations),
+                is_negative=response.is_negative,
             )
         )
         schema = verdict_json_schema(names, [m.name for m in self.rubric.failure_modes])

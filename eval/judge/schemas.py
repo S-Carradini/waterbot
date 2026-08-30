@@ -129,6 +129,11 @@ class CorpusIdentity(Strict):
     chunk_size: int = Field(gt=0)
     chunk_overlap: int = Field(ge=0)
     embedding_model: str
+    # When the corpus was gathered, not when this record was written. Two corpora with identical
+    # content collected a year apart are different evidence bases in a domain where designations
+    # and shortage tiers change; without this they were indistinguishable. "unrecorded" is an
+    # explicit value rather than a silent absence.
+    collected_at: str = "unrecorded"
     proofs: List[DuplicateProof] = Field(default_factory=list)
     created_at: str = Field(default_factory=utcnow)
 
@@ -161,6 +166,12 @@ class Passage(Strict):
     retrieval_score: float
 
 
+# The category string that marks a question as one the system should decline. Retained for
+# `benchmark_dataset.json`, which encodes the scoring class in the category; the gold set
+# uses the explicit `should_refuse` flag instead.
+NEGATIVE_CATEGORY = "out_of_scope_negative"
+
+
 class Response(Strict):
     """A frozen answer from a system under test, with everything needed to judge it."""
 
@@ -171,6 +182,13 @@ class Response(Strict):
     question: str
     category: str
     answer: str
+    # Whether this question SHOULD be declined. None means the item never said, in which case
+    # callers fall back to reading it off `category` - see `is_negative`. Explicit is the point:
+    # `category` on the gold set is a topic ("Water-supply and Availability"), not a scoring
+    # class, so inferring refusal from it silently scores every refusal item in the wrong
+    # direction. Optional with a None default so response files frozen before this field are
+    # still readable.
+    should_refuse: Optional[bool] = None
     passages: List[Passage] = Field(default_factory=list)
     citations: List[str] = Field(default_factory=list)
     latency_ms: int = Field(ge=0)
@@ -193,6 +211,23 @@ class Response(Strict):
     def response_id(self) -> str:
         """Content-independent identity: which item, from which system, in which persona."""
         return f"{self.item_id}::{self.system}::{self.persona}"
+
+    @property
+    def is_negative(self) -> bool:
+        """Should this question have been declined?
+
+        One source of truth for a question three modules ask - `refusal.py`, `rubric.py` and
+        `checklist.py` each used to compare `category` against a magic string. That proxy is
+        right for `benchmark_dataset.json`, whose categories carry the scoring class, and wrong
+        for the gold set, whose categories are topics. Getting it wrong is not a crash: it scores
+        every refusal item in the opposite direction and reports a clean-looking number.
+
+        The explicit flag wins when present. Falling back to the category keeps every response
+        frozen before the flag existed reading the same way it always did.
+        """
+        if self.should_refuse is not None:
+            return self.should_refuse
+        return self.category == NEGATIVE_CATEGORY
 
 
 # ---------------------------------------------------------------------------

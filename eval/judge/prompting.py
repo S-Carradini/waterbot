@@ -145,7 +145,9 @@ def render_pointwise(
     system_template, user_template, template_hash = load_template(template_name, prompts_dir)
 
     names = list(dimensions) if dimensions is not None else rubric.applicable_names(
-        response.category, has_citations=bool(response.citations)
+        response.category,
+        has_citations=bool(response.citations),
+        is_negative=response.is_negative,
     )
     if not names:
         raise PromptError(

@@ -119,10 +119,15 @@ def refusal_report(
     declining to score is not evidence the system refused wrongly. The scored counts are reported
     separately so the denominator is visible.
     """
-    category_of = {r.response_id: r.category for r in responses}
 
-    negatives = [r for r in responses if r.category == NEGATIVE_CATEGORY]
-    answerable = [r for r in responses if r.category != NEGATIVE_CATEGORY]
+    # `is_negative` reads the item's explicit should_refuse flag where it has one and falls back
+    # to the category otherwise. Splitting on the category alone put all 30 gold items in
+    # `answerable`, because the gold set's categories are topics - so the five refusal items were
+    # scored as though they should have been answered, and the report still looked clean.
+    is_negative = {r.response_id: r.is_negative for r in responses}
+
+    negatives = [r for r in responses if r.is_negative]
+    answerable = [r for r in responses if not r.is_negative]
 
     correct_refusals = correct_answers = 0
     negatives_scored = answerable_scored = 0
@@ -131,10 +136,10 @@ def refusal_report(
         judgement = verdict.dimensions.get(dimension)
         if judgement is None or judgement.score is None:
             continue
-        category = category_of.get(verdict.response_id)
-        if category is None:
+        negative = is_negative.get(verdict.response_id)
+        if negative is None:
             continue
-        if category == NEGATIVE_CATEGORY:
+        if negative:
             negatives_scored += 1
             if judgement.score >= threshold:
                 correct_refusals += 1

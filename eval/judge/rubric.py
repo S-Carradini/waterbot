@@ -40,7 +40,13 @@ class Dimension:
     requires_citations: bool = False
     notes: str = ""
 
-    def applies(self, category: str, *, has_citations: bool = True) -> bool:
+    def applies(
+        self,
+        category: str,
+        *,
+        has_citations: bool = True,
+        is_negative: Optional[bool] = None,
+    ) -> bool:
         """Whether this dimension should be scored for a given item.
 
         `has_citations` only matters for dimensions that declare
@@ -54,7 +60,10 @@ class Dimension:
         if self.applies_to == "all":
             return True
         if self.applies_to == "answerable":
-            return category != NEGATIVE_CATEGORY
+            # `is_negative` is the caller's explicit answer where it has one. The category
+            # comparison is only a fallback, and it is wrong for any source whose categories are
+            # topics rather than scoring classes - such as the gold set.
+            return not (category == NEGATIVE_CATEGORY if is_negative is None else is_negative)
         if isinstance(self.applies_to, (list, tuple, set)):
             return category in self.applies_to
         raise RubricError(
@@ -102,11 +111,32 @@ class Rubric:
                 return d
         raise KeyError(f"no dimension named {name!r}")
 
-    def applicable(self, category: str, *, has_citations: bool = True) -> List[Dimension]:
-        return [d for d in self.dimensions if d.applies(category, has_citations=has_citations)]
+    def applicable(
+        self,
+        category: str,
+        *,
+        has_citations: bool = True,
+        is_negative: Optional[bool] = None,
+    ) -> List[Dimension]:
+        return [
+            d
+            for d in self.dimensions
+            if d.applies(category, has_citations=has_citations, is_negative=is_negative)
+        ]
 
-    def applicable_names(self, category: str, *, has_citations: bool = True) -> List[str]:
-        return [d.name for d in self.applicable(category, has_citations=has_citations)]
+    def applicable_names(
+        self,
+        category: str,
+        *,
+        has_citations: bool = True,
+        is_negative: Optional[bool] = None,
+    ) -> List[str]:
+        return [
+            d.name
+            for d in self.applicable(
+                category, has_citations=has_citations, is_negative=is_negative
+            )
+        ]
 
 
 def _validate_dimension(raw: Dict[str, Any], seen: set, categories: List[str]) -> Dimension:

@@ -1,0 +1,242 @@
+[
+  {
+    "id": "q001",
+    "question": "What should a buyer review before signing a new construction home contract?",
+    "answer": "By law the buyer must be given the ADRE Public Report before signing. It discloses water supply status (assured/adequate), legal access, and other required subdivision facts, and the buyer should also request the ADWR water report for the property.",
+    "source_quote": "The Arizona Department of Real Estate Disclosure Report (Public Report) must be provided to a prospective purchaser by law, before signing the purchase contract.",
+    "should_refuse": false,
+    "category": "Disclosure and Transaction"
+  },
+  {
+    "id": "q002",
+    "question": "What does a public report tell a purchaser about water?",
+    "answer": "It states whether the subdivision has an assured (inside an AMA) or adequate (outside an AMA) water supply determination, or discloses an inadequate supply if that's the finding, so buyers know the water status before purchasing.",
+    "source_quote": "It ensures that the water adequacy or inadequacy is disclosed in the public report provided to potential first purchasers and that any water supply limitations are disclosed.",
+    "should_refuse": false,
+    "category": "Disclosure and Transaction"
+  },
+  {
+    "id": "q003",
+    "question": "What does Arizona case law state as the responsibility of an agent/broker for water information disclosure?",
+    "answer": "This is actually an Arizona Administrative Code duty, not case law: a licensee must disclose in writing to all parties any information they possess that materially or adversely affects the transaction, which covers known water-supply problems. Separately, the seller's own disclosure affidavit must call out the property's water source and whether it's tied to a pending water-rights adjudication claim.",
+    "source_quote": "A licensee participating in a real estate transaction shall disclose in writing to all other parties any information the licensee possesses that materially or adversely affects the consideration to be paid by any party to the transaction.",
+    "should_refuse": false,
+    "category": "Disclosure and Transaction"
+  },
+  {
+    "id": "q004",
+    "question": "If I know about a property being in a Stream Adjudication area, do I have to tell all my clients about it?",
+    "answer": "Yes. The General Stream Adjudications, including the Verde Watershed, are still ongoing and not all water rights have been fully decreed, so while a property may claim water rights, the final legal status, extent, and priority of those rights are still being determined by the courts with ADWR's help. Recommend the client check with the seller on whether they've been part of the adjudication and whether a decree was made, contact the Maricopa Superior Court Stream Adjudications office, and review any Statement of Claimant filed with ADWR. This doesn't apply to properties served by a municipal provider, only those diverting surface water or pumping subflow groundwater hydrologically connected to a river system.",
+    "source_quote": "This means that while a property may claim water rights, the final legal status, extent, and priority of those rights are still being determined by the courts, with help from the Arizona Department of Water Resources (ADWR).",
+    "should_refuse": false,
+    "category": "Disclosure and Transaction"
+  },
+  {
+    "id": "q005",
+    "question": "The seller doesn't have any documentation for the water rights they are claiming for the property. What should I do to help my buyer investigate this information on their own?",
+    "answer": "Have the buyer contact ADWR directly. ADWR keeps the filed Statement of Claimant records for adjudicated watersheds and can also provide copies of well documents on file even if the owner lost their own paperwork.",
+    "source_quote": "You should keep records of all work done on your well. If you lose your well records, ADWR's Groundwater Permitting and Wells Section can provide copies of the documents that have been filed.",
+    "should_refuse": false,
+    "category": "Disclosure and Transaction"
+  },
+  {
+    "id": "q006",
+    "question": "Does a property with a shared well need to be registered with ADWR?",
+    "answer": "Yes. Every well, shared or not, gets an ADWR well registration number (a \"55-\" number) when it's drilled, and that record is what a buyer or their agent should pull to confirm the well's legal status.",
+    "source_quote": "Well registration numbers are unique identifiers beginning with \"55-\", followed by six digits. Once you have the well registration number you can easily retrieve the imaged record for the well.",
+    "should_refuse": false,
+    "category": "Water-supply and Availability"
+  },
+  {
+    "id": "q007",
+    "question": "How can I find out if there's an official or recorded agreement for shared well use if the original parties have passed away?",
+    "answer": "ADWR does not regulate or require filing of shared well agreements since they're private contracts, so they're rarely in ADWR's well file. Check the county recorder's office where the well is located for a recorded copy, and also check whether either parcel's past sale disclosures addressed it, since Arizona's standard well disclosure form asks directly whether a shared well agreement exists and whether it's recorded, and that paperwork survives even after the original owners are gone.",
+    "source_quote": "The Department does not regulate shared well agreements nor does any state agency. Shared well agreements are considered a civil matter between the parties who share the well.",
+    "should_refuse": false,
+    "category": "Water-supply and Availability"
+  },
+  {
+    "id": "q008",
+    "question": "Is there an assured water supply at 25062 S Meridian Rd, Queen Creek, AZ 85142?",
+    "answer": "I can't determine assured water supply status for a specific address. Queen Creek straddles Maricopa and Pinal counties, both covered by Arizona's AMA system, so the buyer or agent should check ADWR's Certificate/Designation of Assured Water Supply database, or ask the municipal provider whether it holds a Designation of Assured Water Supply covering this property.",
+    "source_quote": "Currently there are eight AMAs (Prescott, Phoenix, Pinal, Tucson, Santa Cruz, Douglas, Willcox, Ranegras Plain) which are subject to regulation pursuant to the Groundwater Code.",
+    "should_refuse": true,
+    "category": "Address or Groundwater Basin Specific"
+  },
+  {
+    "id": "q009",
+    "question": "Is there an assured water supply at 9972 Cattleman Rd. Holbrook, AZ 86025?",
+    "answer": "I can't determine that for a specific address. Also, since Holbrook is outside any AMA, the correct program is \"adequate,\" not \"assured,\" water supply, a different ADWR determination with somewhat lighter requirements. Contact ADWR or the local water provider to check status.",
+    "source_quote": "The Adequate Water Supply Program operates outside of the AMAs. It ensures that the water adequacy or inadequacy is disclosed in the public report provided to potential first purchasers.",
+    "should_refuse": true,
+    "category": "Address or Groundwater Basin Specific"
+  },
+  {
+    "id": "q010",
+    "question": "What sort of water supply information does my client need to know about the property located at 0008 N Porter, Joseph City, AZ, 86032?",
+    "answer": "Joseph City is inside the Joseph City Irrigation Non-Expansion Area (INA), a designation meant to preserve existing irrigated acreage rather than an AMA's stricter regime. Your client should confirm whether the parcel is served by a private well (check the ADWR well registry) or a municipal system, and note that new irrigated acreage is restricted in an INA.",
+    "source_quote": "An INA's purpose is to preserve the existing irrigation of cultivated lands. The irrigation of new acres is prohibited.",
+    "should_refuse": false,
+    "category": "Address or Groundwater Basin Specific"
+  },
+  {
+    "id": "q011",
+    "question": "What sort of water information does my client need to know about for this property: 194 S Taylor Rd, Willcox AZ 85643?",
+    "answer": "This property is in the Willcox AMA, designated December 19, 2024 (Arizona's 7th AMA). That means non-exempt wells now need a groundwater right or permit and are subject to metering/reporting, and only acreage irrigated in the 5 years before the designation process may still be irrigated going forward.",
+    "source_quote": "On December 19, 2024, the Director issued a Findings, Decision and Order to designate the Willcox Groundwater Basin as a subsequent AMA.",
+    "should_refuse": false,
+    "category": "Address or Groundwater Basin Specific"
+  },
+  {
+    "id": "q012",
+    "question": "Is the Agua Fria groundwater basin healthy?",
+    "answer": "I can't give a single yes/no on basin health. ADWR does publish a Supply and Demand Report (SDR) for each basin, required every 5 years, but it's a basin-wide water budget, not a fine-grained groundwater flow model, so it can't confirm the situation at any one parcel. Check the current SDR for the Agua Fria basin (or the Phoenix AMA management plan, which covers it) for the actual current data rather than relying on a general answer.",
+    "source_quote": "The SDRs are structured as water budgets, focusing on total inflows and outflows at the basin scale. The SDRs are not groundwater flow models with finer geographic results, which are conducted by ADWR's Hydrology Division.",
+    "should_refuse": true,
+    "category": "Address or Groundwater Basin Specific"
+  },
+  {
+    "id": "q013",
+    "question": "What communities in Arizona are investing in water recycling?",
+    "answer": "Several Arizona cities already treat and reuse wastewater as part of their supply portfolio, including Tucson (its \"One Water 2100\" plan) and Scottsdale, which lists reclaimed water as part of its diversified water supply alongside CAP and groundwater.",
+    "source_quote": "Scottsdale's diversified water portfolio includes Colorado River water delivered through the Central Arizona Project, Salt and Verde River water, reclaimed water and groundwater.",
+    "should_refuse": false,
+    "category": "Water-supply and Availability"
+  },
+  {
+    "id": "q014",
+    "question": "Does water supply show up on tax records?",
+    "answer": "Not directly, in general. County assessor and tax records mainly track ownership and property value, not water supply source or status. One direct exception though: in Maricopa, Pinal, and Pima counties, a CAWCD line item on the property tax bill means the parcel sits within the district that funds the Central Arizona Project, which is a real, checkable signal about the area's water source. For anything more specific, check ADWR's well registry or its Certificate/Designation of Assured Water Supply database instead.",
+    "source_quote": "Property owners in Maricopa, Pinal and Pima counties are the only ones that pay a property tax to CAWCD.",
+    "should_refuse": false,
+    "category": "Water-supply and Availability"
+  },
+  {
+    "id": "q015",
+    "question": "What's the deal with Arizona exploring de-salination as a water source?",
+    "answer": "Arizona's Water Infrastructure Finance Authority has been reviewing seawater desalination proposals, the most advanced being a $5.5 billion plant and 200-mile pipeline on Mexico's Sea of Cortez near Puerto Peñasco. Nothing is built or finalized yet, and it's expensive, desalinated water this way runs several times the cost per acre-foot of Colorado River water, so it's a serious option under review, not a settled or cheap fix.",
+    "source_quote": "Arizona officials voted to advance a $5.5-billion plan to build a water desalination plant in Mexico, as well as a 200-mile pipeline and associated infrastructure as part of a state effort to address its drought-driven water uncertainty.",
+    "should_refuse": false,
+    "category": "Limits and Uncertainty"
+  },
+  {
+    "id": "q016",
+    "question": "If assured water supply rules only kick in for land subdivision, how is 100 years of assured water determined for multifamily projects?",
+    "answer": "Most multifamily projects are served by a municipal water provider that already holds a Designation of Assured Water Supply (DAWS), which covers all of that provider's current, committed, and future customers, so the project relies on the provider's designation rather than proving its own 100-year supply individually.",
+    "source_quote": "A Designation of Assured Water Supply applies to all current, committed and future uses of water served by the municipal provider.",
+    "should_refuse": false,
+    "category": "Limits and Uncertainty"
+  },
+  {
+    "id": "q017",
+    "question": "There's a property with a non-exempt well on it. What do I need to tell my buyer about investigating their ability to use this well for their business?",
+    "answer": "A non-exempt well (pumps more than 35 gallons per minute) needs a groundwater right or permit to operate within an AMA, and its withdrawals generally must be measured and reported to ADWR. Have the buyer confirm the well's registration, its associated right/permit, and current reporting status before relying on it for business use.",
+    "source_quote": "Within an AMA, a person may withdraw groundwater from a well having a pump with a maximum capacity greater than 35 gallons per minute (\"non-exempt well\") only if the person holds a right or permit to withdraw the groundwater.",
+    "should_refuse": false,
+    "category": "Water-supply and Availability"
+  },
+  {
+    "id": "q018",
+    "question": "There's a property with an exempt well on it. What do I need to tell my buyer about investigating their ability to use this well for watering their livestock?",
+    "answer": "Stock watering is explicitly covered under an exempt well's normal domestic-purpose use, so an exempt well (35 gpm or less) can generally be used to water livestock without needing a separate groundwater right or permit.",
+    "source_quote": "\"Stock watering\" means the watering of livestock, range livestock or poultry, as such terms are defined in section 3-1201.",
+    "should_refuse": false,
+    "category": "Water-supply and Availability"
+  },
+  {
+    "id": "q019",
+    "question": "How does advice differ for a domestic well property versus a metro subdivision?",
+    "answer": "A standalone domestic-well property just needs its own well registered and (if non-exempt) permitted, there's no subdivision-level water supply review. A subdivision of six or more lots, though, can't get its ADRE Public Report until it's cleared ADWR's assured (in an AMA) or adequate (outside) water supply determination for the whole project.",
+    "source_quote": "State statute requires subdivision developers to obtain a determination from ADWR regarding water supply availability before marketing lots.",
+    "should_refuse": false,
+    "category": "Limits and Uncertainty"
+  },
+  {
+    "id": "q020",
+    "question": "How difficult is it to get a well permit today, and does that reflect a growing water shortage or stricter regulation due to water concerns?",
+    "answer": "It's both, and it depends heavily on location. Outside AMAs/INAs it's still a straightforward registration process, but Arizona has been actively expanding regulated areas (Willcox and Douglas became AMAs in 2024 and 2022, Ranegras Plain became an AMA in January 2026, and Hualapai Valley became an INA in 2022) specifically because of documented groundwater declines, so permitting has gotten meaningfully stricter in more rural areas recently.",
+    "source_quote": "in recent years, driven by increased of agricultural water uses in certain areas of the state (e.g., the Willcox, Douglas, McMullen Valley, and Hualapai Valley groundwater basins), local governments and residents have become increasingly vocal regarding their concerns over the long-term sustainability of their groundwater supplies.",
+    "should_refuse": false,
+    "category": "Limits and Uncertainty"
+  },
+  {
+    "id": "q021",
+    "question": "Tell me about the water situation in Kingman, AZ.",
+    "answer": "Kingman relies on groundwater and, unlike the nearby Harquahala INA, is not currently inside any AMA or INA, so it lacks that added layer of state groundwater oversight even as pumping has increased with growth, worth flagging to clients given how recently ADWR has expanded regulation in comparably-situated rural basins nearby.",
+    "source_quote": "The Harquahala INA was created in 1981.",
+    "should_refuse": false,
+    "category": "Address or Groundwater Basin Specific"
+  },
+  {
+    "id": "q022",
+    "question": "Are there any current restrictions on rain water harvesting in the Verde Valley?",
+    "answer": "No Arizona state law restricts rainwater harvesting anywhere, including the Verde Valley. Local municipal codes or HOA rules could still impose specifics (like tank placement or size), so that's worth a quick local check, but there is no statewide legal barrier. (Lower confidence: no Verde-Valley-specific source found; verify against a local municipal code before relying on this.)",
+    "source_quote": "There are no laws, ordinances, or regulations against the act of rainwater harvesting.",
+    "should_refuse": false,
+    "category": "Rural vs Urban Context"
+  },
+  {
+    "id": "q023",
+    "question": "How many rainy seasons will it take to get out of this mega-drought?",
+    "answer": "There's no fixed number of rainy seasons that ends a drought designation. ADWR determines drought status by comparing rolling 24-, 36-, and 48-month precipitation and streamflow totals against the prior 30-year record for that watershed, so recovery depends on a sustained multi-year pattern, not any single wet season.",
+    "source_quote": "ADWR's calculates long-term drought status by comparing the 24-, 36- and 48-month precipitation and streamflow totals to all these same periods in the previous 30-year record.",
+    "should_refuse": true,
+    "category": "Limits and Uncertainty"
+  },
+  {
+    "id": "q024",
+    "question": "What's happening with the Colorado River decision?",
+    "answer": "As of this writing, Arizona is in a Tier 1 shortage, taking roughly a 512,000 acre-foot cut to its Colorado River supply, almost entirely absorbed by Central Arizona Project (CAP) agricultural users because CAP's water is junior in priority to California's allocation. This status changes as new federal operating guidelines are negotiated, so check CAP's current shortage page for the latest figures rather than treating this as fixed.",
+    "source_quote": "The reason that CAP water users face the most severe cutbacks is because that, in order to secure approval of the 1968 Colorado River Basin Project Act authorizing CAP construction, Arizona had to agree that water delivered through the CAP canal would be junior in priority to California's Colorado River water deliveries.",
+    "should_refuse": false,
+    "category": "Limits and Uncertainty"
+  },
+  {
+    "id": "q025",
+    "question": "How might Arizona's growth and economy change if we don't have enough water?",
+    "answer": "Continued growth in many areas increasingly depends on non-groundwater sources (reclaimed water, imported surface water, or new augmentation like desalination) once local groundwater is fully allocated, meaning some future development may be constrained or cost more to serve unless those alternative supplies are secured. (Lower confidence: this is a broad analytical question without one single authoritative quote; treat as directional framing, not a settled fact.)",
+    "source_quote": "Inside AMAs: New growth often requires sources other than groundwater, making reclaimed water, brackish desalination, or imported surface water part of the solution.",
+    "should_refuse": false,
+    "category": "Limits and Uncertainty"
+  },
+  {
+    "id": "q026",
+    "question": "If I lived for 97 years and my family gets my house, are they going to have water after the 100th year?",
+    "answer": "The \"100-year\" in assured water supply isn't a personal countdown clock tied to any one owner. It's a planning-horizon guarantee made at the time of the original ADWR determination, based on the data and demand projections available then, and ADWR periodically re-evaluates those models (as it did with the 2023-24 Phoenix AMA update) rather than the supply simply expiring on a fixed calendar date after your purchase.",
+    "source_quote": "An Assured Water Supply is a determination by ADWR that: 1) Sufficient water of adequate quality will be physically, continuously and legally available to satisfy water needs for at least 100 years.",
+    "should_refuse": false,
+    "category": "Limits and Uncertainty"
+  },
+  {
+    "id": "q027",
+    "question": "If you have a well, does that likely come with water rights?",
+    "answer": "Not automatically. A well gets a registration number when it's drilled, but that's not the same as a transferable water right or permit, those are separate authorizations (the 56-, 57-, 58-, 59-, and 74- series) required specifically for non-exempt wells, and an exempt well's use stays tied to reasonable domestic use rather than a marketable certificate.",
+    "source_quote": "A well number (55-) is a registration number given to the well so that ADWR can easily identify the ownership, location, pump capacity, and nature of use... A water right or permit (56-, 57-, 58-, 59-, 74-) authorizes the user to withdraw water from a non-exempt well.",
+    "should_refuse": false,
+    "category": "Limits and Uncertainty"
+  },
+  {
+    "id": "q028",
+    "question": "Is there a limit for how many properties can share a well?",
+    "answer": "Within an AMA, the general rule is only one exempt well may serve the same non-irrigation use at the same location, with narrow exceptions requiring ADWR approval, small combined withdrawals, and local health authority sign-off. There's no blanket limit outside that specific rule, but shared use should be documented.",
+    "source_quote": "In an AMA, only one exempt well may be drilled or used to serve the same non-irrigation use at the same location, unless the Director of ADWR determines that all of the following apply.",
+    "should_refuse": false,
+    "category": "Water-supply and Availability"
+  },
+  {
+    "id": "q029",
+    "question": "How would I prove to a client that their subdivision has an assured or adequate supply?",
+    "answer": "Ask for the ADWR determination itself: a Certificate of Assured Water Supply (or a Designation of Assured Water Supply from the servicing provider) if it's inside an AMA, or ADWR's Water Adequacy Report if it's outside one. Any of these documents is the actual proof, not just a verbal assurance.",
+    "source_quote": "Four types of applications are processed in each of these roughly parallel programs: physical availability demonstration (PAD), designation of assured or adequate water supply, analysis of assured (or adequate) water supply, and either a certificate of assured water supply or a water adequacy report.",
+    "should_refuse": false,
+    "category": "Disclosure and Transaction"
+  },
+  {
+    "id": "q030",
+    "question": "Is there an assured water supply at 53254 N 61st St, Salome, Arizona 85348?",
+    "answer": "I can't determine that for a specific address. Also, Salome is outside any AMA, so the correct program is \"adequate,\" not \"assured,\" water supply, a lighter-requirement ADWR determination than the AMA program. Contact ADWR or the local water provider to check status.",
+    "source_quote": "The Adequate Water Supply Program operates outside of the AMAs. It ensures that the water adequacy or inadequacy is disclosed in the public report provided to potential first purchasers.",
+    "should_refuse": true,
+    "category": "Address or Groundwater Basin Specific"
+  }
+]

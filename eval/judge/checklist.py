@@ -81,11 +81,12 @@ class ChecklistDimension:
     def total_weight(self) -> int:
         return sum(i.weight for i in self.items)
 
-    def applies(self, category: str) -> bool:
+    def applies(self, category: str, *, is_negative: Optional[bool] = None) -> bool:
         if "all" in self.applies_to:
             return True
         if ANSWERABLE in self.applies_to:
-            return category != NEGATIVE_CATEGORY
+            # See Dimension.applies in rubric.py: explicit flag first, category only as fallback.
+            return not (category == NEGATIVE_CATEGORY if is_negative is None else is_negative)
         return category in self.applies_to
 
 
@@ -114,8 +115,12 @@ class ChecklistRubric:
                 return dimension
         raise ChecklistError(f"no dimension named {name!r}")
 
-    def applicable_names(self, category: str) -> List[str]:
-        return [d.name for d in self.dimensions if d.applies(category)]
+    def applicable_names(
+        self, category: str, *, is_negative: Optional[bool] = None
+    ) -> List[str]:
+        return [
+            d.name for d in self.dimensions if d.applies(category, is_negative=is_negative)
+        ]
 
     @property
     def rubric_hash(self) -> str:

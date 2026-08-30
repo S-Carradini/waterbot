@@ -62,6 +62,8 @@ class BenchmarkItem:
     item_id: str
     question: str
     category: str
+    # None means "this source did not say"; the scoring class is then read off `category`.
+    should_refuse: Optional[bool] = None
 
 
 def items_from_dataset(questions: Sequence[dict], include_excluded: bool = False) -> List[BenchmarkItem]:
@@ -140,6 +142,7 @@ def freeze_responses(
                 persona=persona,
                 question=item.question,
                 category=item.category,
+                should_refuse=item.should_refuse,
                 answer=generation.answer,
                 passages=passages,
                 citations=list(generation.citations),
