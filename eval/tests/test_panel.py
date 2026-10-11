@@ -10,6 +10,7 @@ Network-free: every judge is a FakeJudgeClient (invariant 3).
 
 from __future__ import annotations
 
+import dataclasses
 import json
 
 import pytest
@@ -164,9 +165,13 @@ def test_an_empty_judge_id_is_rejected():
 # The cache
 # ---------------------------------------------------------------------------
 def test_a_stored_verdict_comes_back():
+    """Compare against the stored object, not a fresh build: `created_at` defaults to now, so
+    two separate constructions differ by microseconds on any clock fine-grained enough to see it.
+    """
     cache = VerdictCache()
-    cache.put("k1", a_verdict())
-    assert cache.get("k1") == a_verdict()
+    stored = a_verdict()
+    cache.put("k1", stored)
+    assert cache.get("k1") == stored
 
 
 def test_a_miss_returns_none_and_is_counted():
@@ -414,17 +419,38 @@ def test_judging_a_set_covers_every_response(rubric):
 # The unpiloted rubric guard
 # ---------------------------------------------------------------------------
 def test_an_unpiloted_rubric_blocks_a_panel_run(rubric):
-    """If two humans cannot agree using these anchors, no model will."""
-    assert rubric.is_piloted is False
+    """If two humans cannot agree using these anchors, no model will.
+
+    The shipped rubric was piloted on 2026-09-04, so this builds a draft one rather than
+    relying on the file still being marked DRAFT. The guard is what is under test, not the
+    current status of the file on disk.
+    """
+    draft = dataclasses.replace(
+        rubric, status="DRAFT - NOT YET PILOTED WITH HUMAN ANNOTATORS"
+    )
+    assert draft.is_piloted is False
     with pytest.raises(ValueError, match="not been piloted"):
         PanelRunner(
-            clients=[FakeJudgeClient("judge-a")], rubric=rubric, rubric_hash="r" * 16,
+            clients=[FakeJudgeClient("judge-a")], rubric=draft, rubric_hash="r" * 16,
             corpus_fingerprint=FINGERPRINT,
         )
 
 
 def test_an_unpiloted_rubric_can_be_used_deliberately(rubric):
-    runner = a_runner(rubric)
+    draft = dataclasses.replace(
+        rubric, status="DRAFT - NOT YET PILOTED WITH HUMAN ANNOTATORS"
+    )
+    runner = a_runner(draft)
+    assert runner.judge_response(a_response())
+
+
+def test_the_shipped_rubric_now_passes_the_gate_without_an_override(rubric):
+    """M5 passed, so the gate no longer fires on the real rubric (decisions.md 036)."""
+    assert rubric.is_piloted is True
+    runner = PanelRunner(
+        clients=[FakeJudgeClient("judge-a", seed=1)], rubric=rubric, rubric_hash="r" * 16,
+        corpus_fingerprint=FINGERPRINT,
+    )
     assert runner.judge_response(a_response())
 
 

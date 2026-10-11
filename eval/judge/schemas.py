@@ -278,7 +278,19 @@ class Verdict(Strict):
     rubric_hash: str
     corpus_fingerprint: str
     dimensions: Dict[str, DimensionVerdict]
-    failure_modes: List[FailureMode] = Field(default_factory=list)
+    # Typed as plain strings, and the CLOSED SET IS ENFORCED IN `panel.validate_verdict`
+    # against whichever rubric is actually loaded - not here.
+    #
+    # This used to be `List[FailureMode]`, a Literal fixed to rubric.yaml's seven factual modes.
+    # That silently assumed one rubric would ever exist. When the qualitative rubric arrived with
+    # its own modes (buried_answer, unexplained_jargon, padding...), a judge that correctly
+    # reported one had its whole verdict rejected by pydantic - the judge was right and the type
+    # was out of date. 14 of 15 verdicts died that way on 2026-09-09.
+    #
+    # The closed set is still enforced, and still matters: a typo must not invent a mode that
+    # then reads as zero occurrences of a real one. It just has to be enforced where the active
+    # rubric is known, which is the validator, not the schema.
+    failure_modes: List[str] = Field(default_factory=list)
     overall_confidence: Confidence = "medium"
     repaired: bool = False  # first parse failed; a reported metric, not an implementation detail
     order_position: Optional[Literal["first", "second"]] = None  # pairwise only

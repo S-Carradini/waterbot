@@ -138,3 +138,90 @@ carries real uncertainty. The scorer already treats arms within 0.05 of each oth
 picks the faster one. At this sample size, be sceptical of a slightly larger gap too: a 0.10 lead
 on twelve items is not solid evidence that one rubric beats another, and choosing the faster of
 the two is a sound call.
+
+---
+
+# RESULT (run 2026-09-04)
+
+Two annotators, the fixed twelve, 28 scored (item x dimension) units per arm.
+
+| Arm | Cohen's kappa | Units agreed | Wilson 95% on raw agreement | Annotator time |
+|---|---|---|---|---|
+| anchored | **0.839** weighted / 0.604 unweighted | 20/28 | [0.529, 0.847] | 45 min |
+| checklist | 1.000 | 28/28 | [0.879, 1.000] | 30 min |
+| rollup | 1.000 | 28/28 | [0.879, 1.000] | derived, free |
+
+Both finished in 75 minutes against the 122-minute estimate.
+
+**Outcome: PASS. `anchored` is the rubric in force** - by explicit decision, not by the
+automatic tie-break, which picked `checklist`. See `decisions.md` 036. The selection is recorded
+in `rubric.yaml` (`selected: true`), `rubric_checklist.yaml` (`selected: false`) and
+`pilot.py:SELECTED_ARM`; `pilot_status` prints a NOTE whenever the recorded decision and the
+computed winner differ, which they do here.
+
+## Why the arm with lower agreement was chosen
+
+**A ceiling is not a measurement.** kappa 1.000 has no usable interval. The checklist's 67
+Yes/No calls bound true agreement only at [0.946, 1.000], and it beat `rollup` on a speed
+tie-break rather than on reliability.
+
+**The checklist cannot see under-refusal.** Three of its four `refusal_appropriateness` items
+begin "if it declined", so a response that answered something it should have declined has almost
+nothing to fail. Worked case, q021 (Kingman), same annotator, same answer:
+
+| | Score | Why |
+|---|---|---|
+| anchored | **1** | "It clearly didn't have the evidence it needed to make any kind of claim" |
+| rollup | **4.00** | One applicable box, ticked Yes; the other three went NA |
+
+The mirror case, q022 grounding, runs the other way: anchored **4**, rollup **1.00**, because the
+checklist forced per-claim scrutiny that the holistic scale let slide.
+
+## The finding the pilot was not designed to produce
+
+Holding the annotator fixed and comparing their own anchored score against their own rollup
+score for the same unit:
+
+| | Annotator 1 | Annotator 2 |
+|---|---|---|
+| Exact match | 16/28 (57%) | 10/28 (36%) |
+| Within one level | 24/28 (86%) | 23/28 (82%) |
+| Three or more levels apart | 2/28 | 2/28 |
+| Weighted kappa between arms | 0.605 | **0.465** |
+
+Annotator 2 agrees with *themselves across the two rubrics* less than the two annotators agree
+with *each other* on the anchored arm. The arms are not measuring the same construct. Reliability
+is not validity: the checklist agreed more partly because it looks at less.
+
+All three arms are a publishable methods result, and the between-arm disagreement is the most
+interesting part of it.
+
+## Where the anchored disagreements fell
+
+Eight units out of 28. Seven were one level apart, one was two levels apart, **none were
+opposite verdicts** - a healthy pattern for an ordinal scale.
+
+| By dimension | Count |
+|---|---|
+| `refusal_appropriateness` | **4** |
+| `grounding` | 3 |
+| `correctness` | 1 |
+
+| By item | Count |
+|---|---|
+| q018 (exempt well) | 3 |
+| q017 (non-exempt well) | 2 |
+| q013, q020, q023 | 1 each |
+
+Both concentrations were predicted. The historical tester data showed all five of its
+disagreements clustering on the non-exempt-well question and the address-specific supply
+question, and the twelve were hand-picked to sit there. **The item selection worked.**
+
+`refusal_appropriateness` taking 4 of the 8 is evidence that scoring partial refusals on that
+dimension alone is too blunt. It is not yet an answer. Open thread 11 stays open.
+
+## Known defect to fix before the checklist is used for anything
+
+`refusal_appropriateness` needs an item that fires when the response answered something it should
+have declined, not gated behind "if it declined". The rubric file is deliberately left unmodified
+so the arm comparison above stays reproducible.

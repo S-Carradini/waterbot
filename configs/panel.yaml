@@ -1,0 +1,58 @@
+# Judge panel configuration.
+#
+# Until 2026-09-05 no panel config existed in this repo at all. The three-model panel discussed
+# during M7 lived only in a scratchpad script, a comment table, and test parameters - the only
+# executable panel setting in the project was `DEFAULT_PANEL_MODEL`, a SINGLE model. This file
+# is what makes the three-judge panel real rather than agreed.
+#
+# INVARIANT 6: every id below is a pinned snapshot, never an alias. An alias silently repoints
+# under you, which turns a judge-stability measurement into a model-migration measurement.
+#
+# THE LIMITATION THAT MUST TRAVEL WITH EVERY RESULT FROM THIS PANEL: these are three
+# generations of ONE company's models, not three companies. M7 as specified calls for 3+
+# families because its mechanism is error decorrelation, and models from one vendor share
+# training data, post-training method, tokenizer and failure modes. A panel that agrees may be
+# agreeing because it is three views of one system. See decisions.md 040.
+#
+# Open-weight judges via HF Inference Providers were TRIED as a second/third vendor on
+# 2026-09-09/10 and abandoned: gemma-4-31B and gemma-4-26B-A4B both 504'd on the real prompt,
+# and Llama-4-Scout and phi-4 both flatlined at score 4 (>=96% of grounding scores at ceiling,
+# quadratic-weighted kappa ~0.1 against gpt-5.4). This is the same "judge carrying no
+# information" failure that dropped Llama-3.3-70B earlier. The single-vendor limitation stands.
+
+schema_version: "1"
+
+panel:
+  # Probed live on 2026-09-05; all three accept temperature=0 and strict json_schema, so the
+  # panel runs at one temperature and one output contract (see model_probe.json).
+  judges:
+    - model_id: "gpt-5.4-2026-03-05"     # newest snapshot that still accepts a temperature
+    - model_id: "gpt-5.2-2025-12-11"
+    - model_id: "gpt-4.1-2025-04-14"     # incumbent; keeps continuity with M1 and M1b
+
+  # Excluded deliberately, recorded so nobody re-adds them without reading why:
+  #   gpt-5.5-2026-04-23  rejects `temperature` outright
+  #   gpt-5-2025-08-07    rejects `temperature` outright
+  #   gpt-6-astra         alias only, no pinned snapshot exists (invariant 6)
+  #   gpt-5.6-*           alias only, no pinned snapshot exists (invariant 6)
+
+  samples: 5            # k, repeats per judge per item
+  temperature: 0.0      # matches M1 and M1b, so the runs stay comparable
+  max_tokens: 1500
+
+budget:
+  # Hard cap for the WHOLE run. The runner refuses the next call rather than continuing once
+  # cumulative spend would cross this.
+  cap_usd: 10.00
+  # Rates are USD per 1000 tokens and are ASSUMED, not verified against published pricing.
+  # Every dollar figure this project has ever produced rests on them. Measured token counts are
+  # real; the conversion to dollars is not audited.
+  rates_verified: false
+  prompt_per_1k: 0.002
+  completion_per_1k: 0.008
+  cached_prompt_per_1k: 0.0005
+
+rubric:
+  path: "eval/judge/rubric.yaml"
+  # Must be the rubric M5 put in force. `load_rubric().is_in_force` gates on this.
+  require_in_force: true

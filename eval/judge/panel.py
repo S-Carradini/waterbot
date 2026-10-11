@@ -155,25 +155,65 @@ class Budget:
 # ---------------------------------------------------------------------------
 # Validation
 # ---------------------------------------------------------------------------
+# Typographic characters that a model routinely substitutes for their ASCII equivalents when
+# quoting text back. Folding these is NOT the same as stripping punctuation: the quoted span
+# still has to be the same words in the same order, and every one of these pairs renders as the
+# same mark to a reader.
+_PUNCTUATION_EQUIVALENTS = {
+    "‘": "'", "’": "'", "‚": "'", "‛": "'",   # single quotes
+    "“": '"', "”": '"', "„": '"', "‟": '"',   # double quotes
+    "′": "'", "″": '"',                                  # primes
+    "‐": "-", "‑": "-", "‒": "-", "–": "-",   # hyphens and dashes
+    "—": "-", "―": "-", "−": "-",
+    "…": "...",                                               # ellipsis
+    " ": " ", " ": " ", " ": " ", "​": "",     # spaces
+}
+_PUNCTUATION_TABLE = str.maketrans(_PUNCTUATION_EQUIVALENTS)
+
+
 def normalise_span(text: str) -> str:
-    """Collapse whitespace and casefold, for comparing a quoted span to an answer.
+    """Collapse whitespace, fold typographic punctuation, and casefold.
 
-    Deliberately not more aggressive. Stripping punctuation would let a judge quote a span that
-    differs from the answer in ways a reader would notice, which is exactly what the check is
-    supposed to catch.
+    Deliberately not more aggressive. Stripping punctuation outright would let a judge quote a
+    span that differs from the answer in ways a reader would notice, which is exactly what this
+    check exists to catch.
+
+    Folding curly quotes to straight ones IS safe, and it was costing real verdicts. The frozen
+    answers contain U+2019 RIGHT SINGLE QUOTATION MARK, and a judge that quotes "you'll" back
+    with a straight apostrophe was failing the span check, burning its one repair attempt, and
+    being discarded. On the first live qualitative run that mechanism rejected 13 of 15 verdicts,
+    and both survivors only survived because a repair happened to reproduce the exact codepoint.
+    A verdict should not be thrown away over a character that renders identically.
     """
-    return _WHITESPACE.sub(" ", text).strip().casefold()
+    folded = text.translate(_PUNCTUATION_TABLE)
+    return _WHITESPACE.sub(" ", folded).strip().casefold()
 
 
-def validate_verdict(verdict: Verdict, response: Response) -> List[str]:
+def validate_verdict(
+    verdict: Verdict,
+    response: Response,
+    allowed_failure_modes: Optional[Sequence[str]] = None,
+) -> List[str]:
     """Return the problems with a verdict. Empty list means it passed.
 
     Returned rather than raised so the caller can feed them into the repair prompt, and so every
     problem is reported at once instead of one per attempt.
+
+    ``allowed_failure_modes`` is the ACTIVE rubric's set. Passed in rather than imported because
+    the legal set depends on which rubric is loaded, and hard-coding one rubric's modes into the
+    type is what caused 14 of 15 verdicts to be rejected on the first qualitative run.
     """
     problems: List[str] = []
     shown = {p.evidence_id for p in response.passages}
     answer = normalise_span(response.answer)
+
+    if allowed_failure_modes is not None:
+        permitted = set(allowed_failure_modes)
+        unknown = sorted(set(verdict.failure_modes) - permitted)
+        if unknown:
+            problems.append(
+                f"failure_modes {unknown} are not in this rubric; allowed: {sorted(permitted)}"
+            )
 
     for name, dimension in sorted(verdict.dimensions.items()):
         invented = sorted(set(dimension.evidence_ids) - shown)
@@ -461,7 +501,10 @@ class PanelRunner:
             return None, [str(exc)]
 
         verdict = verdict.model_copy(update={"corpus_fingerprint": self.corpus_fingerprint})
-        return verdict, validate_verdict(verdict, response)
+        return verdict, validate_verdict(
+            verdict, response,
+            allowed_failure_modes=[m.name for m in self.rubric.failure_modes],
+        )
 
     def _count_dimensions(self, verdict: Verdict) -> None:
         for dimension in verdict.dimensions.values():

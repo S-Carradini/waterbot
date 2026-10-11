@@ -4,6 +4,10 @@ ecr_auth.sh
 # Markdown documentation files
 *.md
 !docs/*.md
+# Run reports are results, not documentation. Without this negation the blanket
+# *.md rule silently drops the human-readable half of every frozen run, leaving
+# the plot and the JSON committed and the interpretation of them not.
+!eval/results/runs/**/*.md
 
 # Mac OS files
 .DS_Store
@@ -194,3 +198,9 @@ frontend/test-results/
 .claude/
 .playwright-mcp/
 iac/
+
+
+.context/
+CLAUDE.md
+# Vendored RealWaterBot prompts are code, not docs
+!eval/judge/vendor/**/*.md

@@ -91,6 +91,11 @@ class Rubric:
     failure_modes: List[FailureMode] = field(default_factory=list)
     categories: List[str] = field(default_factory=list)
     levels: Sequence[int] = REQUIRED_LEVELS
+    # The recorded rubric decision, not an inference from pilot arithmetic. M5's
+    # automatic tie-break would have chosen the checklist; this rubric is the one
+    # in force by explicit decision (decisions.md 036). Defaults True so an older
+    # rubric file without the key keeps working.
+    selected: bool = True
 
     @property
     def is_piloted(self) -> bool:
@@ -100,6 +105,52 @@ class Rubric:
         status string themselves.
         """
         return "DRAFT" not in (self.status or "").upper()
+
+    @property
+    def rubric_hash(self) -> str:
+        """Identity of the rubric, for `MeasurementVersion`.
+
+        Covers version, status, selection and every dimension's anchors and scope. Changing an
+        anchor changes what a score MEANS, so it has to change the hash, and it does.
+
+        Exists because callers were passing a hand-written label instead. A qualitative run and
+        a factual run then carried the same `rubric_hash`, so the version guard - whose whole job
+        is refusing to compare things measured differently - would have pooled them silently.
+        """
+        import hashlib
+        import json
+
+        payload = {
+            "version": self.version,
+            "status": self.status,
+            "selected": self.selected,
+            "levels": list(self.levels),
+            "dimensions": {
+                d.name: {
+                    "question": d.question,
+                    "applies_to": d.applies_to if isinstance(d.applies_to, str)
+                    else sorted(d.applies_to),
+                    "requires_evidence": d.requires_evidence,
+                    "requires_citations": d.requires_citations,
+                    "anchors": {str(k): v for k, v in sorted(d.anchors.items())},
+                }
+                for d in self.dimensions
+            },
+            "failure_modes": sorted(m.name for m in self.failure_modes),
+        }
+        blob = json.dumps(payload, sort_keys=True, separators=(",", ":"))
+        return hashlib.sha256(blob.encode("utf-8")).hexdigest()[:16]
+
+    @property
+    def is_in_force(self) -> bool:
+        """Piloted AND explicitly selected.
+
+        Piloting says the rubric can be applied consistently. Selection says it is the one we
+        chose to apply. They are different claims: at M5 both candidate rubrics were piloted
+        and only one was selected, so a caller that gates on `is_piloted` alone would happily
+        score with the rubric we rejected.
+        """
+        return self.is_piloted and self.selected
 
     @property
     def dimension_names(self) -> List[str]:
@@ -260,6 +311,13 @@ def load_rubric(path: str = DEFAULT_RUBRIC_PATH) -> Rubric:
     if len(fm_names) != len(set(fm_names)):
         raise RubricError("duplicate failure_mode names")
 
+    selected = data.get("selected", True)
+    if not isinstance(selected, bool):
+        raise RubricError(
+            f"rubric 'selected' must be true or false, got {selected!r}; an ambiguous value "
+            f"here would silently decide which rubric scores every response"
+        )
+
     return Rubric(
         version=version,
         status=data.get("status", ""),
@@ -267,6 +325,7 @@ def load_rubric(path: str = DEFAULT_RUBRIC_PATH) -> Rubric:
         failure_modes=failure_modes,
         categories=categories,
         levels=levels,
+        selected=selected,
     )
 
 

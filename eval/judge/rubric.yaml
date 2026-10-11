@@ -19,12 +19,39 @@
 #    meaningful; elsewhere it is null, NOT zero. Scoring an inapplicable
 #    dimension as zero silently penalises the system for our bookkeeping.
 #
-# Pilot this rubric on ~20 items with two human annotators BEFORE building the
-# judge. If two people cannot agree using these anchors, no model will, and the
-# anchors need rewriting first.
+# PILOT RESULT (M5, run 2026-09-04, 12 items x 2 annotators = 28 scored units).
+#
+# This rubric was piloted against two alternatives: a pure binary checklist and
+# that checklist rolled up onto this 1-4 scale. Result:
+#
+#   anchored   Cohen's kappa 0.839 quadratic-weighted / 0.604 unweighted, 20/28 units agreed
+#   checklist  kappa 1.000, 28/28 agreed
+#   rollup     kappa 1.000, 28/28 agreed
+#
+# The automatic tie-break in checklist.py:compare_arms would pick `checklist`,
+# on agreement with time as the tie-break. That selection is NOT in force.
+# `selected: true` below overrides it, deliberately, for two reasons recorded in
+# decisions.md 036:
+#
+#   1. The checklist's 1.000 is a ceiling result with no usable interval. Its 67
+#      Yes/No calls bound true agreement only at [0.946, 1.000], and it won the
+#      three-way comparison on a speed tie-break, not on measured reliability.
+#   2. The checklist is structurally blind to under-refusal. Three of its four
+#      refusal boxes are conditioned on "if it declined", so an answer that should
+#      have been declined and was not scores 4/4. Worked example: q021 scored
+#      anchored 1 ("clearly didn't have the evidence it needed") and rollup 4.00.
+#
+# Reliability is not validity. The checklist agreed more because it looks at less.
+#
+# Changing `selected` or `status` changes what every downstream score means, and
+# rubric_hash feeds MeasurementVersion, so results either side of such an edit are
+# not comparable. Do not edit either to route around a gate.
 
-version: "1.0.0-draft"
-status: "DRAFT - NOT YET PILOTED WITH HUMAN ANNOTATORS"
+version: "1.0.0"
+status: "PILOTED 2026-09-04 - SELECTED for all judge scoring (decisions.md 036)"
+
+# The explicit, recorded rubric decision. Read by rubric.py:load_rubric.
+selected: true
 scale:
   levels: [1, 2, 3, 4]
   direction: higher_is_better

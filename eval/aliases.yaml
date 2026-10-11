@@ -1,0 +1,584 @@
+# Document alias groups — GENERATED FROM CONTENT HASHES.
+#
+# Regenerate with: python eval/generate_aliases.py --write
+#
+# Every group below is PROVEN: all member names hold a byte-identical set
+# of chunk content hashes, so the retriever cannot distinguish them by any
+# means. Grouping them makes recall measure retrieval rather than corpus
+# hygiene. verified: true reflects that content-hash proof.
+#
+# IMPORTANT: a group marked SUSPECTED_CORRUPTION is NOT a claim that the
+# documents are the same work. It means different documents currently hold
+# identical stored text because the wrong file was ingested. Grouping stops
+# it distorting the metric; the corpus still needs repairing. See
+# eval/results/corpus_defects.md.
+#
+# Do not hand-edit: this file is regenerated from the corpus.
+
+alias_groups:
+  - canonical_id: "Ch.-5.6-Ft.-Mojave-Current-Future-Water-Use-12-13-2018.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: SUSPECTED_CORRUPTION
+    chunks_each: 773
+    content_fingerprint: cb9481042ada43bb
+    members:
+      - "Ch.-5.1-Ute-Tribe-Current-Future-Water-Use-12-13-2018.pdf"
+      - "Ch.-5.2-SUIT-Current-Future-Water-Use-12-13-2018.pdf"
+      - "Ch.-5.3-UMUT-Current-Future-Water-Use-12-13-2018.pdf"
+      - "Ch.-5.4-Jicarilla-Current-Future-Water-Use-12-13-2018.pdf"
+      - "Ch.-5.5-Navajo-Current-Future-Water-Use-12-13-2018.pdf"
+      - "Ch.-5.6-Ft.-Mojave-Current-Future-Water-Use-12-13-2018.pdf"
+      - "Ch.-5.8-CRIT-Current-Future-Water-Use-12-13-2018.pdf"
+      - "Ch.-5.9-Quechan-Current-Future-Water-Use-12-13-2018.pdf"
+      - "Keepers of the River.pdf"
+      - "The Ten Tribes Partnership.pdf"
+
+  - canonical_id: "ArizonaStrategicVisionforWaterResourcesSustainabilityfor thenextcentury_May2014 (17).pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 791
+    content_fingerprint: 2f4656248badf7e4
+    members:
+      - "ArizonaStrategicVisionforWaterResourcesSustainabilityfor thenextcentury_May2014 (17).pdf"
+      - "Strategic Vision for Water Supply.pdf"
+
+  - canonical_id: "Universal Access to Clean Water for Tribes in the Colorado River Basin.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 249
+    content_fingerprint: a76183bc7b73394d
+    members:
+      - "Report.pdf"
+      - "tribal clean water.pdf"
+      - "Universal Access to Clean Water for Tribes in the Colorado River Basin.pdf"
+
+  - canonical_id: "Brief History of Tohono O'odham Water.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 80
+    content_fingerprint: 45f3b89d589bba68
+    members:
+      - "Brief History of Tohono O'odham Water.pdf"
+      - "Brief History of Tohono O_odham Water.pdf"
+      - "Brief History of Water Resources-2.pdf"
+      - "Brief History of Water Resources.pdf"
+      - "Tohono O'odham Nation.pdf"
+
+  - canonical_id: "Wickenburg Water and Wastewater.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 301
+    content_fingerprint: bbd1b4bdeccca4c5
+    members:
+      - "waste water treatment.pdf"
+      - "Wickenburg Water and Wastewater.pdf"
+
+  - canonical_id: "Arizona Drought Preparedness Report 2023.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 130
+    content_fingerprint: 07905c7784015aae
+    members:
+      - "ADPAR_2023_FINAL.pdf"
+      - "ADPAR.pdf"
+      - "Arizona Drought Preparedness Report 2023.pdf"
+
+  - canonical_id: "The_Myth_of_Safe-YieldPursuing_the_Goal_of_Safe-Yield_Isnt_Saving_Our_Groundwater.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 108
+    content_fingerprint: a6a74953156ea1bc
+    members:
+      - "Myth of Safe Yield.pdf"
+      - "the_myth_of_safe-yield_0.pdf"
+      - "The_Myth_of_Safe-YieldPursuing_the_Goal_of_Safe-Yield_Isnt_Saving_Our_Groundwater.pdf"
+
+  - canonical_id: "Tucson One Water-2.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 207
+    content_fingerprint: 6a0d0963ad9a7c77
+    members:
+      - "Tucson One Water-2.pdf"
+      - "Tucson One Water.pdf"
+
+  - canonical_id: "Lake havasu City Water Savers.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 197
+    content_fingerprint: 637bdfda60856fe6
+    members:
+      - "Lake havasu City Water Savers.pdf"
+      - "Lake Havasu Water Savers.pdf"
+
+  - canonical_id: "Water Division - City of Benson.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 162
+    content_fingerprint: c0dbb085729c2388
+    members:
+      - "General Plan-2.pdf"
+      - "Water Division - City of Benson.pdf"
+
+  - canonical_id: "Enhancing Tribal Water Management Capacity in the Colorado River Basin- A Baseline Assessment.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 139
+    content_fingerprint: f57b11de88afd454
+    members:
+      - "Enhancing Tribal Water Management Capacity in the Colorado River Basin- A Baseline Assessment.pdf"
+      - "Enhancing Tribal Water Management Capacity in the Colorado River Basin: A Baseline Assessment.pdf"
+
+  - canonical_id: "FINAL Williams Water Master Plan.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 134
+    content_fingerprint: 740f783cb3c738a7
+    members:
+      - "FINAL Williams Water Master Plan.pdf"
+      - "Williams Water Master Plan.pdf"
+
+  - canonical_id: "interim guidelines for operation of lake powell and lake maed.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 134
+    content_fingerprint: 54910e0abd670e66
+    members:
+      - "Colorado River Interim Guidelines for Lower Basin Shortages.pdf"
+      - "interim guidelines for operation of lake powell and lake maed.pdf"
+
+  - canonical_id: "kyl_center_elusive_concept_assured_water_supply.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 117
+    content_fingerprint: a8d7ae5ae743fadc
+    members:
+      - "Assured water supply (CAGRD and Replenishment).pdf"
+      - "kyl_center_elusive_concept_assured_water_supply.pdf"
+
+  - canonical_id: "Houston Advanced Research Center.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 115
+    content_fingerprint: 1c5ea4368df0b08f
+    members:
+      - "Drought Contingency Plan.pdf"
+      - "Houston Advanced Research Center.pdf"
+
+  - canonical_id: "Arizona Clean Water Act Assessment.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 111
+    content_fingerprint: 3ed9fa2bd7a7c96b
+    members:
+      - "2022_cwaa.pdf"
+      - "Arizona Clean Water Act Assessment.pdf"
+
+  - canonical_id: "Watering the Sun Corridor.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 65
+    content_fingerprint: 07275fa79579280e
+    members:
+      - "sun_corridor_2021_final.pdf"
+      - "Watering the Sun Corridor.pdf"
+
+  - canonical_id: "Understanding_and_Evaluating_Safe-yield_Part_One_CAGRD_-_Central_Groundwater_Replenishment_District_AMWUA.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 54
+    content_fingerprint: a302faebfe79a3e2
+    members:
+      - "Audubon_Southwest_Understanding_Arizonas_Groundwater.pdf"
+      - "Understanding_and_Evaluating_Safe-yield_Part_One_CAGRD_-_Central_Groundwater_Replenishment_District_AMWUA.pdf"
+
+  - canonical_id: "California's Water Supply Strategy.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 52
+    content_fingerprint: ea83d56355f026c5
+    members:
+      - "California's Water Supply Strategy.pdf"
+      - "California_s Water Supply Strategy.pdf"
+
+  - canonical_id: "OPERATION PLAN FOR COLORADO RIVER RESERVOIRS.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 41
+    content_fingerprint: 5792e6d1c119bb4c
+    members:
+      - "current colorado system study.pdf"
+      - "OPERATION PLAN FOR COLORADO RIVER RESERVOIRS.pdf"
+
+  - canonical_id: "Strengthening the Nation-to-Nation Relationship.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 40
+    content_fingerprint: ed97243d3bde8b41
+    members:
+      - "Strengthening the Nation-to-Nation Relationship.pdf"
+      - "tribal water security.pdf"
+
+  - canonical_id: "2022 tuscon water quality report.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 39
+    content_fingerprint: 40d61d19733cfdcf
+    members:
+      - "2022 tuscon water quality report.pdf"
+      - "Tucson AZ.pdf"
+
+  - canonical_id: "impacts_of_colorado_river_shortage_to_tap_water_deliveries_in_central_arizona.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 38
+    content_fingerprint: ade56bfb6a916bcb
+    members:
+      - "impacts_of_colorado_river_shortage_to_tap_water_deliveries_in_central_arizona.pdf"
+      - "Tap water deliveries in central AZ.pdf"
+
+  - canonical_id: "ADWR_Supply_Demand_Upper_Hassayampa.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 34
+    content_fingerprint: a399cfb5ca756fb5
+    members:
+      - "ADWR_Supply_Demand_Upper_Hassayampa.pdf"
+      - "ADWR_Supply_Demand_Upper_San_Pedro.pdf"
+
+  - canonical_id: "AWBA 2023 Plan of Operation.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 34
+    content_fingerprint: 898d836dc429e9a4
+    members:
+      - "2023 Plan of Operation.pdf"
+      - "AWBA 2023 Plan of Operation.pdf"
+
+  - canonical_id: "Tribal-Tax-Primer-3.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 32
+    content_fingerprint: 0b550b268a0f3956
+    members:
+      - "Tribal-Tax-Primer-3.pdf"
+      - "Tribal Tax Primer.pdf"
+
+  - canonical_id: "Developing the Next Framework-1.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 30
+    content_fingerprint: df7bed894acd9bd0
+    members:
+      - "Developing the Next Framework-1.pdf"
+      - "Developing the Next Framework.pdf"
+
+  - canonical_id: "City of Cottonwood Drought and Water Shortage Preparedness Plan.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 29
+    content_fingerprint: 3d9cc08c92eb7df7
+    members:
+      - "City of Cottonwood Drought and Water Shortage Preparedness Plan.pdf"
+      - "Drought and Water Shortage Preparedness Plan.pdf"
+
+  - canonical_id: "Status of Tribal Water Rights-1.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 27
+    content_fingerprint: ab6c00a99f96b548
+    members:
+      - "Status of Tribal Water Rights-1.pdf"
+      - "Status of Tribal Water Rights.pdf"
+
+  - canonical_id: "Changes to Arizona's Adjudication & Statutes.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 24
+    content_fingerprint: 5165085695aa5414
+    members:
+      - "Changes to Arizona's Adjudication & Statutes.pdf"
+      - "Changes to Arizona_s Adjudication & Statutes.pdf"
+
+  - canonical_id: "OVERVIEW OF THE ARIZONA GROUNDWATER MANAGEMENT CODE-2.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 11
+    content_fingerprint: 46a8b175ff95f89c
+    members:
+      - "Arizona_Groundwater_Management_Act_Overview.pdf"
+      - "OVERVIEW OF THE ARIZONA GROUNDWATER MANAGEMENT CODE-2.pdf"
+      - "OVERVIEW OF THE ARIZONA GROUNDWATER MANAGEMENT CODE.pdf"
+
+  - canonical_id: "prescot water quality report.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 21
+    content_fingerprint: d4a8856873d01e25
+    members:
+      - "Prescott 2022 CCR.pdf"
+      - "prescot water quality report.pdf"
+
+  - canonical_id: "Rain Barrel and Rain Harvest Reward program.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 16
+    content_fingerprint: c3d335010fe8aa0d
+    members:
+      - "Rain Barrel and Rain Harvest Reward program.pdf"
+      - "Rainwater Harvesting.pdf"
+
+  - canonical_id: "Untangling_Housing_Affordability_Groundwater_Regulation.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 11
+    content_fingerprint: 54b07d9dad2e15ef
+    members:
+      - "Housing Affordability and Groundwater Regulation.pdf"
+      - "Untangling_Housing_Affordability_Groundwater_Regulation.pdf"
+
+  - canonical_id: "Watershed Report Card.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 10
+    content_fingerprint: 6059462617e02698
+    members:
+      - "verde_water_scorecard.pdf"
+      - "Watershed Report Card.pdf"
+
+  - canonical_id: "Summary of CAGRD History and Operations.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 10
+    content_fingerprint: 9e918c3e4171af56
+    members:
+      - "Summary of CAGRD History and Operations.pdf"
+      - "Summary-of CAGRD-History-and-Operations.pdf"
+
+  - canonical_id: "2022WaterQualityReport - Whetstone Ranch.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 10
+    content_fingerprint: 655671cae664366e
+    members:
+      - "2022WaterQualityReport - Whetstone Ranch.pdf"
+      - "CCR 2022.pdf"
+
+  - canonical_id: "lower-colorado-river-water-quality-partnership-fact-sheet.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 5
+    content_fingerprint: 023ea69e797fde98
+    members:
+      - "lower-colorado-river-water-quality-partnership-fact-sheet.pdf"
+      - "Lower Colorado River Water Quality Partnership.pdf"
+      - "Lower_Colorado_River_Water_Quality_Partnership.pdf"
+
+  - canonical_id: "cap-factsheet-power-portfolio.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 8
+    content_fingerprint: 71b774654a55a58d
+    members:
+      - "cap-factsheet-power-portfolio.pdf"
+      - "Fact Sheet Power Operations.pdf"
+
+  - canonical_id: "Arizona_Active_Management_Areas_AMA_Overview.txt"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 3
+    content_fingerprint: 6c4c0cba1cd68bf4
+    members:
+      - "Active_Management_Areas_AMAs.txt"
+      - "Arizona_Active_Management_Areas_AMA_Overview.txt"
+      - "Arizona_Drought_Monitoring_Dashboard.txt"
+
+  - canonical_id: "CAP Fact Sheet January 2024.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 5
+    content_fingerprint: e1d1a90562a21435
+    members:
+      - "CAP Fact Sheet January 2024.pdf"
+      - "CAP-FactSheet-January2024.pdf"
+
+  - canonical_id: "2022-11-colorado-river-shortage-faq.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 5
+    content_fingerprint: e81e0dddcfd6e494
+    members:
+      - "2022-11-colorado-river-shortage-faq.pdf"
+      - "Colorado River Shortage FAQ.pdf"
+
+  - canonical_id: "CAP-FactSheet-Sustainability.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 4
+    content_fingerprint: 345f780be6d63b84
+    members:
+      - "CAP-FactSheet-Sustainability.pdf"
+      - "Fact Sheet Sustainability.pdf"
+
+  - canonical_id: "Start Saving.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 3
+    content_fingerprint: fbc6bf30787c5ba2
+    members:
+      - "Start Saving.pdf"
+      - "StartSaving.pdf"
+
+  - canonical_id: "Preparing for Colorado River shortage- Milestones.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 3
+    content_fingerprint: 986473fc91150d6f
+    members:
+      - "cap-fact-sheet-shortage-milestones.pdf"
+      - "Preparing for Colorado River shortage- Milestones.pdf"
+
+  - canonical_id: "City of Phoenix Water Conservation.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 3
+    content_fingerprint: e07445e4590a729a
+    members:
+      - "City of Phoenix Drinking Water.pdf"
+      - "City of Phoenix Water Conservation.pdf"
+
+  - canonical_id: "Storm Water Pollution Tips.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 3
+    content_fingerprint: 2912fb2f136964ab
+    members:
+      - "Stormwater Outreach.pdf"
+      - "Storm Water Pollution Tips.pdf"
+
+  - canonical_id: "CAP-FactSheet-FederalRepayment-2023.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 3
+    content_fingerprint: 0643a5c72b797bfe
+    members:
+      - "CAP-FactSheet-FederalRepayment-2023.pdf"
+      - "Federal Repayment Fact Sheet.pdf"
+
+  - canonical_id: "CAP-FactSheet-WaterQuality-2023.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 3
+    content_fingerprint: b67a937f624af509
+    members:
+      - "CAP-FactSheet-WaterQuality-2023.pdf"
+      - "Fact Sheet Water Quality.pdf"
+
+  - canonical_id: "CAP and Climate Change Fact Sheet.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 2
+    content_fingerprint: 595f03344c9df5d8
+    members:
+      - "CAP and Climate Change Fact Sheet.pdf"
+      - "CAP-FactSheet-ClimateChange-2024.pdf"
+
+  - canonical_id: "CAP-FactSheet-CAGRD-2024.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 2
+    content_fingerprint: 416fbc28a751188c
+    members:
+      - "CAP-FactSheet-CAGRD-2024.pdf"
+      - "Fact Sheet CAGRD.pdf"
+
+  - canonical_id: "CAP-FactSheet-EconomicImpact-2022.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 1
+    content_fingerprint: e3129f16e33e1484
+    members:
+      - "CAP-FactSheet-EconomicImpact-2022.pdf"
+      - "Fact Sheet Economic Impact.pdf"
+
+  - canonical_id: "FAQ_groundwater permitting and wells.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 1
+    content_fingerprint: d44971072d2949d2
+    members:
+      - "FAQ_groundwater permitting and wells.pdf"
+      - "Ground Water Permits and Wells.pdf"
+
+  - canonical_id: "Active Management Area Overview.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 1
+    content_fingerprint: 20ba4dac8a1369c4
+    members:
+      - "Active Management Area Overview.pdf"
+      - "arizona_groundwatermanagement.pdf"
+
+  - canonical_id: "cap-fact-sheet-know-your-water-2022.pdf"
+    verified: true
+    evidence: content_hash_identical
+    classification: LIKELY_ALIAS
+    chunks_each: 1
+    content_fingerprint: 4947b9c4efdd0e22
+    members:
+      - "cap-fact-sheet-know-your-water-2022.pdf"
+      - "Know Your Water Factsheet.pdf"

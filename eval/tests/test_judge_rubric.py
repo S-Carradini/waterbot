@@ -103,9 +103,39 @@ class TestShippedRubric:
         assert d.applies("temporal_realtime")
         assert not d.applies("general_policy")
 
-    def test_declares_itself_unpiloted(self):
-        """Until humans pilot it, callers must be able to detect that."""
-        assert load_rubric().is_piloted is False
+    def test_declares_itself_piloted_and_selected(self):
+        """M5 ran on 2026-09-04. This rubric is piloted AND the one chosen (decisions.md 036).
+
+        Was `is_piloted is False` until the pilot ran. Both halves are asserted because they are
+        different claims: the checklist rubric is also piloted, and was rejected.
+        """
+        rubric = load_rubric()
+        assert rubric.is_piloted is True
+        assert rubric.selected is True
+        assert rubric.is_in_force is True
+        assert "DRAFT" not in rubric.status.upper()
+
+    def test_an_unpiloted_rubric_is_still_detectable(self):
+        """The guard itself must keep working, so a future draft cannot slip through."""
+        draft = Rubric(
+            version="0.0.1-draft",
+            status="DRAFT - NOT YET PILOTED WITH HUMAN ANNOTATORS",
+            dimensions=load_rubric().dimensions,
+        )
+        assert draft.is_piloted is False
+        assert draft.is_in_force is False
+
+    def test_a_piloted_but_unselected_rubric_is_not_in_force(self):
+        """Piloted and selected are separate claims; gating on piloted alone would score with
+        the rubric M5 rejected."""
+        rejected = Rubric(
+            version="1.0.0",
+            status="PILOTED 2026-09-04 - NOT SELECTED",
+            dimensions=load_rubric().dimensions,
+            selected=False,
+        )
+        assert rejected.is_piloted is True
+        assert rejected.is_in_force is False
 
     def test_failure_modes_present_and_named(self):
         fms = load_rubric().failure_modes

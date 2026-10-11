@@ -100,10 +100,18 @@ class ChecklistRubric:
     bands: Tuple[Tuple[float, int], ...]  # (minimum fraction, score), highest first
     failure_modes: Tuple[str, ...] = ()
     raw: Dict = field(default_factory=dict)
+    # Piloted at M5 and deliberately not chosen (decisions.md 036). Defaults False so a
+    # checklist file that does not say otherwise is never treated as the scoring rubric.
+    selected: bool = False
 
     @property
     def is_piloted(self) -> bool:
         return "NOT YET PILOTED" not in self.status.upper()
+
+    @property
+    def is_in_force(self) -> bool:
+        """Piloted AND explicitly selected. This rubric is piloted but not selected."""
+        return self.is_piloted and self.selected
 
     @property
     def dimension_names(self) -> List[str]:
@@ -204,6 +212,13 @@ def load_checklist(path: str = DEFAULT_CHECKLIST_PATH) -> ChecklistRubric:
     if len(set(names)) != len(names):
         raise ChecklistError(f"{path} repeats a dimension name")
 
+    selected = raw.get("selected", False)
+    if not isinstance(selected, bool):
+        raise ChecklistError(
+            f"{path} has a non-boolean 'selected' value {selected!r}; this field decides "
+            f"whether the rubric may score responses and must be unambiguous"
+        )
+
     return ChecklistRubric(
         version=str(raw.get("version", "unversioned")),
         status=str(raw.get("status", "")),
@@ -211,6 +226,7 @@ def load_checklist(path: str = DEFAULT_CHECKLIST_PATH) -> ChecklistRubric:
         bands=tuple(bands),
         failure_modes=tuple(m["name"] for m in raw.get("failure_modes") or []),
         raw=raw,
+        selected=selected,
     )
 
 

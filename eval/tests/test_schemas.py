@@ -278,15 +278,65 @@ def test_repaired_defaults_false_and_is_recorded():
     assert a_verdict(repaired=True).repaired is True
 
 
-def test_unknown_failure_mode_is_rejected():
-    """A closed set, so a typo cannot read as zero occurrences of a real mode."""
-    with pytest.raises(ValidationError):
-        a_verdict(failure_modes=["vibes_mismatch"])
+def test_the_schema_itself_accepts_any_failure_mode_string():
+    """Deliberate. The closed set moved to `panel.validate_verdict`, which knows the ACTIVE
+    rubric; see the next test.
+
+    It used to be a Literal fixed to rubric.yaml's seven factual modes, which silently assumed
+    one rubric would ever exist. When the qualitative rubric arrived with its own modes, a judge
+    that correctly reported `buried_answer` had its entire verdict rejected by pydantic - 14 of
+    15 verdicts died that way. The type could not know which rubric was loaded; the validator
+    can.
+    """
+    verdict = a_verdict(failure_modes=["buried_answer", "unexplained_jargon"])
+    assert verdict.failure_modes == ["buried_answer", "unexplained_jargon"]
 
 
 def test_known_failure_modes_are_accepted():
     verdict = a_verdict(failure_modes=["entity_substitution", "unit_or_magnitude_drift"])
     assert len(verdict.failure_modes) == 2
+
+
+def test_the_closed_set_is_still_enforced_against_the_active_rubric():
+    """The guarantee did not go away, it moved. A typo must still not invent a mode that then
+    reads as zero occurrences of a real one."""
+    from eval.judge.panel import validate_verdict
+    from eval.judge.schemas import Passage
+
+    response = Response(
+        item_id="q001", system="waterbot", persona="blue", question="q?",
+        category="general_policy", answer="an answer about wells",
+        passages=[Passage(evidence_id=1, canonical_doc_id="d", chunk_id="c",
+                          text="t", retrieval_rank=0, retrieval_score=0.5)],
+        latency_ms=0, cost_usd=0.0,
+    )
+    allowed = ["buried_answer", "unexplained_jargon", "padding"]
+
+    clean = validate_verdict(
+        a_verdict(failure_modes=["padding"]), response, allowed_failure_modes=allowed)
+    assert not [p for p in clean if "failure_modes" in p]
+
+    problems = validate_verdict(
+        a_verdict(failure_modes=["vibes_mismatch"]), response, allowed_failure_modes=allowed)
+    assert any("vibes_mismatch" in p for p in problems), problems
+
+
+def test_a_factual_mode_is_rejected_under_the_qualitative_rubric():
+    """The two rubrics have disjoint failure-mode sets, and mixing them is a real error."""
+    from eval.judge.panel import validate_verdict
+    from eval.judge.schemas import Passage
+
+    response = Response(
+        item_id="q001", system="waterbot", persona="blue", question="q?",
+        category="general_policy", answer="an answer about wells",
+        passages=[Passage(evidence_id=1, canonical_doc_id="d", chunk_id="c",
+                          text="t", retrieval_rank=0, retrieval_score=0.5)],
+        latency_ms=0, cost_usd=0.0,
+    )
+    problems = validate_verdict(
+        a_verdict(failure_modes=["entity_substitution"]), response,
+        allowed_failure_modes=["buried_answer", "padding"])
+    assert any("entity_substitution" in p for p in problems), problems
 
 
 # ---------------------------------------------------------------------------

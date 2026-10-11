@@ -26,8 +26,29 @@
 # Weights say how much an item matters. They are deliberately coarse — 3 / 2 / 1 — because a
 # finer scale invites arguing about weights instead of about answers.
 
-version: "1.0.0-draft"
-status: "DRAFT - NOT YET PILOTED WITH HUMAN ANNOTATORS"
+# PILOT RESULT (M5, run 2026-09-04): PILOTED, AND NOT SELECTED.
+#
+# This rubric reached Cohen's kappa 1.000 (28/28 units, 112/112 ticks identical
+# across two annotators) and would have won checklist.py:compare_arms on the
+# automatic tie-break. It is deliberately NOT the scoring rubric. See
+# decisions.md 036 and the header of rubric.yaml for the full reasoning; the
+# short version is that a ceiling result carries no usable interval, and this
+# rubric is structurally blind to under-refusal because three of its four
+# refusal items are conditioned on "if it declined".
+#
+# It is retained, unmodified, because the three-arm comparison is a publishable
+# methods result and re-running it against an edited rubric would invalidate that.
+# Use it for the arm comparison. Do not use it to score responses.
+#
+# Known defect to fix before any future use: refusal_appropriateness needs an
+# item that fires when the response answered something it should have declined,
+# not gated behind "if it declined".
+
+version: "1.0.0"
+status: "PILOTED 2026-09-04 - NOT SELECTED, methods comparison only (decisions.md 036)"
+
+# The explicit, recorded rubric decision. Read by checklist.py:load_checklist.
+selected: false
 
 scoring:
   mode: weighted_binary

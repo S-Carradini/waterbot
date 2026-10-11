@@ -30,6 +30,26 @@ from eval.judge.checklist import ArmResult, compare_arms
 
 ARMS: Tuple[str, ...] = ("anchored", "checklist", "rollup")
 
+# The rubric decision, recorded rather than computed.
+#
+# `compare_arms` reports what the pilot data says, and on the 2026-09-04 run that is
+# `checklist`: it reached kappa 1.000 against anchored's 0.839, and took the tie-break against
+# `rollup` on speed. That computed winner is left untouched because it is the honest measurement
+# and a publishable methods result.
+#
+# It is not the rubric in force. `anchored` is, by explicit decision (decisions.md 036):
+#
+#   * The checklist's 1.000 is a ceiling with no usable interval. Two annotators produced 112
+#     identical ticks and therefore zero information about where reliability actually sits;
+#     the 67 Yes/No calls bound it only at [0.946, 1.000].
+#   * The checklist cannot see under-refusal. Three of its four refusal items begin "if it
+#     declined", so an answer that should have been declined and was not scores full marks.
+#     q021 is the worked case: anchored 1, rollup 4.00, same annotator, same answer.
+#
+# Set to None to fall back to the computed winner. Doing so would put the rejected rubric back
+# in force, so it is not a default worth having.
+SELECTED_ARM: Optional[str] = "anchored"
+
 # The pilot is a rubric test, not a system test. Twenty was the architecture's number; the pilot
 # actually runs on the twelve below, chosen by hand. `select_pilot_items` still implements the
 # automatic stratified pick and is kept for re-selection if the gold set ever changes.
@@ -344,12 +364,31 @@ class PilotStatus:
     winner: Optional[str] = None
     agreement: Optional[float] = None
     arms: List[Dict[str, object]] = field(default_factory=list)
+    # What the pilot arithmetic picked, kept separate from what is in force.
+    computed_winner: Optional[str] = None
+    selected_arm: Optional[str] = None
+
+    @property
+    def selection_overrides_data(self) -> bool:
+        """True when the recorded decision differs from the computed winner.
+
+        Worth surfacing every time rather than burying: a reader who sees only `winner` would
+        otherwise assume the data chose it.
+        """
+        return (
+            self.computed_winner is not None
+            and self.selected_arm is not None
+            and self.computed_winner != self.selected_arm
+        )
 
     def to_dict(self) -> Dict[str, object]:
         return {
             "passed": self.passed,
             "reason": self.reason,
             "winner": self.winner,
+            "computed_winner": self.computed_winner,
+            "selected_arm": self.selected_arm,
+            "selection_overrides_data": self.selection_overrides_data,
             "agreement": self.agreement,
             "threshold": USABLE_AGREEMENT,
             "arms": self.arms,
@@ -361,9 +400,19 @@ class PilotStatus:
         for arm in self.arms:
             agreement = arm.get("agreement")
             shown = "not computed" if agreement is None else f"kappa {agreement:.3f}"
-            lines.append(f"  {str(arm.get('arm')):10s} {shown:18s} n={arm.get('n_items')}")
+            marker = "  <- in force" if arm.get("arm") == self.selected_arm else ""
+            lines.append(
+                f"  {str(arm.get('arm')):10s} {shown:18s} n={arm.get('n_items')}{marker}"
+            )
             if arm.get("notes"):
                 lines.append(f"             {arm['notes']}")
+        if self.selection_overrides_data:
+            lines += [
+                "",
+                f"  NOTE: the pilot data favours {self.computed_winner!r}, but "
+                f"{self.selected_arm!r} is the rubric in force",
+                "        by explicit decision (decisions.md 036), not by tie-break.",
+            ]
         return "\n".join(lines)
 
 
@@ -403,15 +452,55 @@ def pilot_status(labels: Sequence[PilotLabel]) -> PilotStatus:
                 f"threshold of {USABLE_AGREEMENT} - rewrite the rubric before any judge work"
             ),
             winner=None,
+            computed_winner=str(winner),
             agreement=best.agreement,
             arms=arms,
         )
 
+    computed = str(winner)
+    scored = {r.arm: r for r in results if r.agreement is not None}
+
+    # The recorded decision wins over the tie-break, but only if that arm actually cleared the
+    # bar in this run. A selection pointing at an arm the data cannot support is a configuration
+    # error, not an override to honour silently.
+    in_force = computed
+    reason = f"arm {computed!r} reached usable agreement"
+    if SELECTED_ARM is not None:
+        chosen = scored.get(SELECTED_ARM)
+        if chosen is None or chosen.agreement is None:
+            raise PilotError(
+                f"SELECTED_ARM is {SELECTED_ARM!r} but that arm produced no agreement number "
+                f"in this run; scored arms were {sorted(scored)}"
+            )
+        if chosen.agreement < USABLE_AGREEMENT:
+            return PilotStatus(
+                passed=False,
+                reason=(
+                    f"selected arm {SELECTED_ARM!r} reached kappa {chosen.agreement:.3f}, below "
+                    f"the usable threshold of {USABLE_AGREEMENT} - rewrite it, or change the "
+                    f"recorded selection deliberately"
+                ),
+                winner=None,
+                computed_winner=computed,
+                selected_arm=SELECTED_ARM,
+                agreement=chosen.agreement,
+                arms=arms,
+            )
+        in_force = SELECTED_ARM
+        reason = (
+            f"arm {SELECTED_ARM!r} is in force by recorded decision "
+            f"(kappa {chosen.agreement:.3f})"
+        )
+        if computed != SELECTED_ARM:
+            reason += f"; the data favoured {computed!r}"
+
     return PilotStatus(
         passed=True,
-        reason=f"arm {winner!r} reached usable agreement",
-        winner=str(winner),
-        agreement=best.agreement,
+        reason=reason,
+        winner=in_force,
+        computed_winner=computed,
+        selected_arm=SELECTED_ARM,
+        agreement=scored[in_force].agreement,
         arms=arms,
     )
 

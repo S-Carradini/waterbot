@@ -241,9 +241,33 @@ def test_the_checklist_rubric_loads(checklist):
     assert checklist.total_items() > 15
 
 
-def test_the_checklist_is_marked_unpiloted(checklist):
-    """Same guard as the anchored rubric: no arm is trusted before the pilot."""
-    assert checklist.is_piloted is False
+def test_the_checklist_is_piloted_but_deliberately_not_selected(checklist):
+    """M5 ran on 2026-09-04 and this arm reached kappa 1.000 - and was still rejected.
+
+    Was `is_piloted is False` before the pilot. It is now genuinely piloted, which is exactly
+    why `selected` has to be a separate flag: a caller gating on `is_piloted` alone would score
+    with the rubric decisions.md 036 rejected. The rejection is on record because the checklist
+    is structurally blind to under-refusal - three of its four refusal items are conditioned on
+    "if it declined".
+    """
+    assert checklist.is_piloted is True
+    assert checklist.selected is False
+    assert checklist.is_in_force is False
+
+
+def test_the_checklist_refusal_items_are_still_conditioned_on_declining(checklist):
+    """Pins the known defect so a future fix is a deliberate, visible change.
+
+    q021 is the worked case: the response answered a question it had no evidence for, three of
+    the four refusal items went NA because it did not decline, and the one remaining item was a
+    Yes - so the arm scored it 4.00 where the anchored rubric scored it 1.
+    """
+    items = checklist.get("refusal_appropriateness").items
+    conditioned = [i for i in items if i.text.strip().lower().startswith("if it declined")]
+    assert len(conditioned) >= 2, (
+        "the under-refusal blind spot is expected to still be present; if this fails the "
+        "rubric was changed and the M5 arm comparison is no longer reproducible"
+    )
 
 
 def test_refusal_applies_to_every_category(checklist):

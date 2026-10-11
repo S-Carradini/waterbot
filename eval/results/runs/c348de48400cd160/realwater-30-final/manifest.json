@@ -1,0 +1,32 @@
+{
+  "budget_usd": null,
+  "corpus_fingerprint": "c348de48400cd160",
+  "created_at": "2026-09-10T09:08:37.752627+00:00",
+  "dataset_version": "gold_set.json",
+  "git_sha": "f9f6dd0",
+  "judge_ids": [],
+  "measurement_version": {
+    "aggregation_version": "1",
+    "corpus_fingerprint": "c348de48400cd160",
+    "judge_set": [
+      "google/gemma-4-26B-A4B-it",
+      "gpt-5.4-2026-03-05",
+      "meta-llama/Llama-4-Scout-17B-16E-Instruct"
+    ],
+    "k": 5,
+    "prompt_hash": "pointwise-v1",
+    "rubric_hash": "panel-final",
+    "temperature": 0.0,
+    "verdict_schema_hash": "unversioned"
+  },
+  "notes": "freezer=1.0.0; index=none (brute force); k=4; mode=exact_knn; L1 freeze of the 30-item gold set against the realwater corpus. Exact kNN with the ivfflat index scan disabled.",
+  "rubric_version": null,
+  "run_id": "realwater-30-final",
+  "samples_per_judge": 1,
+  "schema_version": "1",
+  "seed": 0,
+  "spent_usd": 0.0,
+  "systems": [
+    "realwater"
+  ]
+}

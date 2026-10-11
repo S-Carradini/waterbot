@@ -1,0 +1,65 @@
+# Judge panel for the QUALITATIVE (communicative) round: two judges.
+#
+# REBUILT 2026-09-10, then trimmed to TWO judges 2026-09-11 by owner decision - one OpenAI and
+# one Llama, three samples each. phi-4 was dropped: it produced ZERO usable verdicts through the
+# panel on the 2026-09-10 probe (raw calls returned valid JSON, but nothing passed the verbatim-
+# span / evidence-id / closed-failure-mode validation). Gemma 4 was dropped earlier after two
+# 504s. Llama-4-Scout is the one HF model that has held up through the full validation path.
+#
+# LIMITATION: two judges means no tie-break. Where Llama-4-Scout and gpt-5.4 disagree, nothing
+# adjudicates it - acceptable here because the human raters are the arbiter, not the panel, but
+# a two-judge panel is thin for any pooled score with an interval. Stated, not hidden.
+#
+# Rubric: rubric_qualitative.yaml v2 - Grice's four maxims (Quantity, Quality, Relation, Manner)
+# plus an ISO 24495-1 plain-language dimension. This is the instrument the paper's
+# communicative-quality section describes.
+#
+# INVARIANT 6: OpenAI id is a pinned dated snapshot; the HF id is a repo id whose served
+# revision must be recorded in the run manifest when first used.
+
+schema_version: "1"
+
+panel:
+  judges:
+    # --- Meta, via HF Inference Providers. MoE, 109B total / 17B active. Probed 2026-09-10:
+    #     valid json_schema through the full validation path, ~8s, no reasoning-trace bloat. --
+    - model_id: "meta-llama/Llama-4-Scout-17B-16E-Instruct"
+      provider: huggingface
+      structured_mode: json_schema
+      max_tokens: 5000
+
+    # --- OpenAI anchor. Newest snapshot that still accepts temperature=0. -------------------
+    - model_id: "gpt-5.4-2026-03-05"
+      provider: openai
+      max_tokens: 5000
+
+  # k=3. The review sheet uses ONE rationale per judge per question, and within-judge variation
+  # was near zero at T=0 on earlier runs. k buys insurance against a rejected sample; 3 covers
+  # that. Bump to 5 if the paper's text commits to k=5 for this round.
+  samples: 3
+  temperature: 0.0      # honoured by gpt-5.4 and by both HF MoE models
+  max_tokens: 5000      # per-judge overrides above take precedence; runner uses the max
+
+budget:
+  cap_usd: 10.00
+  # OpenAI rates ASSUMED and unverified. HF Inference Providers bills differently again and
+  # these rates do NOT describe it, so the dollar figure for a mixed panel is indicative only.
+  rates_verified: false
+  prompt_per_1k: 0.002
+  completion_per_1k: 0.008
+  cached_prompt_per_1k: 0.0005
+
+rubric:
+  # The communication rubric, not the factual one. Five dimensions: Grice's Quantity, Quality,
+  # Relation, Manner + ISO 24495-1 plain language. See rubric_qualitative.yaml.
+  path: "eval/judge/rubric_qualitative.yaml"
+  # Deliberately false. rubric_qualitative.yaml v2 has NEVER been piloted with human annotators,
+  # so `is_in_force` is false and the normal gate would refuse. Scores from this round are
+  # exploratory input to the human-expert rating, not a validated measurement.
+  require_in_force: false
+
+prompt:
+  template: pointwise_qualitative_v1
+  # Carries Grice's four maxims and the ISO 24495-1 plain-language principles as the standard,
+  # plus two worked examples. The examples teach METHOD; the prompt says not to anchor on them.
+  few_shot_examples: 2

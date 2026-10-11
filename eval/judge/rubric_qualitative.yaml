@@ -1,0 +1,222 @@
+# Qualitative (communicative) judge rubric: is the answer well COMMUNICATED?
+#
+# The anchored rubric (rubric.yaml) asks whether an answer is TRUE and GROUNDED. This one asks
+# whether it COMMUNICATES: does it give the right amount, is it honestly hedged, does it stay on
+# the question, is it clear, and can a non-specialist reader actually use it. These fail
+# separately from accuracy - a perfectly grounded answer can bury its point under three
+# paragraphs of throat-clearing, and a fluent well-organised answer can be confidently wrong.
+# Neither rubric substitutes for the other, and this one is never used alone to make a quality
+# claim.
+#
+# FRAMEWORK. The five dimensions are Grice's four conversational maxims (Quantity, Quality,
+# Relation, Manner; Grice 1975) plus a plain-language dimension drawn from ISO 24495-1:2023,
+# whose object is helping a reader FIND, UNDERSTAND and USE the information they need. This
+# replaces the earlier seven-dimension draft (v1.0.0) built from a bespoke ten-rule list; the
+# switch was made on 2026-09-10 so the instrument matches the framework the paper describes.
+#
+# DESIGN RULES - identical to rubric.yaml, deliberately, so the two are comparable:
+#   1. Anchors describe OBSERVABLE CONDITIONS, not adjectives. "Buries the direct answer below
+#      background" is checkable by a second person; "well organised" is not.
+#   2. Four levels, deliberately even. An odd scale gives a safe middle to retreat to, which
+#      compresses the distribution; central-tendency bias is documented and persistent in
+#      ordinal LLM scoring, so removing the middle is the one structural defence available.
+#   3. Dimensions fail INDEPENDENTLY. If two always move together, one is redundant.
+#   4. applies_to controls scope. Inapplicable is null, NOT zero.
+#
+# STATUS. Never piloted with human annotators. Unlike rubric.yaml, whose 0.839 kappa came from a
+# real two-annotator pilot, no human has applied THESE anchors. Scores from this rubric are
+# EXPLORATORY until that happens - which is the point of the human-expert rating round this
+# rubric was written for.
+
+version: "2.0.0-draft"
+status: "DRAFT - NOT YET PILOTED WITH HUMAN ANNOTATORS"
+
+# Not the scoring rubric for the factual pipeline. rubric.yaml holds that (decisions.md 036).
+selected: false
+
+scale:
+  levels: [1, 2, 3, 4]
+  direction: higher_is_better
+  null_meaning: "dimension does not apply to this response, or judge abstained"
+
+categories:
+  - general_policy
+  - entity_grounding
+  - numeric_extraction
+  - temporal_realtime
+  - multi_hop
+  - out_of_scope_negative
+
+dimensions:
+
+  - name: quantity
+    question: "Does the response give the amount of information the question needs - no less, no more?"
+    applies_to: all
+    requires_evidence: false
+    maxim: "Grice - Quantity"
+    anchors:
+      4: >-
+        Contains what the reader needs to answer the question or act on it, and
+        little else. Nothing material is missing; no restated question, repeated
+        points, or background nobody asked for.
+      3: >-
+        Substantially the right amount, but carries one passage of related
+        background or a side point the asker did not need, OR omits one
+        non-critical detail that would have helped.
+      2: >-
+        Noticeably off: padded to the point where the reader must hunt for the
+        useful part, OR a part of a multi-part question is left unanswered, OR a
+        caveat the reader needs to act safely is missing.
+      1: >-
+        So thin the reader learns nothing they did not already know, OR so
+        padded that the answer is effectively hidden inside filler.
+    notes: >-
+      Length is judged against what the question warrants, not in the abstract. A
+      one-line question answered in one line scores 4; the same question answered
+      in six paragraphs does not.
+
+  - name: quality
+    question: "Are claims presented with the confidence the material actually supports?"
+    applies_to: all
+    requires_evidence: false
+    maxim: "Grice - Quality"
+    anchors:
+      4: >-
+        Every claim is stated at the confidence it warrants. Uncertainty,
+        incompleteness, and the need to verify are flagged where they exist. No
+        invented sources, figures, policies, dates, or entitlements.
+      3: >-
+        Substantively calibrated, but one claim is stated slightly more firmly
+        than the material supports, or a caveat that would help is missing.
+      2: >-
+        States a guess, assumption, or inference as established fact, OR hedges
+        so uniformly that the reader cannot tell what is known from what is not.
+      1: >-
+        Invents a specific source, figure, policy, date, or entitlement, or
+        asserts something the material contradicts.
+    notes: >-
+      Distinct from `correctness` in the factual rubric, which asks whether the
+      claim is TRUE. This asks whether the stated CONFIDENCE matches the support.
+      A claim that happens to be true but is asserted on no visible basis still
+      fails here.
+
+  - name: relation
+    question: "Does the response stay on the question actually asked?"
+    applies_to: all
+    requires_evidence: false
+    maxim: "Grice - Relation"
+    anchors:
+      4: >-
+        Every part of the response bears on the specific question asked. Related
+        information, if any, is clearly subordinate and brief.
+      3: >-
+        On topic, but drifts once into an adjacent question, a definition, or a
+        warning the asker did not raise.
+      2: >-
+        Answers a broader or adjacent question rather than the one asked, or
+        spends as much space on tangents as on the question.
+      1: >-
+        Does not engage the question asked; answers something else, or offers
+        only generic advice unconnected to what was asked.
+
+  - name: manner
+    question: "Is the response clear, direct, and in a logical order?"
+    applies_to: all
+    requires_evidence: false
+    maxim: "Grice - Manner"
+    anchors:
+      4: >-
+        The direct answer or main takeaway is near the top. Sentences carry one
+        idea each. Sequence and structure fit the content - a list is a list, a
+        procedure is in order, examples and caveats sit apart from the main
+        answer.
+      3: >-
+        Readable, but one choice works against it - the answer arrives after a
+        sentence of preamble, or a short list is written as prose, or one
+        sentence has to be re-read.
+      2: >-
+        The answer is reachable only by scanning past a paragraph of background,
+        OR content that was plainly a sequence or list is delivered as
+        undifferentiated prose.
+      1: >-
+        Order actively impedes reading: the answer is at the end or never stated
+        plainly, or a substantial block of text with no internal structure.
+
+  - name: plain_language
+    question: "Can a non-specialist reader find, understand, and use this? (ISO 24495-1)"
+    applies_to: all
+    requires_evidence: false
+    standard: "ISO 24495-1:2023 plain language - governing principles"
+    anchors:
+      4: >-
+        Everyday words throughout. Every technical term, acronym, or statutory
+        reference is explained the first time it appears. The reader is told what
+        the information MEANS for them or what to do with it, not just the facts.
+      3: >-
+        Mostly plain and usable, but one technical term or acronym is left
+        unexplained where a general reader would need it, OR the practical
+        takeaway is implied rather than stated.
+      2: >-
+        Several unexplained terms of art, OR the response states facts without
+        ever making clear what they mean for this reader, so a reasonable reader
+        could not act on it confidently.
+      1: >-
+        Reads as specialist text. A general reader could not follow it without
+        looking terms up, or could not tell what it requires of them.
+    notes: >-
+      Arizona water language is exactly where this bites: AMA, INA, assured
+      versus adequate supply, adjudication, exempt versus non-exempt well.
+      Using those terms is fine and often necessary. Using them unexplained to a
+      home buyer, or leaving the buyer to work out what the rule means for their
+      transaction, is not.
+
+# Communicative failure modes. Distinct from the factual rubric's list, which names ways an
+# answer can be WRONG; these name ways an answer can be correct and still fail its reader. Each
+# maps to one maxim / to the plain-language dimension.
+failure_modes:
+
+  - name: padding
+    description: >-
+      Quantity: length not justified by content - restated question, repeated
+      points, unrequested background, or filler offers to help further.
+
+  - name: critical_omission
+    description: >-
+      Quantity: a part of the question, or a caveat the reader needs in order to
+      act safely, is left out.
+
+  - name: overclaiming
+    description: >-
+      Quality: a guess, assumption, or inference stated as established fact, or
+      an invented source, figure, policy, or date.
+
+  - name: uniform_hedging
+    description: >-
+      Quality: hedges everything equally, so the reader cannot separate what is
+      known from what is uncertain.
+
+  - name: topic_drift
+    description: >-
+      Relation: answers an adjacent or broader question, or drifts into
+      definitions, advice, or warnings the asker did not raise.
+
+  - name: buried_answer
+    description: >-
+      Manner: the direct answer exists but sits below background the reader must
+      wade through first.
+
+  - name: disordered
+    description: >-
+      Manner: content that is plainly a sequence or a list, delivered as
+      undifferentiated prose, or steps given out of order.
+
+  - name: unexplained_jargon
+    description: >-
+      Plain language: a term of art - AMA, INA, assured supply, adjudication,
+      non-exempt well - used without explanation to a reader who would not know
+      it.
+
+  - name: no_reader_takeaway
+    description: >-
+      Plain language: states the facts but never says what they mean for this
+      reader or what the reader should do with them.
