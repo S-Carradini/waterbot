@@ -1,0 +1,112 @@
+{
+  "model": "gpt-4.1-2025-04-14",
+  "samples_per_item": 20,
+  "with_passages": true,
+  "pooled_abstention_rate": 0.03,
+  "pooled_wilson_95": [
+    0.010254524024038925,
+    0.0845193642905276
+  ],
+  "items_inconsistent": 1,
+  "calls": 103,
+  "repaired": 3,
+  "spend_usd_at_assumed_rates": 0.416758,
+  "items": [
+    {
+      "item_id": "q049",
+      "n_samples": 20,
+      "n_abstained": 0,
+      "abstention_rate": 0.0,
+      "wilson_95": [
+        0.0,
+        0.1611
+      ],
+      "inconsistent": false,
+      "distinct_scores": [
+        4
+      ],
+      "median": 4.0,
+      "iqr": 0.0,
+      "entropy": -0.0,
+      "escalate": false,
+      "escalation_reason": null
+    },
+    {
+      "item_id": "q052",
+      "n_samples": 20,
+      "n_abstained": 0,
+      "abstention_rate": 0.0,
+      "wilson_95": [
+        0.0,
+        0.1611
+      ],
+      "inconsistent": false,
+      "distinct_scores": [
+        4
+      ],
+      "median": 4.0,
+      "iqr": 0.0,
+      "entropy": -0.0,
+      "escalate": false,
+      "escalation_reason": null
+    },
+    {
+      "item_id": "q053",
+      "n_samples": 20,
+      "n_abstained": 0,
+      "abstention_rate": 0.0,
+      "wilson_95": [
+        0.0,
+        0.1611
+      ],
+      "inconsistent": false,
+      "distinct_scores": [
+        4
+      ],
+      "median": 4.0,
+      "iqr": 0.0,
+      "entropy": -0.0,
+      "escalate": false,
+      "escalation_reason": null
+    },
+    {
+      "item_id": "q056",
+      "n_samples": 20,
+      "n_abstained": 0,
+      "abstention_rate": 0.0,
+      "wilson_95": [
+        0.0,
+        0.1611
+      ],
+      "inconsistent": false,
+      "distinct_scores": [
+        4
+      ],
+      "median": 4.0,
+      "iqr": 0.0,
+      "entropy": -0.0,
+      "escalate": false,
+      "escalation_reason": null
+    },
+    {
+      "item_id": "q059",
+      "n_samples": 20,
+      "n_abstained": 3,
+      "abstention_rate": 0.15,
+      "wilson_95": [
+        0.0524,
+        0.3604
+      ],
+      "inconsistent": true,
+      "distinct_scores": [
+        3,
+        4
+      ],
+      "median": 4.0,
+      "iqr": 0.0,
+      "entropy": 0.16137847944869915,
+      "escalate": false,
+      "escalation_reason": null
+    }
+  ]
+}

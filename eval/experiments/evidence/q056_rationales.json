@@ -1,0 +1,145 @@
+{
+  "item_id": "q056",
+  "samples": 5,
+  "conditions": {
+    "no_evidence": {
+      "n_passages": 0,
+      "spend_usd": 0.019068,
+      "calls": 5,
+      "verdicts": [
+        {
+          "sample_index": 0,
+          "score": null,
+          "insufficient_evidence": true,
+          "evidence_ids": [],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "There is no evidence provided in the EVIDENCE block to support any answer to the question about Lake Mead's water level in 2030. The response attempts to answer the question by referencing forecasts and trends, but without any supporting evidence, it should have refused to answer. The appropriate action would have been to decline to answer due to lack of evidence.",
+          "failure_modes": [
+            "overrefusal"
+          ]
+        },
+        {
+          "sample_index": 1,
+          "score": null,
+          "insufficient_evidence": true,
+          "evidence_ids": [],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "There is no evidence provided in the EVIDENCE block to support any statements about Lake Mead's water level in 2030 or any related forecasts. The response attempts to answer the question with speculative information and references to forecasts and trends, but without any supporting evidence. The appropriate action would have been to refuse to answer due to lack of evidence.",
+          "failure_modes": [
+            "overrefusal"
+          ]
+        },
+        {
+          "sample_index": 2,
+          "score": 1,
+          "insufficient_evidence": false,
+          "evidence_ids": [],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "There is no evidence provided in the EVIDENCE block to support any statements about Lake Mead's water level in 2030, or even about trends, forecasts, or risks for 2026. The system should have refused to answer due to lack of evidence, but instead provided a speculative answer with unsupported specifics. This is a clear case of answering when it should have declined.",
+          "failure_modes": [
+            "overrefusal"
+          ]
+        },
+        {
+          "sample_index": 3,
+          "score": 1,
+          "insufficient_evidence": false,
+          "evidence_ids": [],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "There is no evidence provided in the EVIDENCE block to support any statements about Lake Mead's water level in 2030, or even about trends, risks, or forecasts. The system should have refused to answer the question due to lack of evidence, but instead it provided a speculative answer with unsupported specifics. This is a clear case of answering when it should have declined, as there is insufficient evidence to support any part of the response.",
+          "failure_modes": [
+            "overrefusal"
+          ]
+        },
+        {
+          "sample_index": 4,
+          "score": null,
+          "insufficient_evidence": true,
+          "evidence_ids": [],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "There is no evidence provided in the EVIDENCE block to support any statements about Lake Mead's water level in 2030 or any related forecasts. The response attempts to answer the question with specific projections and trends, but without any supporting evidence, it should have refused to answer. The appropriate action would have been to decline to answer due to lack of evidence.",
+          "failure_modes": [
+            "overrefusal"
+          ]
+        }
+      ]
+    },
+    "with_evidence": {
+      "n_passages": 4,
+      "spend_usd": 0.021162,
+      "calls": 5,
+      "verdicts": [
+        {
+          "sample_index": 0,
+          "score": 4,
+          "insufficient_evidence": false,
+          "evidence_ids": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "The question asks for the water level at Lake Mead in 2030. The evidence provides some near-term forecasts (to 2026) and discusses factors influencing the lake's level, but does not provide any projections or forecasts specifically for 2030. The response correctly refuses to give an exact 2030 level, citing the uncertainty and lack of long-term projections, and instead summarizes the available evidence about trends and risks up to 2026. This is an appropriate refusal, as the evidence does not support a specific answer for 2030, and the response does not overreach or invent unsupported specifics.",
+          "failure_modes": []
+        },
+        {
+          "sample_index": 1,
+          "score": 4,
+          "insufficient_evidence": false,
+          "evidence_ids": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "The question asks for the water level at Lake Mead in 2030. The evidence provides current and near-term forecasts (through 2024 and some mention of risk by 2026) but does not contain any projections or data specifically for 2030. The response correctly refuses to provide an exact figure for 2030, citing the uncertainty and lack of long-term projections, and instead summarizes the available evidence about trends and risks up to 2026. This is an appropriate refusal, as the evidence does not support a specific answer for 2030, and the response does not overreach or invent unsupported specifics. The refusal is clear and justified based on the evidence provided.",
+          "failure_modes": []
+        },
+        {
+          "sample_index": 2,
+          "score": 4,
+          "insufficient_evidence": false,
+          "evidence_ids": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "The question asks for the water level at Lake Mead in 2030. The evidence provides current and near-term forecasts (through 2024 and some risk scenarios out to 2026), but does not contain any projections or forecasts specifically for 2030. The response correctly refuses to provide an exact figure for 2030, citing the uncertainty and lack of long-term projections, and instead summarizes the available evidence about trends and risks up to 2026. This is an appropriate refusal, as the evidence does not support a specific answer for 2030, and the response does not overreach or invent unsupported specifics. The refusal is clear and justified based on the evidence provided.",
+          "failure_modes": []
+        },
+        {
+          "sample_index": 3,
+          "score": 4,
+          "insufficient_evidence": false,
+          "evidence_ids": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "The question asks for the water level at Lake Mead in 2030. The evidence provides current and near-term forecasts (through 2024 and some risk scenarios out to 2026), but does not contain any projections or data specifically for 2030. The response correctly refuses to provide an exact 2030 value, citing the uncertainty and lack of long-term projections, and instead summarizes the available evidence about trends and risks up to 2026. This is an appropriate refusal, as it does not invent unsupported specifics and accurately reflects the limits of the evidence.",
+          "failure_modes": []
+        },
+        {
+          "sample_index": 4,
+          "score": 4,
+          "insufficient_evidence": false,
+          "evidence_ids": [
+            1,
+            2,
+            3,
+            4
+          ],
+          "quoted_span": "Predicting the exact water level at Lake Mead in 2030 is challenging due to variables like weather, water use, and conservation efforts. However, current forecasts suggest that if current trends continue\u2014with increased inflows from Lake Powell and reduced water use by the Lower Basin states\u2014Lake Mead could avoid the rapid drops seen in previous years. Still, there is a risk that, by the summer of 2026, levels could dip back into the 1,040-foot range if conditions worsen, and long-term projections remain uncertain.",
+          "rationale": "The question asks for the water level at Lake Mead in 2030. The evidence provides forecasts and scenarios for the next year or two (e.g., through 2026), but does not contain any projections or data specifically for 2030. The response correctly refuses to provide an exact figure for 2030, citing the uncertainty and lack of long-term projections, and instead summarizes the available near-term forecasts and their limitations. This is an appropriate refusal, as the evidence does not support a specific answer for 2030, and the response does not overreach or invent unsupported specifics.",
+          "failure_modes": []
+        }
+      ]
+    }
+  }
+}

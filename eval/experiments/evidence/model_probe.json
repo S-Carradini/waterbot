@@ -1,0 +1,47 @@
+{
+  "gpt-5.5-2026-04-23": {
+    "token_field": "max_completion_tokens",
+    "temperature_zero": false,
+    "json_schema": true,
+    "usable": true,
+    "error": null,
+    "prompt_tokens": 99,
+    "completion_tokens": 213
+  },
+  "gpt-5.4-2026-03-05": {
+    "token_field": "max_completion_tokens",
+    "temperature_zero": true,
+    "json_schema": true,
+    "usable": true,
+    "error": null,
+    "prompt_tokens": 99,
+    "completion_tokens": 31
+  },
+  "gpt-5.2-2025-12-11": {
+    "token_field": "max_completion_tokens",
+    "temperature_zero": true,
+    "json_schema": true,
+    "usable": true,
+    "error": null,
+    "prompt_tokens": 99,
+    "completion_tokens": 31
+  },
+  "gpt-5-2025-08-07": {
+    "token_field": "max_completion_tokens",
+    "temperature_zero": false,
+    "json_schema": true,
+    "usable": true,
+    "error": null,
+    "prompt_tokens": 99,
+    "completion_tokens": 306
+  },
+  "gpt-4.1-2025-04-14": {
+    "token_field": "max_tokens",
+    "temperature_zero": true,
+    "json_schema": true,
+    "usable": true,
+    "error": null,
+    "prompt_tokens": 100,
+    "completion_tokens": 33
+  }
+}

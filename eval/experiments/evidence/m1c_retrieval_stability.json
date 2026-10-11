@@ -1,0 +1,94 @@
+{
+  "replicates": 25,
+  "k": 4,
+  "n_items": 12,
+  "items_with_varying_document_set": 0,
+  "items_with_varying_order": 0,
+  "unstable_items": [],
+  "per_item": {
+    "q049": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q050": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q051": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q052": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q053": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q054": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q055": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q056": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q057": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q058": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q059": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    },
+    "q060": {
+      "distinct_document_sets": 1,
+      "distinct_orderings": 1,
+      "stable_set": true,
+      "stable_order": true,
+      "most_common_set_count": 25
+    }
+  }
+}

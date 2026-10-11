@@ -1,0 +1,56 @@
+{
+  "item": "q049",
+  "assumed_prompt_rate_per_1k": 0.002,
+  "assumed_completion_rate_per_1k": 0.008,
+  "rates_are_verified": false,
+  "models": [
+    {
+      "model_id": "gpt-5.4-2026-03-05",
+      "token_param": "max_completion_tokens",
+      "supports_temperature": true,
+      "api_calls": 1,
+      "repaired": 0,
+      "prompt_tokens": 2353,
+      "completion_tokens": 210,
+      "cached_tokens": 0,
+      "total_tokens": 2563,
+      "cost_at_gpt41_rates_usd": 0.006386,
+      "cost_per_call_at_gpt41_rates_usd": 0.006386,
+      "score": 4,
+      "insufficient_evidence": false,
+      "rationale_chars": 587
+    },
+    {
+      "model_id": "gpt-5.2-2025-12-11",
+      "token_param": "max_completion_tokens",
+      "supports_temperature": true,
+      "api_calls": 1,
+      "repaired": 0,
+      "prompt_tokens": 2353,
+      "completion_tokens": 247,
+      "cached_tokens": 0,
+      "total_tokens": 2600,
+      "cost_at_gpt41_rates_usd": 0.006682,
+      "cost_per_call_at_gpt41_rates_usd": 0.006682,
+      "score": 3,
+      "insufficient_evidence": false,
+      "rationale_chars": 736
+    },
+    {
+      "model_id": "gpt-4.1-2025-04-14",
+      "token_param": "max_tokens",
+      "supports_temperature": true,
+      "api_calls": 1,
+      "repaired": 0,
+      "prompt_tokens": 2355,
+      "completion_tokens": 210,
+      "cached_tokens": 0,
+      "total_tokens": 2565,
+      "cost_at_gpt41_rates_usd": 0.00639,
+      "cost_per_call_at_gpt41_rates_usd": 0.00639,
+      "score": 4,
+      "insufficient_evidence": false,
+      "rationale_chars": 581
+    }
+  ]
+}

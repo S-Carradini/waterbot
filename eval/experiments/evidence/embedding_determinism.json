@@ -1,0 +1,27 @@
+{
+  "repeats": 10,
+  "any_drift": true,
+  "per_question": {
+    "q049": {
+      "distinct_vectors": 1,
+      "repeats": 10,
+      "identical": true,
+      "max_abs_coordinate_delta": 0.0,
+      "dimensions": 1536
+    },
+    "q050": {
+      "distinct_vectors": 2,
+      "repeats": 10,
+      "identical": false,
+      "max_abs_coordinate_delta": 0.0001881774514913559,
+      "dimensions": 1536
+    },
+    "q051": {
+      "distinct_vectors": 1,
+      "repeats": 10,
+      "identical": true,
+      "max_abs_coordinate_delta": 0.0,
+      "dimensions": 1536
+    }
+  }
+}

@@ -1,0 +1,134 @@
+{
+  "replicates": 25,
+  "k": 4,
+  "model": "gpt-4.1",
+  "temperature": 0.0,
+  "items_retrieval_varied": 0,
+  "items_answer_varied": 11,
+  "items_generation_varied_independently": 11,
+  "n_items": 12,
+  "prompt_tokens": 282075,
+  "completion_tokens": 27193,
+  "per_item": {
+    "q049": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 5,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "75e0433c92f7d476": 5
+      }
+    },
+    "q050": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 3,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "611e2fecc1853239": 3
+      }
+    },
+    "q051": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 10,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "3ae7811457a9696b": 10
+      }
+    },
+    "q052": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 13,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "335c371615c2ffdc": 13
+      }
+    },
+    "q053": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 4,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "bf3214fb345b1f07": 4
+      }
+    },
+    "q054": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 4,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "532f0fad3ecc0470": 4
+      }
+    },
+    "q055": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 3,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "068813b15c80fb83": 3
+      }
+    },
+    "q056": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 16,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "07f54456dd35b020": 16
+      }
+    },
+    "q057": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 11,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "a4f72dbe899d38b9": 11
+      }
+    },
+    "q058": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 1,
+      "retrieval_stable": true,
+      "answer_stable": true,
+      "generation_varied_with_retrieval_held_fixed": false,
+      "answers_per_retrieval_set": {
+        "33d9be2a6066d85b": 1
+      }
+    },
+    "q059": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 17,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "15eff75337f72c3a": 17
+      }
+    },
+    "q060": {
+      "distinct_retrieval_sets": 1,
+      "distinct_answers": 4,
+      "retrieval_stable": true,
+      "answer_stable": false,
+      "generation_varied_with_retrieval_held_fixed": true,
+      "answers_per_retrieval_set": {
+        "e014a84f778f02d5": 4
+      }
+    }
+  }
+}
