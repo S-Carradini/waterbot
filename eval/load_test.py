@@ -52,8 +52,11 @@ async def simulate_user(user_id: int, queries: List[str], vector_store: PgVector
         
         # 3. LLM Generation
         kb_data = "\n\n".join([d.page_content for d in docs])
+        # The question reaches the model only through chat_history — see the
+        # note in generation_metrics.py. An empty history sends no question,
+        # which understates prompt size and therefore generation latency.
         llm_body = await llm_adapter.get_llm_body(
-            chat_history=[],
+            chat_history=[{"role": "user", "content": query}],
             kb_data=kb_data,
             temperature=0.0,
             endpoint_type="default"

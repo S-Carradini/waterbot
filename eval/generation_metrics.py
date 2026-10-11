@@ -42,17 +42,34 @@ MODEL_COST_PER_1K = {
 DEFAULT_EVAL_MODEL = "gpt-4.1"
 
 
-def load_benchmark_dataset() -> List[Dict[str, Any]]:
+def load_benchmark_dataset(include_excluded: bool = False) -> List[Dict[str, Any]]:
+    """Load benchmark questions, skipping quarantined ones by default.
+
+    Questions flagged excluded_from_scoring have no corpus document that
+    genuinely sources them, so grading an answer against them measures a known
+    dataset gap rather than the system. Skipping also avoids paying for LLM
+    calls that produce an uninterpretable score.
+    """
     dataset_path = os.path.join(_script_dir, "benchmark_dataset.json")
     with open(dataset_path, "r", encoding="utf-8") as f:
         data = json.load(f)
-    return data.get("questions", [])
+    questions = data.get("questions", [])
+    if include_excluded:
+        return questions
+    return [q for q in questions if not q.get("excluded_from_scoring")]
 
 
-async def judge_hallucination(question: str, answer: str, llm_adapter: OpenAIAdapter) -> bool:
+async def judge_hallucination(
+    question: str, answer: str, llm_adapter: OpenAIAdapter
+) -> tuple:
     """
     Use an LLM to determine if the bot hallucinated on an out-of-scope question.
-    Returns True if the bot HALLUCINATED (tried to answer), False if it correctly REFUSED.
+    Returns (hallucinated, usage) where hallucinated is True if the bot tried
+    to answer, False if it correctly REFUSED.
+
+    Usage is returned so judge calls are included in the run's cost. They were
+    previously uncounted, along with all RAGAS grading calls, which made the
+    reported spend a small fraction of the real one.
     """
     judge_prompt = (
         "You are evaluating a chatbot that is only supposed to answer questions about "
@@ -73,10 +90,16 @@ async def judge_hallucination(question: str, answer: str, llm_adapter: OpenAIAda
             max_tokens=10,
         )
         verdict = response.choices[0].message.content.strip().upper()
-        return "ANSWERED" in verdict
+        usage = {}
+        if getattr(response, "usage", None):
+            usage = {
+                "prompt_tokens": response.usage.prompt_tokens or 0,
+                "completion_tokens": response.usage.completion_tokens or 0,
+            }
+        return "ANSWERED" in verdict, usage
     except Exception:
         # Fallback to keyword matching if LLM judge fails
-        return _keyword_hallucination_check(answer)
+        return _keyword_hallucination_check(answer), {}
 
 
 def _keyword_hallucination_check(answer: str) -> bool:
@@ -139,9 +162,15 @@ async def run_generation_evaluation(db_url: str = None) -> None:
     hallucinations_on_negatives = 0
     total_negatives = 0
 
-    # Cost tracking
-    total_prompt_tokens = 0
-    total_completion_tokens = 0
+    # Cost tracking, split by which subsystem spent the tokens. The previous
+    # single counter only covered pipeline generation and therefore reported a
+    # small fraction of the true run cost — RAGAS grading is usually the
+    # largest line item.
+    cost_buckets = {
+        "pipeline": {"prompt_tokens": 0, "completion_tokens": 0},
+        "judge": {"prompt_tokens": 0, "completion_tokens": 0},
+        "grading": {"prompt_tokens": 0, "completion_tokens": 0},
+    }
 
     for idx, q_data in enumerate(dataset):
         q_id = q_data["id"]
@@ -157,7 +186,17 @@ async def run_generation_evaluation(db_url: str = None) -> None:
         kb_data = await rag_manager.knowledge_to_string(retrieval_payload)
         
         # 2. Generation
-        chat_history = []
+        #
+        # CRITICAL: get_llm_body() has no user_query parameter — it builds
+        # messages as [system_prompt(kb_data)] + chat_history. The question
+        # reaches the model ONLY via chat_history. Production does this by
+        # passing the real session history (main.py: get_session_history_all),
+        # which already contains the user turn.
+        #
+        # Passing chat_history=[] here meant the model received a system prompt
+        # and NO question at all, so every generation metric was scoring an
+        # answer to nothing. Mirror production's message shape instead.
+        chat_history = [{"role": "user", "content": question}]
         llm_body = await llm_adapter.get_llm_body(
             chat_history=chat_history,
             kb_data=kb_data,
@@ -170,13 +209,15 @@ async def run_generation_evaluation(db_url: str = None) -> None:
         # Track token usage if the adapter exposes it
         if hasattr(llm_adapter, "last_usage"):
             usage = llm_adapter.last_usage or {}
-            total_prompt_tokens += usage.get("prompt_tokens", 0)
-            total_completion_tokens += usage.get("completion_tokens", 0)
-        
+            cost_buckets["pipeline"]["prompt_tokens"] += usage.get("prompt_tokens", 0)
+            cost_buckets["pipeline"]["completion_tokens"] += usage.get("completion_tokens", 0)
+
         # Check negative hallucination with LLM judge
         if category == "out_of_scope_negative":
             total_negatives += 1
-            hallucinated = await judge_hallucination(question, answer, llm_adapter)
+            hallucinated, judge_usage = await judge_hallucination(question, answer, llm_adapter)
+            cost_buckets["judge"]["prompt_tokens"] += judge_usage.get("prompt_tokens", 0)
+            cost_buckets["judge"]["completion_tokens"] += judge_usage.get("completion_tokens", 0)
             if hallucinated:
                 hallucinations_on_negatives += 1
                 print(f"  -> HALLUCINATION detected on {q_id}")
@@ -198,6 +239,57 @@ async def run_generation_evaluation(db_url: str = None) -> None:
     
     ragas_dataset = Dataset.from_dict(data)
     
+    from langchain_openai import ChatOpenAI, OpenAIEmbeddings
+    from ragas.llms import LangchainLLMWrapper
+    from ragas.embeddings import LangchainEmbeddingsWrapper
+    
+    eval_llm = LangchainLLMWrapper(ChatOpenAI(model=model_id))
+    eval_embeddings = LangchainEmbeddingsWrapper(OpenAIEmbeddings())
+    
+    # RAGAS grading is normally the dominant cost of a run: four metrics x N
+    # questions, each a separate LLM call. Attribute it with a callback handler
+    # built on langchain_core.
+    #
+    # The obvious choice, langchain_community's get_openai_callback, is not
+    # usable here: langchain_community.callbacks fails to import against
+    # langchain-core >= 1.0 (it reaches for langchain_core.tracers.langchain_v1,
+    # which was removed). Since langchain_community is only present as a ragas
+    # dependency, relying on it for cost measurement would silently report
+    # "not measured" on exactly the setups the suite actually runs on.
+    # BaseCallbackHandler is stable core API, so this works across versions.
+    grading_tokens = {"prompt_tokens": 0, "completion_tokens": 0}
+
+    try:
+        from langchain_core.callbacks.base import BaseCallbackHandler
+
+        class _TokenCounter(BaseCallbackHandler):
+            """Accumulate token usage reported by the grading model."""
+
+            def on_llm_end(self, response, **kwargs):
+                usage = {}
+                # Newer LangChain surfaces usage per-generation; older versions
+                # put it in llm_output. Check both so this doesn't go quiet.
+                if getattr(response, "llm_output", None):
+                    usage = response.llm_output.get("token_usage") or {}
+                if not usage:
+                    for gen_list in getattr(response, "generations", []) or []:
+                        for gen in gen_list:
+                            message = getattr(gen, "message", None)
+                            meta = getattr(message, "usage_metadata", None) if message else None
+                            if meta:
+                                grading_tokens["prompt_tokens"] += meta.get("input_tokens", 0)
+                                grading_tokens["completion_tokens"] += meta.get("output_tokens", 0)
+                    return
+                grading_tokens["prompt_tokens"] += usage.get("prompt_tokens", 0)
+                grading_tokens["completion_tokens"] += usage.get("completion_tokens", 0)
+
+        token_counter = _TokenCounter()
+        eval_llm = LangchainLLMWrapper(ChatOpenAI(model=model_id, callbacks=[token_counter]))
+        cost_measurable = True
+    except ImportError:
+        print("WARN: langchain_core callbacks unavailable — grading cost not measured.")
+        cost_measurable = False
+
     result = evaluate(
         ragas_dataset,
         metrics=[
@@ -206,8 +298,18 @@ async def run_generation_evaluation(db_url: str = None) -> None:
             context_precision,
             context_recall
         ],
+        llm=eval_llm,
+        embeddings=eval_embeddings,
     )
-    
+
+    if cost_measurable and (grading_tokens["prompt_tokens"] or grading_tokens["completion_tokens"]):
+        cost_buckets["grading"] = grading_tokens
+    else:
+        # Report honestly rather than counting zero as if it were measured.
+        if cost_measurable:
+            print("WARN: grading token usage was not reported by the model wrapper.")
+        cost_buckets["grading"] = None
+
     ragas_df = result.to_pandas()
     
     results_dir = os.path.join(_script_dir, "results")
@@ -235,27 +337,71 @@ async def run_generation_evaluation(db_url: str = None) -> None:
             cat_summary["n"] = int(len(cat_df))
             by_category[cat] = cat_summary
 
-    # Estimate cost
+    # Estimate cost per bucket
     cost_info = MODEL_COST_PER_1K.get(model_id, {"prompt": 0.0, "completion": 0.0})
-    estimated_cost = (
-        (total_prompt_tokens / 1000) * cost_info["prompt"] +
-        (total_completion_tokens / 1000) * cost_info["completion"]
-    )
 
-    serializable_result = {k: float(v) for k, v in result.items()}
+    def _bucket_cost(bucket: dict) -> float:
+        return (
+            (bucket["prompt_tokens"] / 1000) * cost_info["prompt"] +
+            (bucket["completion_tokens"] / 1000) * cost_info["completion"]
+        )
+
+    measured = {k: v for k, v in cost_buckets.items() if v is not None}
+    total_prompt_tokens = sum(b["prompt_tokens"] for b in measured.values())
+    total_completion_tokens = sum(b["completion_tokens"] for b in measured.values())
+    estimated_cost = sum(_bucket_cost(b) for b in measured.values())
+
+    # RAGAS aggregates: exclude out_of_scope_negative questions.
+    #
+    # Negatives have no gold context by construction, so context_precision is
+    # 0.0 for every one of them and context_recall is meaningless. Averaging
+    # them into the headline dragged all four metrics down and made the gate
+    # measure "how many negatives are in the dataset" as much as answer
+    # quality. Negatives are scored by the refusal judge instead, which is the
+    # metric that actually applies to them.
+    NEGATIVE_CATEGORY = "out_of_scope_negative"
+    metric_cols = ["faithfulness", "answer_correctness", "context_precision", "context_recall"]
+    scored_df = ragas_df[ragas_df["category"] != NEGATIVE_CATEGORY]
+
+    def _means(df) -> dict:
+        out = {}
+        for col in metric_cols:
+            if col in df.columns and len(df) > 0:
+                value = df[col].mean()
+                if value == value:  # filter NaN
+                    out[col] = float(value)
+        return out
+
+    serializable_result = _means(scored_df)
+    all_questions_result = _means(ragas_df)
 
     summary = {
         "total_questions": len(dataset),
+        "scored_questions": int(len(scored_df)),
         "model_id": model_id,
+        # Headline metrics — positives only.
         "metrics": serializable_result,
+        # Retained for continuity with historical runs, which averaged over
+        # everything. Not comparable to `metrics`.
+        "metrics_including_negatives": all_questions_result,
+        "negatives_excluded_from_metrics": True,
         "by_category": by_category,
         "hallucination_on_negatives_rate": hallucination_rate,
         "hallucinated_negatives_count": hallucinations_on_negatives,
         "total_negatives_count": total_negatives,
         "cost": {
+            "by_bucket": {
+                k: {**v, "estimated_usd": round(_bucket_cost(v), 4)}
+                for k, v in measured.items()
+            },
+            "grading_measured": cost_buckets["grading"] is not None,
             "prompt_tokens": total_prompt_tokens,
             "completion_tokens": total_completion_tokens,
-            "estimated_usd": round(estimated_cost, 4)
+            "estimated_usd": round(estimated_cost, 4),
+            # Embedding spend (retrieval queries + RAGAS answer_correctness
+            # similarity) is not included; it is small relative to grading but
+            # non-zero, so this figure is a close lower bound, not exact.
+            "excludes": ["embeddings"],
         }
     }
     
@@ -266,7 +412,8 @@ async def run_generation_evaluation(db_url: str = None) -> None:
     print("\nSUCCESS: Generation Evaluation Complete!")
     print(f"Results saved to: {csv_path}")
     print(f"Summary saved to: {json_path}")
-    print(f"\n--- Overall (model={model_id}) ---")
+    print(f"\n--- Overall (model={model_id}, {len(scored_df)} scored questions, "
+          f"{total_negatives} negatives excluded) ---")
     for k, v in serializable_result.items():
         print(f"  {k}: {v:.4f}")
     print(f"  hallucination_on_negatives: {hallucination_rate:.4f} ({hallucinations_on_negatives}/{total_negatives})")
@@ -275,11 +422,18 @@ async def run_generation_evaluation(db_url: str = None) -> None:
         n = cat_metrics.get("n", 0)
         faith = cat_metrics.get("faithfulness", 0)
         correct = cat_metrics.get("answer_correctness", 0)
-        print(f"  {cat:25s}  n={n:2d}  faithfulness={faith:.4f}  correctness={correct:.4f}")
+        marker = "  (judged by refusal rate, not RAGAS)" if cat == NEGATIVE_CATEGORY else ""
+        print(f"  {cat:25s}  n={n:2d}  faithfulness={faith:.4f}  correctness={correct:.4f}{marker}")
     print(f"\n--- Cost ---")
-    print(f"  Prompt tokens: {total_prompt_tokens}")
-    print(f"  Completion tokens: {total_completion_tokens}")
-    print(f"  Estimated cost: ${estimated_cost:.4f}")
+    for bucket_name, bucket in measured.items():
+        print(f"  {bucket_name:9s}  prompt={bucket['prompt_tokens']:>7,}  "
+              f"completion={bucket['completion_tokens']:>6,}  "
+              f"${_bucket_cost(bucket):.4f}")
+    if cost_buckets["grading"] is None:
+        print("  grading    NOT MEASURED (langchain_community unavailable)")
+    print(f"  {'TOTAL':9s}  prompt={total_prompt_tokens:>7,}  "
+          f"completion={total_completion_tokens:>6,}  ${estimated_cost:.4f}")
+    print("  (excludes embedding spend)")
 
     return summary
 

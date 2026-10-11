@@ -20,6 +20,8 @@ How to Run the Suite:
 
 Before running anything, make sure your local Docker database is running and you have installed the dependencies from the eval/requirements-eval.txt file. You'll also need a valid OpenAI API key in your environment.
 
+Start with the preflight check: run preflight.py in the eval directory. This verifies that every document the benchmark expects actually exists in the database before you spend any money on LLM calls. If it fails, the scores you would get are measuring corpus completeness rather than retrieval quality, so fix the corpus (or the benchmark) first. The full suite runs this automatically and aborts on failure; pass --skip-preflight to override, though you should not need to. Running preflight.py --propose-aliases prints candidate duplicate-filename groups for review without modifying anything.
+
 To test just the retrieval part of the system, run the retrieval_metrics.py script in the eval directory. This runs very quickly because it just queries the database and doesn't make any LLM calls.
 
 If you want to test the full pipeline and grade the answers, run the generation_metrics.py script. This will take a bit longer since it involves generating responses and grading them via the OpenAI API.
@@ -51,3 +53,17 @@ The benchmark_dataset.json file holds all our test questions and expected source
 For automation and comparison, run_eval_suite.py handles the CI checks using the rules in thresholds.yaml and includes regression detection against eval_history.jsonl. We also have an ablation_runner.py script that lets us run A/B tests to compare different database configurations, like seeing how the system performs before and after adding new PDFs.
 
 The config.py file handles shared setup like database connections, load_test.py is there for performance benchmarking, and report_generator.py produces the structured evaluation_report.md after each run. All the results get dumped into the results folder.
+
+Two modules handle measurement integrity. preflight.py is the corpus gate described above. corpus_identity.py resolves the fact that the same document exists in our corpus under several different filenames, with the reviewed equivalences recorded in aliases.yaml. Tests for the harness's own metric mathematics live in eval/tests/ and run without a database or an API key.
+
+Measurement Corrections (v2):
+
+An audit found three defects that made earlier results invalid, so any run recorded before measurement_version 2 in eval_history.jsonl should be discarded rather than compared against.
+
+First, the benchmark question was never actually sent to the LLM. The adapter's get_llm_body takes no user_query parameter and only receives the question through chat_history, which the harness was passing as an empty list. Every generation metric was therefore grading an answer produced from a system prompt with no question attached. This is why the hallucination rate on out-of-scope questions was 100 percent: with no question present the bot cannot refuse anything.
+
+Second, retrieval scoring joined gold_source_ids against chunk filenames as raw strings, but the corpus contains the same document under multiple names. Correct retrievals were counted as misses. The tell was in the suite's own output — keyword hit rate, which compares chunk text rather than filenames, was 4.5 times higher than recall@4.
+
+Third, 34 of 59 gold documents (58 percent) were not in the evaluated database at all, including every one of the newly added PDFs the suite was built to assess.
+
+Because of these fixes, scores will jump sharply between v1 and v2. That jump is a correction to the measurement, not an improvement to the system, and the regression check refuses to compare across versions so it can never be misreported as a win. Cost figures also rise substantially, because RAGAS grading calls (typically around 85 percent of the true spend) were previously uncounted.

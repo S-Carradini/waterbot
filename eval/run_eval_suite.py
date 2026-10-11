@@ -1,8 +1,14 @@
 import os
 import sys
 import json
+import argparse
 import asyncio
 import datetime
+
+# Bump when a change alters what the metrics MEAN rather than how the system
+# performs. Runs with different versions are never compared. See the comment
+# on the history record in run_suite().
+MEASUREMENT_VERSION = 2
 
 # Ensure both project root and application are in Python path
 _script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -23,19 +29,45 @@ except ImportError:
 
 from eval.retrieval_metrics import run_retrieval_evaluation
 from eval.generation_metrics import run_generation_evaluation
+from eval.preflight import run_preflight, print_human
 
-async def run_suite():
+async def run_suite(skip_preflight: bool = False):
     print("START: Starting RAG Evaluation Suite")
-    
+
     db_url = resolve_db_url()
-            
+
     # Load thresholds
     thresholds_path = os.path.join(_script_dir, "thresholds.yaml")
     with open(thresholds_path, "r", encoding="utf-8") as f:
         thresholds = yaml.safe_load(f)
-        
+
     print(f"Loaded Thresholds: {thresholds}")
-    
+
+    # 0. Corpus preflight — runs BEFORE any LLM spend.
+    #
+    # If gold documents are missing from the corpus, every downstream number
+    # measures corpus completeness rather than system quality, and the whole
+    # run is wasted money producing a misleading result. Fail fast instead.
+    preflight = None
+    if not skip_preflight:
+        try:
+            preflight = run_preflight(db_url=db_url)
+            print_human(preflight)
+        except Exception as e:
+            print(f"ERROR: Preflight could not inspect the corpus: {e}")
+            print("Is the database running? Use --skip-preflight to bypass (not recommended).")
+            sys.exit(2)
+
+        if not preflight["passed"]:
+            missing = preflight["gold_sources"]["missing"]
+            affected = len(preflight["gold_sources"]["affected_questions"])
+            print(f"\nABORT: {missing} gold document(s) are absent from the corpus, "
+                  f"affecting {affected} question(s).")
+            print("Retrieval scores computed now would measure corpus completeness,")
+            print("not retrieval quality. Fix the corpus or the benchmark first.")
+            print("Override with --skip-preflight if you understand the caveat.")
+            sys.exit(1)
+
     # 1. Run Retrieval Eval
     retrieval_summary = run_retrieval_evaluation(db_url=db_url)
     retrieval_metrics = retrieval_summary["aggregate_metrics"]
@@ -92,12 +124,36 @@ async def run_suite():
     history_record = {
         "timestamp": datetime.datetime.now(datetime.timezone.utc).isoformat(),
         "passed": passed,
+        # MEASUREMENT_VERSION identifies what these numbers *mean*.
+        #
+        # v1 runs are not comparable to v2 runs. Between them, three defects
+        # were fixed that each changed the metrics' meaning rather than the
+        # system's behaviour:
+        #   * the benchmark question was never sent to the LLM (generation
+        #     metrics were scoring answers to an empty prompt)
+        #   * retrieval joined on raw filenames, so correct retrievals of
+        #     aliased documents scored as misses
+        #   * RAGAS aggregates included out-of-scope negatives
+        #
+        # Scores will jump sharply at this boundary. That jump is a
+        # measurement correction, NOT a quality improvement, and the
+        # regression check below refuses to compare across versions so it can
+        # never be reported as a win.
+        "measurement_version": MEASUREMENT_VERSION,
         "metrics": {
             "faithfulness": f_score,
             "answer_correctness": ac_score,
             "retrieval_recall_at_4": r_score,
             "hallucination_on_negatives_rate": hallucination_rate
-        }
+        },
+        "provenance": {
+            "corpus_fingerprint": (preflight or {}).get("corpus", {}).get("fingerprint"),
+            "alias_groups_active": (preflight or {}).get("aliases", {}).get("groups_active"),
+            "alias_groups_unverified": (preflight or {}).get("aliases", {}).get("groups_unverified"),
+            "model_id": generation_summary.get("model_id"),
+            "scored_questions": generation_summary.get("scored_questions"),
+            "preflight_skipped": preflight is None,
+        },
     }
     
     # Regression detection: compare against last N runs
@@ -107,15 +163,36 @@ async def run_suite():
     if os.path.exists(history_path):
         with open(history_path, "r", encoding="utf-8") as f:
             history_lines = f.readlines()
-        
+
         if history_lines:
-            recent_runs = []
-            for line in history_lines[-history_lookback:]:
+            # Only compare against runs measured the same way. Records written
+            # before the Phase 0 fixes carry a different (or absent) version
+            # and describe different quantities.
+            comparable = []
+            skipped_versions = 0
+            for line in history_lines:
                 try:
-                    recent_runs.append(json.loads(line.strip()))
+                    record = json.loads(line.strip())
                 except json.JSONDecodeError:
                     continue
-            
+                if record.get("measurement_version", 1) == MEASUREMENT_VERSION:
+                    comparable.append(record)
+                else:
+                    skipped_versions += 1
+
+            recent_runs = comparable[-history_lookback:]
+
+            # Single header for the whole regression section, whichever
+            # combination of notices applies below.
+            if skipped_versions or not recent_runs:
+                print(f"\n--- Regression Check ---")
+            if skipped_versions:
+                print(f"  Ignoring {skipped_versions} historical run(s) from an earlier "
+                      f"measurement version; their numbers are not comparable.")
+            if not recent_runs:
+                print(f"  No comparable history at measurement_version="
+                      f"{MEASUREMENT_VERSION}. This run establishes the new baseline.")
+
             if recent_runs:
                 print(f"\n--- Regression Check (vs last {len(recent_runs)} run(s)) ---")
                 
@@ -179,5 +256,13 @@ async def run_suite():
 
 
 if __name__ == "__main__":
-    asyncio.run(run_suite())
+    parser = argparse.ArgumentParser(description="Run the full RAG evaluation suite")
+    parser.add_argument(
+        "--skip-preflight",
+        action="store_true",
+        help="bypass the corpus integrity gate (not recommended — scores may "
+             "reflect a missing corpus rather than retrieval quality)",
+    )
+    args = parser.parse_args()
+    asyncio.run(run_suite(skip_preflight=args.skip_preflight))
 

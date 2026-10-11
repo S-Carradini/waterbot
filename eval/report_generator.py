@@ -49,6 +49,28 @@ def generate_report() -> str:
     lines.append("## Overall Performance")
     lines.append("")
     
+    # Measurement caveats belong at the top, before any number is read.
+    caveats = []
+    identity = retrieval.get("identity", {}) if retrieval else {}
+    unverified = identity.get("alias_groups_unverified", 0)
+    if unverified:
+        caveats.append(
+            f"**{unverified} document alias group(s) are unverified.** They are active "
+            f"and therefore affect recall. Review `eval/aliases.yaml` and set "
+            f"`verified: true` once confirmed."
+        )
+    if generation and not generation.get("cost", {}).get("grading_measured", True):
+        caveats.append(
+            "**Grading cost was not measured** (`langchain_community` unavailable), "
+            "so the reported spend excludes RAGAS calls and is a substantial underestimate."
+        )
+    if caveats:
+        lines.append("> **Read before interpreting these numbers**")
+        lines.append(">")
+        for c in caveats:
+            lines.append(f"> - {c}")
+        lines.append("")
+
     if retrieval:
         agg = retrieval.get("aggregate_metrics", {})
         lines.append(f"**Retrieval** ({retrieval.get('valid_questions', 0)} scored questions out of {retrieval.get('total_questions', 0)} total)")
@@ -61,14 +83,26 @@ def generate_report() -> str:
         lines.append(f"| MRR | {format_float(agg.get('mrr', 0))} |")
         khr = agg.get("keyword_hit_rate", 0)
         if khr > 0:
-            lines.append(f"| Keyword Hit Rate | {format_pct(khr)} |")
+            n_kw = retrieval.get("questions_with_keywords")
+            suffix = f" (over {n_kw} question(s) with keywords)" if n_kw else ""
+            lines.append(f"| Keyword Hit Rate | {format_pct(khr)}{suffix} |")
         lines.append("")
     
     if generation:
         metrics = generation.get("metrics", {})
         model_id = generation.get("model_id", "unknown")
-        lines.append(f"**Generation** (model: {model_id})")
+        scored = generation.get("scored_questions")
+        negatives = generation.get("total_negatives_count", 0)
+        scope = f", {scored} scored questions" if scored else ""
+        lines.append(f"**Generation** (model: {model_id}{scope})")
         lines.append("")
+        if generation.get("negatives_excluded_from_metrics"):
+            lines.append(
+                f"*{negatives} out-of-scope negatives are excluded from these averages — "
+                f"they have no gold context, so RAGAS context metrics are undefined for them. "
+                f"They are scored by the refusal rate below.*"
+            )
+            lines.append("")
         lines.append("| Metric | Score |")
         lines.append("|--------|-------|")
         for k, v in metrics.items():
@@ -78,15 +112,35 @@ def generate_report() -> str:
         hall_total = generation.get("total_negatives_count", 0)
         lines.append(f"| Hallucination on Negatives | {format_pct(hall_rate)} ({hall_count}/{hall_total}) |")
         lines.append("")
-        
-        # Cost section
+
+        # Cost section, broken out by which subsystem spent the tokens.
         cost = generation.get("cost", {})
         if cost.get("prompt_tokens", 0) > 0:
             lines.append("**Cost**")
             lines.append("")
-            lines.append(f"- Prompt tokens: {cost.get('prompt_tokens', 0):,}")
-            lines.append(f"- Completion tokens: {cost.get('completion_tokens', 0):,}")
-            lines.append(f"- Estimated cost: ${cost.get('estimated_usd', 0):.4f}")
+            by_bucket = cost.get("by_bucket", {})
+            if by_bucket:
+                lines.append("| Stage | Prompt tokens | Completion tokens | Est. USD |")
+                lines.append("|-------|---------------|-------------------|----------|")
+                for name, bucket in by_bucket.items():
+                    lines.append(
+                        f"| {name} | {bucket.get('prompt_tokens', 0):,} | "
+                        f"{bucket.get('completion_tokens', 0):,} | "
+                        f"${bucket.get('estimated_usd', 0):.4f} |"
+                    )
+                lines.append(
+                    f"| **total** | **{cost.get('prompt_tokens', 0):,}** | "
+                    f"**{cost.get('completion_tokens', 0):,}** | "
+                    f"**${cost.get('estimated_usd', 0):.4f}** |"
+                )
+            else:
+                lines.append(f"- Prompt tokens: {cost.get('prompt_tokens', 0):,}")
+                lines.append(f"- Completion tokens: {cost.get('completion_tokens', 0):,}")
+                lines.append(f"- Estimated cost: ${cost.get('estimated_usd', 0):.4f}")
+            excludes = cost.get("excludes")
+            if excludes:
+                lines.append("")
+                lines.append(f"*Excludes {', '.join(excludes)} spend; figure is a lower bound.*")
             lines.append("")
     
     # Per-category breakdowns

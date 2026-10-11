@@ -1,0 +1,91 @@
+{
+  "total_questions": 56,
+  "scored_questions": 44,
+  "model_id": "gpt-4.1",
+  "metrics": {
+    "faithfulness": 0.6673649582740491,
+    "answer_correctness": 0.48931272672202747,
+    "context_precision": 0.5530303030082702,
+    "context_recall": 0.39772727272727265
+  },
+  "metrics_including_negatives": {
+    "faithfulness": 0.5612629434058005,
+    "answer_correctness": 0.47941238635432043,
+    "context_precision": 0.4523809523618552,
+    "context_recall": 0.38392857142857145
+  },
+  "negatives_excluded_from_metrics": true,
+  "by_category": {
+    "temporal_realtime": {
+      "faithfulness": 0.7286,
+      "answer_correctness": 0.4692,
+      "context_precision": 0.4286,
+      "context_recall": 0.3571,
+      "n": 7
+    },
+    "entity_grounding": {
+      "faithfulness": 0.6976,
+      "answer_correctness": 0.4356,
+      "context_precision": 0.5,
+      "context_recall": 0.25,
+      "n": 6
+    },
+    "general_policy": {
+      "faithfulness": 0.5604,
+      "answer_correctness": 0.5209,
+      "context_precision": 0.5204,
+      "context_recall": 0.2778,
+      "n": 15
+    },
+    "multi_hop": {
+      "faithfulness": 0.5414,
+      "answer_correctness": 0.523,
+      "context_precision": 0.5417,
+      "context_recall": 0.2917,
+      "n": 8
+    },
+    "numeric_extraction": {
+      "faithfulness": 0.9177,
+      "answer_correctness": 0.4543,
+      "context_precision": 0.7743,
+      "context_recall": 0.875,
+      "n": 8
+    },
+    "out_of_scope_negative": {
+      "faithfulness": 0.1722,
+      "answer_correctness": 0.4431,
+      "context_precision": 0.0833,
+      "context_recall": 0.3333,
+      "n": 12
+    }
+  },
+  "hallucination_on_negatives_rate": 0.6666666666666666,
+  "hallucinated_negatives_count": 8,
+  "total_negatives_count": 12,
+  "cost": {
+    "by_bucket": {
+      "pipeline": {
+        "prompt_tokens": 62056,
+        "completion_tokens": 6647,
+        "estimated_usd": 0.1773
+      },
+      "judge": {
+        "prompt_tokens": 2183,
+        "completion_tokens": 24,
+        "estimated_usd": 0.0046
+      },
+      "grading": {
+        "prompt_tokens": 623086,
+        "completion_tokens": 117111,
+        "estimated_usd": 2.1831
+      }
+    },
+    "grading_measured": true,
+    "prompt_tokens": 687325,
+    "completion_tokens": 123782,
+    "estimated_usd": 2.3649,
+    "excludes": [
+      "embeddings"
+    ]
+  }
+}
