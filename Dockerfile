@@ -1,5 +1,6 @@
 # Stage 1: Build the React frontend
-FROM node:18-alpine AS frontend-builder
+# Vite 8 / rolldown require Node ^20.19 or >=22.12
+FROM node:22-alpine AS frontend-builder
 
 WORKDIR /build
 
