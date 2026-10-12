@@ -38,6 +38,26 @@ export async function sendChatMessage(userQuery, language = 'en') {
 }
 
 /**
+ * Send a message to the River persona (/riverbot page)
+ */
+export async function sendRiverbotMessage(userQuery) {
+  const formData = new FormData();
+  formData.append('user_query', userQuery);
+
+  const response = await fetch(`${API_BASE_URL}/riverbot_chat_api`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Riverbot request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
  * Get more detailed response
  */
 export async function getDetailedResponse(language = 'en') {

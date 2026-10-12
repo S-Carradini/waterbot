@@ -75,7 +75,8 @@ body {
 }
 
 /* Figma design pages bypass the scale wrapper and old background */
-.spa-scale-wrapper:has(.figma-root) {
+.spa-scale-wrapper:has(.figma-root),
+.spa-scale-wrapper:has(.riverbot-root) {
   transform: none;
   width: 100vw;
   min-width: 100vw;

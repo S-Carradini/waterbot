@@ -213,6 +213,14 @@ if frontend_dist_path:
                         logging.info(f"Mounted public images from: {images_path.resolve()}")
                     except Exception as e:
                         logging.error(f"Failed to mount images directory at {images_path.resolve()}: {e}")
+                # Riverbot UI media (river photo/video, mascot) from frontend/public/riverbot-assets
+                riverbot_assets_path = frontend_dist_path / "riverbot-assets"
+                if riverbot_assets_path.exists() and riverbot_assets_path.is_dir():
+                    try:
+                        app.mount("/riverbot-assets", StaticFiles(directory=str(riverbot_assets_path.resolve())), name="riverbot-assets")
+                        logging.info(f"Mounted Riverbot assets from: {riverbot_assets_path.resolve()}")
+                    except Exception as e:
+                        logging.error(f"Failed to mount Riverbot assets at {riverbot_assets_path.resolve()}: {e}")
         except Exception as e:
             logging.error(f"Failed to mount assets directory at {assets_path_str}: {e}")
             frontend_dist_path = None
@@ -1514,13 +1522,22 @@ async def settings_page(request: Request):
 
 RIVERBOT_CANONICAL_HOST = "www.azwaterbot.org"
 
-@app.get("/riverbot", response_class=HTMLResponse)
-async def riverbot_page(request: Request):
-    """Serve the riverbot page (Jinja template), canonicalizing to the www host"""
+def _riverbot_canonical_redirect(request: Request):
+    """Redirect the bare azwaterbot.org host to the canonical www host."""
     if request.url.hostname == "azwaterbot.org":
         target = request.url.replace(scheme="https", netloc=RIVERBOT_CANONICAL_HOST)
         return RedirectResponse(url=str(target), status_code=301)
-    return templates.TemplateResponse("riverbot.html", {"request": request})
+    return None
+
+@app.get("/riverbot", response_class=HTMLResponse)
+async def riverbot_page(request: Request):
+    """Serve the Riverbot React UI, canonicalizing to the www host"""
+    return _riverbot_canonical_redirect(request) or await _serve_react_spa()
+
+@app.get("/riverbot-old", response_class=HTMLResponse)
+async def riverbot_old_page(request: Request):
+    """Previous Riverbot page (Jinja template), kept as a fallback"""
+    return _riverbot_canonical_redirect(request) or templates.TemplateResponse("riverbot.html", {"request": request})
 
 
 @app.post('/api/tts')

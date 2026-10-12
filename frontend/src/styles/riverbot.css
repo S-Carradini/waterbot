@@ -1,0 +1,56 @@
+/*
+ * Riverbot (/riverbot) styles. Everything is scoped under .riverbot-root so the
+ * Waterbot pages are unaffected. Ported from the Figma Make theme.css, which
+ * set these rules globally.
+ */
+.riverbot-root {
+  --background: #153d35;
+  --foreground: #fffdf0;
+  --border: #ffffff30;
+  --primary: #d8edac;
+
+  width: 100vw;
+  height: 100dvh;
+  overflow: hidden;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+.riverbot-root button { cursor: pointer; }
+.riverbot-root button:disabled { cursor: not-allowed; }
+.riverbot-root button,
+.riverbot-root a,
+.riverbot-root input,
+.riverbot-root textarea { -webkit-tap-highlight-color: transparent; }
+/* :where() keeps specificity low so utilities like focus:outline-none still win */
+.riverbot-root :where(:focus-visible) { outline: 2px solid #d8edac; outline-offset: 5px; }
+.riverbot-root ::selection { background: #d8edac; color: #153d35; }
+
+/* <dialog> opens in the top layer, outside .riverbot-root, so style it directly */
+dialog:where(:focus-visible) { outline: 2px solid #d8edac; outline-offset: 5px; }
+
+@keyframes float {
+  0%, 100% { transform: translateY(0) rotate(-2deg); }
+  50% { transform: translateY(-10px) rotate(2deg); }
+}
+@keyframes ripple {
+  0% { transform: scale(.8); opacity: .5; }
+  100% { transform: scale(1.5); opacity: 0; }
+}
+@keyframes arrive {
+  from { opacity: 0; transform: translateY(14px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+@keyframes wave {
+  0%, 100% { transform: scaleY(.3); }
+  50% { transform: scaleY(1); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .riverbot-root *, .riverbot-root *::before, .riverbot-root *::after {
+    animation: none !important;
+    transition: none !important;
+    scroll-behavior: auto !important;
+  }
+}
