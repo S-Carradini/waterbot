@@ -1,10 +1,21 @@
 from .base import ModelAdapter
 import json
+import logging
+import os
+import openai
 from openai import OpenAI
 import re
 from langchain_openai import OpenAIEmbeddings
 from datetime import datetime
 import asyncio
+
+# Bounds for the Blue chat routes (generate_blue). Riverbot keeps generate_response.
+BLUE_LLM_TIMEOUT_SECONDS = float(os.getenv("BLUE_LLM_TIMEOUT_SECONDS", "30"))
+BLUE_LLM_MAX_RETRIES = int(os.getenv("BLUE_LLM_MAX_RETRIES", "1"))
+
+
+class LLMServiceError(Exception):
+    """The AI service failed, timed out, or returned nothing usable."""
 
 
 class OpenAIAdapter(ModelAdapter):
@@ -243,7 +254,41 @@ class OpenAIAdapter(ModelAdapter):
         response_content = re.sub(r'\n', '<br>', response_body)
 
         return response_content
-    
+
+    @property
+    def blue_client(self):
+        """Separate client for the Blue routes: bounded timeout and retries."""
+        if getattr(self, "_blue_client", None) is None:
+            self._blue_client = OpenAI(timeout=BLUE_LLM_TIMEOUT_SECONDS, max_retries=BLUE_LLM_MAX_RETRIES)
+        return self._blue_client
+
+    async def generate_blue(self, messages, max_completion_tokens=1200, temperature=0.5):
+        """Generate a Blue reply. Raises LLMServiceError instead of leaking SDK errors."""
+        try:
+            response = await asyncio.to_thread(
+                self.blue_client.chat.completions.create,
+                model=self.model_id,
+                messages=messages,
+                temperature=temperature,
+                max_completion_tokens=max_completion_tokens,
+                stream=False,
+            )
+        except (openai.OpenAIError, TimeoutError) as exc:
+            logging.error("Blue LLM call failed: %s", type(exc).__name__)
+            raise LLMServiceError(type(exc).__name__) from exc
+
+        if hasattr(response, "usage") and response.usage:
+            self.last_usage = {
+                "prompt_tokens": response.usage.prompt_tokens or 0,
+                "completion_tokens": response.usage.completion_tokens or 0,
+            }
+        choices = getattr(response, "choices", None) or []
+        content = choices[0].message.content if choices and choices[0].message else None
+        if not content or not content.strip():
+            logging.error("Blue LLM call returned an empty response")
+            raise LLMServiceError("empty response")
+        return re.sub(r'\n', '<br>', content)
+
     # async def safety_checks(self, user_query):
     #     async def ModerationCheck(user_query):
     #         #print('timestamp starting moderation check: ',datetime.now().strftime(' %H:%M:%S'))

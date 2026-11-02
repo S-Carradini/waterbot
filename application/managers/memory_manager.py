@@ -33,11 +33,9 @@ class MemoryManager:
             }
 
     async def create_session(self, session_id):
+        # Session IDs are credentials; never write them to the logs.
         if session_id not in self.sessions:
-            print(f"Creating new session for: {session_id}")
             self.sessions[session_id] = []
-        else:
-            print(f"Session already exists for: {session_id}, keeping history.")
 
 
     async def add_message_to_session(self, session_id, message, source_list):
@@ -83,6 +81,77 @@ class MemoryManager:
         except:
             return ""
     
+
+    # ------------------------------------------------------------------
+    # Blue (WaterBot) turns. Each Blue entry carries a "meta" dict so the
+    # follow-up buttons can see whether the question they belong to was
+    # refused, and so the history sent to the model contains only real
+    # turns (no refused questions, no tag-wrapped pseudo messages).
+    # Riverbot entries have no "meta" and are ignored by these helpers.
+    # ------------------------------------------------------------------
+    async def add_blue_turn(self, session_id, user_content, assistant_content, source_list, meta):
+        """Store one user/assistant exchange with shared metadata."""
+        if session_id not in self.sessions:
+            await self.create_session(session_id)
+        turn_meta = dict(meta)
+        self.sessions[session_id].append({
+            "message": {"role": "user", "content": user_content},
+            "source_list": [],
+            "meta": {**turn_meta, "side": "user"},
+        })
+        self.sessions[session_id].append({
+            "message": {"role": "assistant", "content": assistant_content},
+            "source_list": source_list,
+            "meta": {**turn_meta, "side": "assistant"},
+        })
+
+    def _blue_entries(self, session_id):
+        return [e for e in self.sessions.get(session_id, []) if isinstance(e.get("meta"), dict)]
+
+    async def blue_history(self, session_id, max_turns=10):
+        """Answered (not refused) chat and follow-up exchanges, oldest first, capped."""
+        entries = self._blue_entries(session_id)
+        messages = []
+        for i in range(0, len(entries) - 1):
+            user, assistant = entries[i], entries[i + 1]
+            if user["meta"].get("side") != "user" or assistant["meta"].get("side") != "assistant":
+                continue
+            meta = user["meta"]
+            if meta.get("refused") or meta.get("kind") == "sources":
+                continue
+            messages.append([user["message"], assistant["message"]])
+        flattened = []
+        for pair in messages[-max_turns:]:
+            flattened.extend(pair)
+        return flattened
+
+    async def recent_blue_questions(self, session_id, limit=2):
+        """The user's latest typed questions (refused ones included), for screening context."""
+        questions = [
+            e["meta"].get("original_query", "")
+            for e in self._blue_entries(session_id)
+            if e["meta"].get("side") == "user" and e["meta"].get("kind") == "chat"
+        ]
+        return [q for q in questions if q][-limit:]
+
+    async def blue_follow_up_count(self, session_id):
+        """Follow-up button clicks recorded in this session (refused ones included)."""
+        return sum(
+            1 for e in self._blue_entries(session_id)
+            if e["meta"].get("side") == "user" and e["meta"].get("kind") != "chat"
+        )
+
+    async def last_blue_parent(self, session_id):
+        """Metadata of the latest typed question's exchange, or None.
+
+        Returns the assistant-side entry, whose meta holds the screening result,
+        the answer, the retrieved documents and the follow-up counter.
+        """
+        for entry in reversed(self._blue_entries(session_id)):
+            meta = entry["meta"]
+            if meta.get("kind") == "chat" and meta.get("side") == "assistant":
+                return entry
+        return None
 
     async def format_sources_as_html(self, source_list):
         logging.info(f"📚 Formatting sources: Received {len(source_list) if source_list else 0} sources from RAG")

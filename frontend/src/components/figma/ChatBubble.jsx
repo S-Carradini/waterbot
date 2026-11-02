@@ -3,12 +3,14 @@ import { ThumbsUp, ThumbsDown, Volume2, Square } from 'lucide-react';
 import { marked } from 'marked';
 import { useTypewriter } from '../../hooks/useTypewriter';
 import blueCharacter from '../../assets/blue-character.png';
+import { sanitizeHtml, htmlToText, escapeHtml } from '../../utils/sanitize';
 
 marked.setOptions({ breaks: false, gfm: true });
 
 const renderer = new marked.Renderer();
+// Attribute values are escaped here; the final HTML is sanitized again before rendering.
 renderer.link = ({ href, title, text }) =>
-  `<a href="${href}" target="_blank" rel="noopener noreferrer"${title ? ` title="${title}"` : ''}>${text}</a>`;
+  `<a href="${escapeHtml(href)}" target="_blank" rel="noopener noreferrer"${title ? ` title="${escapeHtml(title)}"` : ''}>${text}</a>`;
 marked.use({ renderer });
 
 function cleanMarkdown(text) {
@@ -98,9 +100,7 @@ export default function ChatBubble({
       setIsSpeaking(true);
       return;
     }
-    const tmp = document.createElement('div');
-    tmp.innerHTML = renderedContent;
-    const plainText = (tmp.textContent || tmp.innerText || '').replace(/undefined/g, '').trim();
+    const plainText = htmlToText(renderedContent).replace(/undefined/g, '').trim();
     if (!plainText) return;
     setTtsLoading(true);
     try {
@@ -137,7 +137,7 @@ export default function ChatBubble({
   };
 
   const rawContent = disableTypewriter ? textContent : displayedText;
-  const renderedContent = useMemo(() => marked.parse(cleanMarkdown(rawContent)), [rawContent]);
+  const renderedContent = useMemo(() => sanitizeHtml(marked.parse(cleanMarkdown(rawContent))), [rawContent]);
 
   const feedbackLabels = language === 'es'
     ? { title: '\u00bfQu\u00e9 no te gust\u00f3?', fi: 'Incorrecto', gr: 'Respuesta gen\u00e9rica', ra: 'Se neg\u00f3 a responder', other: 'Otro', more: 'Cu\u00e9ntanos m\u00e1s...', submit: 'Enviar', thanks: 'Gracias por tus comentarios.' }

@@ -10,6 +10,7 @@ if _application_dir not in sys.path:
     sys.path.insert(0, _application_dir)
 
 from dotenv import load_dotenv
+from guardrails import redact_personal_emails
 from langchain_community.document_loaders import TextLoader, PyPDFLoader
 from langchain_text_splitters import RecursiveCharacterTextSplitter
 from langchain_openai import OpenAIEmbeddings
@@ -163,6 +164,9 @@ def process_batch(batch, store, text_splitter):
 
     if splits:
         try:
+            # Remove personal email addresses before anything is stored (shared agency mailboxes are kept).
+            for split in splits:
+                split.page_content = redact_personal_emails(split.page_content)
             store.add_documents(splits, locale=LOCALE)
             print(f"✅ Successfully added {len(splits)} document chunks from {successful_files} files.")
             if skipped_files > 0:

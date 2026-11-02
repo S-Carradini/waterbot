@@ -10,7 +10,9 @@
   <div class="container py-5" style="max-width: 400px;">
     <h2 class="mb-4">Admin Login</h2>
 
-    {% if error %}
+    {% if error == 2 %}
+    <div class="alert alert-danger">Too many failed attempts. Please try again in 15 minutes.</div>
+    {% elif error %}
     <div class="alert alert-danger">Invalid username or password.</div>
     {% endif %}
 
