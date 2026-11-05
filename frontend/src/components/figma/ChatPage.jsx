@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getStoredLanguage, storeLanguage } from '../../i18n/languagePreference';
 import AppHeader from './AppHeader';
 import ChatBubble from './ChatBubble';
 import FollowUpChips from './FollowUpChips';
@@ -29,7 +30,7 @@ const isSourcesAllowed = (messages) => {
 };
 
 export default function ChatPage() {
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(getStoredLanguage);
   const [messages, setMessages] = useState([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -201,6 +202,7 @@ export default function ChatPage() {
     // Switch language + prepend new welcome message (single state update)
     const newDefault = { id: nextId(), type: 'intro', content: (uiText[nextLang] || uiText.en).defaultAnswerText, messageId: null, showActions: false, disableTypewriter: true };
     setLanguage(nextLang);
+    storeLanguage(nextLang);
     setMessages([newDefault, ...updatedFiltered]);
 
     if (texts.length === 0) return;

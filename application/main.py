@@ -3,6 +3,7 @@ import uuid
 import secrets
 import socket
 import logging
+import re
 
 from typing import Annotated
 
@@ -25,7 +26,7 @@ from managers.s3_manager import LocalTranscriptManager
 from adapters.openai import OpenAIAdapter
 from openai import OpenAI
 from starlette.middleware.sessions import SessionMiddleware
-from langdetect import detect, DetectorFactory
+from langdetect import detect_langs, DetectorFactory
 
 import asyncio
 
@@ -52,28 +53,69 @@ logging.basicConfig(
 # Ensure reproducibility by setting the seed
 DetectorFactory.seed = 0
 
+_SPANISH_MARKERS = re.compile(r"[¿¡ñÑáéíóúÁÉÍÓÚü]")
+_SPANISH_WORDS = {
+    "que", "qué", "como", "cómo", "cuál", "cual", "cuánta", "cuanta", "cuánto", "cuanto",
+    "dónde", "donde", "por", "para", "el", "la", "los", "las", "del", "es", "son", "agua",
+    "hola", "gracias", "puedo", "está", "esta", "hay", "una", "uno", "pero", "también",
+    "río", "rio", "sequía", "sequia", "lluvia", "ahorrar", "mi", "mis", "tu", "y",
+}
+_ENGLISH_WORDS = {
+    "the", "what", "how", "why", "where", "when", "which", "is", "are", "do", "does", "can",
+    "water", "i", "my", "you", "and", "of", "to", "in", "for", "hello", "hi", "thanks",
+    "thank", "river", "drought", "save", "about", "tell", "me", "please",
+}
+
+
 def detect_language(text):
-    try:
-        language = detect(text)
-        logging.info(f"Detected language: {language}")
-        return language
-    except Exception as e:
-        logging.error(f"Language detection failed: {str(e)}")
+    """Return 'en' or 'es' when the text is clearly one of them, otherwise None.
+
+    langdetect alone is unreliable on short chat messages, so we combine it with
+    a couple of cheap signals (Spanish punctuation/accents and common words).
+    Returning None lets the caller fall back to the UI language toggle.
+    """
+    text = (text or "").strip()
+    if not text:
         return None
 
+    words = re.findall(r"[a-záéíóúñü]+", text.lower())
+    es_hits = sum(w in _SPANISH_WORDS for w in words)
+    en_hits = sum(w in _ENGLISH_WORDS for w in words)
+    has_spanish_marks = bool(_SPANISH_MARKERS.search(text))
+
+    detected = None
+    try:
+        candidates = detect_langs(text)
+        top = candidates[0] if candidates else None
+        if top and top.lang in ("en", "es") and top.prob >= 0.80 and len(words) >= 3:
+            detected = top.lang
+    except Exception as e:
+        logging.info(f"langdetect could not classify text: {str(e)}")
+
+    # Strong lexical signals override or fill in for langdetect.
+    if has_spanish_marks and en_hits <= es_hits:
+        detected = "es"
+    elif es_hits > en_hits and es_hits >= 1:
+        detected = "es"
+    elif en_hits > es_hits and en_hits >= 1 and not has_spanish_marks:
+        detected = "en"
+
+    logging.info(f"Detected language: {detected} (es_hits={es_hits}, en_hits={en_hits})")
+    return detected
+
 def resolve_language(preferred_language: str | None, detected_language: str | None) -> str:
+    """The language the user actually wrote in wins; the UI toggle is the fallback."""
+    if detected_language in ("en", "es"):
+        return detected_language
     normalized_preference = (preferred_language or "").lower()
     if normalized_preference in ("en", "es"):
         return normalized_preference
-    if detected_language == 'es':
-        return 'es'
     return 'en'
 
 def determine_prompt_language(chat_language: str, preferred_language: str | None) -> str:
-    normalized_preference = (preferred_language or "").lower()
-    if normalized_preference in ("en", "es"):
-        return normalized_preference
-    return chat_language
+    # chat_language already comes from resolve_language(), which accounts for
+    # both the user's message and their UI preference.
+    return chat_language if chat_language in ("en", "es") else "en"
 
 # Set the cookie name to match the one configured in the CDK
 COOKIE_NAME = "USER_SESSION"  # Changed from WATERBOT
@@ -771,7 +813,7 @@ async def riverbot_chat_sources_post(request: Request, background_tasks:Backgrou
         lang = "es" if detect_language(user_query or user_question or "") == "es" else "en"
         await memory.increment_message_count(session_uuid)
         return {"resp": NO_SOURCES_MESSAGE[lang], "msgID": await memory.get_message_count(session_uuid)}
-    language = detect_language(user_query)
+    language = resolve_language(None, detect_language(user_query))
 
     memory_payload={
         "documents":docs,
@@ -910,7 +952,7 @@ async def riverbot_chat_action_items_api_post(request: Request, background_tasks
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
 
-    language = detect_language(user_query)
+    language = resolve_language(None, detect_language(user_query))
 
     if is_greeting_only(user_query):
         await memory.increment_message_count(session_uuid)
@@ -1131,7 +1173,7 @@ async def riverbot_chat_detailed_api_post(request: Request, background_tasks:Bac
     user_query=await memory.get_latest_memory( session_id=session_uuid, read="content",travel=-2)
     bot_response=await memory.get_latest_memory( session_id=session_uuid, read="content")
 
-    language = detect_language(user_query)
+    language = resolve_language(None, detect_language(user_query))
 
     if is_greeting_only(user_query):
         await memory.increment_message_count(session_uuid)
@@ -1399,7 +1441,7 @@ async def riverbot_chat_api_post(request: Request, user_query: Annotated[str, Fo
         source_list=[]
     )
     
-    language = detect_language(user_query)
+    language = resolve_language(None, detect_language(user_query))
 
     if not knowledge_base:
         raise HTTPException(503, "RAG is not available. Configure PostgreSQL (DATABASE_URL or DB_*) with pgvector.")

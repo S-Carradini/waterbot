@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getStoredLanguage, storeLanguage } from './i18n/languagePreference';
 import './App.css';
 import Header from './components/Header';
 import ChatBubble from './components/ChatBubble';
@@ -35,7 +36,7 @@ const isSourcesAllowed = (messages) => {
 };
 
 export default function App() {
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(getStoredLanguage);
   const [messages, setMessages] = useState([buildDefaultMessage('en')]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false); // Track typewriter typing state
@@ -227,6 +228,7 @@ export default function App() {
 
     // Switch language and static UI immediately (optimistic update)
     setLanguage(nextLanguage);
+    storeLanguage(nextLanguage);
     setMessages([buildDefaultMessage(nextLanguage), ...updatedFiltered]);
 
     if (textsToTranslate.length === 0) return;

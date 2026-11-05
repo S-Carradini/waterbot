@@ -36,7 +36,7 @@ export default function ContextPanel({ isOpen, onToggle, onPromptSelect, t }) {
               <button
                 key={topic.key}
                 className="topic-chip"
-                onClick={() => onPromptSelect(`Tell me about ${t[topic.key]}`)}
+                onClick={() => onPromptSelect(`${t.tellMeAbout || 'Tell me about'} ${t[topic.key]}`)}
               >
                 <topic.icon size={16} style={{ color: topic.color }} />
                 {t[topic.key]}
