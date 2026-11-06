@@ -69,21 +69,5 @@ jobs:
         run: pytest -v
         working-directory: application
 
-  deploy:
-    needs: [test, test-backend]
-    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
-
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy to Railway
-        run: railway up --service waterbot --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: Print deployment URL
-        run: echo "Deployed to https://waterbot-production.up.railway.app"
+  # Deployment is handled by Railway's GitHub integration (it deploys main
+  # automatically), so there is no deploy job here.
