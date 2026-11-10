@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { getStoredLanguage, storeLanguage } from '../../i18n/languagePreference';
 import { useNavigate } from 'react-router-dom';
 import { Printer, Download, ArrowLeft } from 'lucide-react';
 import AppHeader from './AppHeader';
@@ -10,7 +11,7 @@ import '../../styles/figma.css';
 
 export default function TranscriptPage() {
   const navigate = useNavigate();
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(getStoredLanguage);
   const t = uiText[language] || uiText.en;
 
   const today = new Date().toLocaleDateString(language === 'es' ? 'es-ES' : 'en-US', {
@@ -36,7 +37,7 @@ export default function TranscriptPage() {
     <div className="figma-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--wb-light-bg)' }}>
       <AppHeader
         language={language}
-        onLangChange={setLanguage}
+        onLangChange={(l) => { storeLanguage(l); setLanguage(l); }}
         onVoice={() => navigate('/chat')}
         onDownload={handleDownload}
         onAbout={() => {}}

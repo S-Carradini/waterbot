@@ -1,4 +1,5 @@
 import React, { useState, useMemo, useCallback } from 'react';
+import { getStoredLanguage, storeLanguage } from '../../i18n/languagePreference';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Info } from 'lucide-react';
@@ -59,7 +60,7 @@ function SplashRipple({ delay, x }) {
 
 export default function FigmaSplashScreen() {
   const navigate = useNavigate();
-  const [lang, setLang] = useState('en');
+  const [lang, setLang] = useState(getStoredLanguage);
   const [showHowItWorks, setShowHowItWorks] = useState(false);
   const [showAbout, setShowAbout] = useState(false);
   const [transitioning, setTransitioning] = useState(false);
@@ -162,7 +163,7 @@ export default function FigmaSplashScreen() {
               <span className="water">Water</span><span className="bot">bot</span>
             </button>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <LanguageToggle lang={lang} onLangChange={setLang} t={t} />
+              <LanguageToggle lang={lang} onLangChange={(l) => { storeLanguage(l); setLang(l); }} t={t} />
               <button className="btn-icon-wb" onClick={() => setShowAbout(true)} aria-label={t.aboutTitle}>
                 <Info size={20} />
               </button>

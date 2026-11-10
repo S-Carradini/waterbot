@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { getStoredLanguage, storeLanguage } from '../../i18n/languagePreference';
 import { useNavigate } from 'react-router-dom';
 import { ShieldCheck, Mail, User } from 'lucide-react';
 import AppHeader from './AppHeader';
@@ -8,11 +9,11 @@ import '../../styles/figma.css';
 
 export default function SettingsPage() {
   const navigate = useNavigate();
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(getStoredLanguage);
   const [useLocalSources, setUseLocalSources] = useState(true);
   const t = uiText[language] || uiText.en;
 
-  const handleLangChange = (lang) => setLanguage(lang);
+  const handleLangChange = (lang) => { storeLanguage(lang); setLanguage(lang); };
 
   return (
     <div className="figma-root" style={{ display: 'flex', flexDirection: 'column', height: '100vh', background: 'var(--wb-light-bg)' }}>
