@@ -1177,7 +1177,9 @@ async def _blue_follow_up(request: Request, background_tasks: BackgroundTasks, l
     # A follow-up never elaborates on a refused question.
     if parent_meta.get("refused"):
         guardrails.log_event("follow_up_after_refusal", kind=kind, category=parent_meta.get("category"))
-        return await refuse(guardrails.fixed_reply("followup_refused", lang), "parent_refused")
+        # After a self-harm signal every button repeats the crisis resources, not a generic refusal.
+        reply_key = "crisis" if parent_meta.get("category") == "self_harm" else "followup_refused"
+        return await refuse(guardrails.fixed_reply(reply_key, lang), "parent_refused")
 
     if (parent_meta.get("followups", 0) >= MAX_FOLLOW_UPS_PER_QUESTION
             or await memory.blue_follow_up_count(session_uuid) >= MAX_FOLLOW_UPS_PER_SESSION):

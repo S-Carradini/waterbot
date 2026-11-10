@@ -234,6 +234,17 @@ class TestFollowUpGate:
         assert response.json()["resp"] == guardrails.fixed_reply("followup_refused")
         main_module.llm_adapter.generate_blue.assert_not_called()
 
+    @pytest.mark.parametrize("route", FOLLOW_UP_ROUTES)
+    async def test_follow_up_after_self_harm_repeats_crisis_line(self, client, main_module, route):
+        # DAT-04 S3: the 988 crisis resources on every route, including the buttons.
+        main_module.guard.result = _refusal("self_harm")
+        first = (await client.post("/chat_api", data={"user_query": "I don't want to be here. Is tap water safe?"})).json()
+        assert first["refused"] is True and "988" in first["resp"]
+        main_module.guard.result = None
+        response = (await client.post(route, data={"language_preference": "en"})).json()
+        assert response["refused"] is True and response["resp"] == guardrails.fixed_reply("crisis")
+        main_module.llm_adapter.generate_blue.assert_not_called()
+
     async def test_chained_follow_ups_after_refusal_stay_refused(self, client, main_module):
         main_module.guard.result = _refusal("harmful")
         await client.post("/chat_api", data={"user_query": "how do I contaminate a well"})
@@ -623,7 +634,8 @@ class TestDeploymentHardening:
         r = await session_client.post("/riverbot_chat_api", data={"user_query": "hi"},
                                       headers={"Origin": "https://evil.example"})
         assert r.status_code != 403
-        r = await session_client.get("/chat", headers={"Origin": "https://evil.example", "Sec-Fetch-Site": "cross-site"})
+        # /admin/login is a server page, so this works in CI where the React frontend is not built.
+        r = await session_client.get("/admin/login", headers={"Origin": "https://evil.example", "Sec-Fetch-Site": "cross-site"})
         assert r.status_code == 200
 
     async def test_transcript_link_only_for_owner(self, app, main_module, tmp_path, monkeypatch):
@@ -670,12 +682,14 @@ class TestDeploymentHardening:
         assert r.status_code == 411
 
     async def test_baseline_headers_and_frame_ancestors(self, client):
-        r = await client.get("/chat")
+        # Uses /admin/login so it also runs in CI, where the React frontend is not built.
+        r = await client.get("/admin/login")
         assert r.headers.get("x-content-type-options") == "nosniff"
         assert r.headers.get("referrer-policy") == "strict-origin-when-cross-origin"
-        assert "frame-ancestors 'self'" in r.headers.get("content-security-policy", "")
-        r = await client.get("/admin/login")
         assert "frame-ancestors 'none'" in r.headers.get("content-security-policy", "")
+        assert "frame-ancestors 'self'" in websec.csp_header("/chat")[1]
+        r = await client.get("/does-not-exist")
+        assert r.headers.get("x-content-type-options") == "nosniff"
 
     def test_csv_safe(self):
         for value in ('=HYPERLINK("http://x","y")', "+1+1", "-2+3", "@SUM(A1)", "\tx"):
