@@ -253,15 +253,19 @@ CSP_FRAME_ANCESTORS = os.getenv("CSP_FRAME_ANCESTORS", "'self'")
 # analytics stops (Cloudflare's documented CSP requirements).
 CLOUDFLARE_ANALYTICS_SCRIPT = "https://static.cloudflareinsights.com"
 CLOUDFLARE_ANALYTICS_CONNECT = "https://cloudflareinsights.com"
+# Google Analytics 4 (frontend/src/utils/analytics.js), per Google's documented CSP for
+# Analytics. Images are already allowed from any https source.
+GOOGLE_ANALYTICS_SCRIPT = "https://www.googletagmanager.com"
+GOOGLE_ANALYTICS_CONNECT = "https://www.googletagmanager.com https://*.google-analytics.com https://*.google.com"
 
 SPA_CSP = "; ".join([
     "default-src 'self'",
-    f"script-src 'self' https://cdnjs.cloudflare.com {CLOUDFLARE_ANALYTICS_SCRIPT}",
+    f"script-src 'self' https://cdnjs.cloudflare.com {CLOUDFLARE_ANALYTICS_SCRIPT} {GOOGLE_ANALYTICS_SCRIPT}",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
     "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: blob: https:",
     "media-src 'self' data: blob:",
-    f"connect-src 'self' {CLOUDFLARE_ANALYTICS_CONNECT}",
+    f"connect-src 'self' {CLOUDFLARE_ANALYTICS_CONNECT} {GOOGLE_ANALYTICS_CONNECT}",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
