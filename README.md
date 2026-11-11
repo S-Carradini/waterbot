@@ -338,7 +338,6 @@ The code review added **14 findings** (3 Critical, 4 High, 3 Medium, 4 Low) that
 | DAT supplemental (S-1, S-3) | Bot attributed phone numbers and codes the user never gave | 2 | 2 |
 | **Total** | | **59** | **58 + 1 partial** |
 
-Code-review findings: **12 of 14 fixed**. Two were set aside by decision: the Riverbot persona (Riverbot was out of scope) and pinning AI model versions (still under discussion). Removing the old admin password from git history is on hold; the password itself is no longer in the code.
 
 #### 3. Retest against the fixed system
 
