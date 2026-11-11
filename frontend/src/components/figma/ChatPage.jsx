@@ -105,7 +105,8 @@ export default function ChatPage() {
         if (updated[last]?.type === 'bot') {
           updated[last] = {
             type: 'bot', content: response.resp, messageId: response.msgID,
-            showActions: true, disableTypewriter: false,
+            // No follow-up buttons under a refused reply (the server also refuses them).
+            showActions: !response.refused, disableTypewriter: false,
           };
         }
         return updated;
@@ -158,7 +159,7 @@ export default function ChatPage() {
         const updated = [...prev];
         const last = updated.length - 1;
         if (updated[last]?.type === 'bot') {
-          updated[last] = { type: 'bot', content, messageId: msgID, showActions: true, disableTypewriter: false };
+          updated[last] = { type: 'bot', content, messageId: msgID, showActions: !response?.refused, disableTypewriter: false };
         }
         return updated;
       });

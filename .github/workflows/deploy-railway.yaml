@@ -36,6 +36,10 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+        working-directory: frontend
+
       - name: Install Playwright browsers
         # No --with-deps: the runner already has Chromium's system libraries, and
         # the apt download of extra fonts kept failing on GitHub's network.
@@ -70,6 +74,12 @@ jobs:
 
       - name: Run pytest
         run: pytest -v
+        working-directory: application
+
+      - name: Audit Python dependencies
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements_full.txt --no-deps --disable-pip
         working-directory: application
 
   # Deployment is handled by Railway's GitHub integration (it deploys main

@@ -6,6 +6,7 @@ import AppHeader from './AppHeader';
 import { uiText } from '../../i18n/uiText';
 import { downloadTranscript } from '../../services/api';
 import blueCharacter from '../../assets/blue-character.png';
+import { sanitizeHtml } from '../../utils/sanitize';
 import '../../styles/figma.css';
 
 export default function TranscriptPage() {
@@ -101,8 +102,15 @@ export default function TranscriptPage() {
                           </span>
                           {msg.time && <span style={{ fontSize: 12, color: 'var(--wb-muted)' }}>{msg.time}</span>}
                         </div>
-                        <p style={{ fontSize: 16, lineHeight: '24px', color: 'var(--wb-dark)', margin: 0 }}
-                          dangerouslySetInnerHTML={{ __html: typeof msg.content === 'string' ? msg.content : '' }} />
+                        {msg.type === 'user' ? (
+                          // What the user typed is shown as plain text, never as HTML.
+                          <p style={{ fontSize: 16, lineHeight: '24px', color: 'var(--wb-dark)', margin: 0, whiteSpace: 'pre-wrap' }}>
+                            {typeof msg.content === 'string' ? msg.content : ''}
+                          </p>
+                        ) : (
+                          <p style={{ fontSize: 16, lineHeight: '24px', color: 'var(--wb-dark)', margin: 0 }}
+                            dangerouslySetInnerHTML={{ __html: sanitizeHtml(typeof msg.content === 'string' ? msg.content : '') }} />
+                        )}
                       </div>
                     </div>
                   ))}

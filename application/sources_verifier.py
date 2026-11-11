@@ -38,11 +38,16 @@ async def should_show_sources(
     user_query: str,
     bot_response: str = "",
     sources: List[Any] = None,
+    fail_closed: bool = False,
 ) -> bool:
     """
     Return True if the last response deserves a sources list, False otherwise.
     Uses OpenAI gpt-4o-mini with timeout and error handling; falls back to heuristics on failure.
+    With fail_closed=True (Blue routes) any failure means "no sources" instead of the heuristic.
     """
+    def _fallback() -> bool:
+        return False if fail_closed else _heuristic_should_show_sources(user_query, sources)
+
     sources = sources or []
     user_query = (user_query or "").strip()
     bot_response = (bot_response or "").strip()
@@ -53,8 +58,8 @@ async def should_show_sources(
 
     api_key = os.getenv("OPENAI_API_KEY")
     if not api_key:
-        logging.warning("SOURCES_VERIFIER: OPENAI_API_KEY not set, using heuristic only.")
-        return _heuristic_should_show_sources(user_query, sources)
+        logging.warning("SOURCES_VERIFIER: OPENAI_API_KEY not set, using fallback.")
+        return _fallback()
 
     system_prompt = """You are a classifier for a water-in-Arizona chatbot. Given the user's last question and the bot's reply, decide whether showing "sources" (citations) makes sense.
 
@@ -82,12 +87,12 @@ Answer YES only if the user asked a substantive, informational question and the 
         )
         choice = response.choices[0] if response.choices else None
         if not choice or not choice.message or not choice.message.content:
-            return _heuristic_should_show_sources(user_query, sources)
+            return _fallback()
         content = choice.message.content.strip().upper()
         return "YES" in content and not content.startswith("NO")
     except asyncio.TimeoutError:
-        logging.warning("SOURCES_VERIFIER: OpenAI request timed out, using heuristic.")
-        return _heuristic_should_show_sources(user_query, sources)
+        logging.warning("SOURCES_VERIFIER: OpenAI request timed out, using fallback.")
+        return _fallback()
     except Exception as e:
-        logging.warning("SOURCES_VERIFIER: OpenAI request failed (%s), using heuristic.", e)
-        return _heuristic_should_show_sources(user_query, sources)
+        logging.warning("SOURCES_VERIFIER: OpenAI request failed (%s), using fallback.", type(e).__name__)
+        return _fallback()
