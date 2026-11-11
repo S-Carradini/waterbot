@@ -1,39 +1,84 @@
 name: RAG Evaluation Suite
 
+# Manual only: never runs on push or pull requests. Start it from
+# Actions -> RAG Evaluation Suite -> Run workflow, and pick the branch to evaluate.
 on:
-  workflow_dispatch: # Allows manual trigger from GitHub UI
-  pull_request:
-    paths:
-      - 'application/**'
-      - 'eval/**'
-      
+  workflow_dispatch:
+    inputs:
+      full_suite:
+        description: 'Also run the full RAGAS suite (calls OpenAI, billed)'
+        type: boolean
+        default: false
+
 jobs:
-  evaluate:
+  # Free checks: the eval dependencies install and import alongside the app, and the
+  # harness's own metric tests pass. No secrets, database or OpenAI calls.
+  harness-tests:
     # Pinned: Python 3.11 builds aren't published for ubuntu-latest (26.04) yet.
     runs-on: ubuntu-24.04
-    
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        
+
       - name: Set up Python
         uses: actions/setup-python@v5
         with:
           python-version: '3.11'
-          
+
       - name: Install Application Dependencies
         run: pip install -r application/requirements_full.txt -r application/requirements.txt
-          
+
       - name: Install Evaluation Dependencies
-        run: pip install -r eval/requirements-eval.txt pyyaml
-        
+        run: pip install -r eval/requirements-eval.txt
+
+      - name: Check the evaluation code imports
+        run: python -c "import eval.generation_metrics, eval.retrieval_metrics, eval.run_eval_suite"
+
+      - name: Run harness tests
+        run: pytest eval/tests -q
+
+  # The full RAGAS suite calls OpenAI (billed) and needs a database loaded with the
+  # corpus, so it runs only when "full_suite" is ticked.
+  evaluate:
+    if: inputs.full_suite
+    needs: harness-tests
+    runs-on: ubuntu-24.04
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+
+      - name: Install dependencies
+        run: |
+          pip install -r application/requirements_full.txt -r application/requirements.txt
+          pip install -r eval/requirements-eval.txt
+
+      - name: Check secrets are set
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          EVAL_DATABASE_URL: ${{ secrets.EVAL_DATABASE_URL }}
+        run: |
+          missing=""
+          [ -n "$OPENAI_API_KEY" ] || missing="$missing OPENAI_API_KEY"
+          [ -n "$EVAL_DATABASE_URL" ] || missing="$missing EVAL_DATABASE_URL"
+          if [ -n "$missing" ]; then
+            echo "::error::Missing repository secrets:$missing"
+            exit 1
+          fi
+
       - name: Run RAG Evaluation Suite
         env:
           OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
-          DATABASE_URL: ${{ secrets.DATABASE_URL }}
-        run: |
-          python eval/run_eval_suite.py
-          
+          # Must be a copy of the corpus database, never production.
+          EVAL_DATABASE_URL: ${{ secrets.EVAL_DATABASE_URL }}
+          # The harness refuses non-local databases unless this is set.
+          EVAL_ALLOW_REMOTE: '1'
+        run: python eval/run_eval_suite.py
+
       - name: Upload Results Artifact
         uses: actions/upload-artifact@v4
         if: always()
