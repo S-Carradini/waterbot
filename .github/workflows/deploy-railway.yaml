@@ -37,7 +37,10 @@ jobs:
         working-directory: frontend
 
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        # No --with-deps: the runner already has Chromium's system libraries, and
+        # the apt download of extra fonts kept failing on GitHub's network.
+        run: npx playwright install chromium
+        timeout-minutes: 10
         working-directory: frontend
 
       - name: Run Playwright tests
