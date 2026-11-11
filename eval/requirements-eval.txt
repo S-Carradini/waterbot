@@ -1,6 +1,31 @@
 # RAG Evaluation Dependencies
 # Install with: pip install -r eval/requirements-eval.txt
 # These are isolated from production — not included in Dockerfile or requirements.txt
+#
+# Install AFTER application/requirements*.txt: the harness imports the real
+# pipeline from application/.
 
-ragas>=0.2.0
+# --- Grading framework ---
+# ragas 0.4.3 is the latest release. Two known incompatibilities with the app's pins:
+#  1. ragas imports langchain_community.chat_models.vertexai at module scope, which
+#     langchain-community removed in 0.4.0. Without the cap below, ragas fails on
+#     import with: ModuleNotFoundError: No module named
+#     'langchain_community.chat_models.vertexai'
+#  2. ragas depends on instructor, which caps jiter<0.15, while openai 3.x needs
+#     jiter>=0.16. pip therefore installs openai 1.x and langchain-openai 1.1.x in
+#     the eval environment. The app code works with both; production is unaffected
+#     because this file is never installed in the Docker image.
+ragas==0.4.3
 datasets>=2.14.0
+langchain-community>=0.3.0,<0.4
+
+# --- Threshold gates and alias configuration (run_eval_suite, aliases.yaml) ---
+pyyaml>=6.0
+
+# --- Result tables (ablation_runner, load_test) ---
+pandas>=2.0.0
+tabulate>=0.9.0          # required by DataFrame.to_markdown()
+
+# --- Test suite for the harness itself ---
+pytest>=7.0
+pytest-asyncio>=0.21

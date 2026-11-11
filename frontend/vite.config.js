@@ -33,6 +33,19 @@ export default defineConfig({
         target: API_URL,
         changeOrigin: true,
       },
+      // /riverbot is a React route; proxy only its API and the legacy Jinja page
+      '/riverbot_chat_': {
+        target: API_URL,
+        changeOrigin: true,
+      },
+      '/riverbot-old': {
+        target: API_URL,
+        changeOrigin: true,
+      },
+      '/chat_examples_api': {
+        target: API_URL,
+        changeOrigin: true,
+      },
       '/static': {
         target: API_URL,
         changeOrigin: true,

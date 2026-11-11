@@ -558,7 +558,7 @@
 
       document
         .getElementById("transcript-button")
-        .addEventListener("click", function () {
+        ?.addEventListener("click", function () {
           fetch("/session-transcript", {
             method: "POST", // or 'GET' if your server supports it
             credentials: "include", // Ensures cookies are sent with the request

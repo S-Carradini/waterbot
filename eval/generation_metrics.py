@@ -20,8 +20,11 @@ try:
     from datasets import Dataset
     from ragas import evaluate
     from ragas.metrics import faithfulness, answer_correctness, context_precision, context_recall
-except ImportError:
-    print("ERROR: RAGAS or datasets is not installed. Please run: pip install -r eval/requirements-eval.txt")
+except ImportError as e:
+    # Show the real error: an installed-but-incompatible ragas also lands here, and
+    # reporting it as "not installed" hid the actual cause in CI.
+    print(f"ERROR: could not import RAGAS/datasets: {e!r}\n"
+          "Install the pinned versions with: pip install -r eval/requirements-eval.txt")
     sys.exit(1)
 
 from managers.pgvector_store import PgVectorStore

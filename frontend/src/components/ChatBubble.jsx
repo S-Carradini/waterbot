@@ -5,6 +5,7 @@ import imgThumbsUp from '../assets/thumbs-up.png';
 import imgThumbsDown from '../assets/thumbs-down.png';
 import { useTypewriter } from '../hooks/useTypewriter';
 import { uiText } from '../i18n/uiText';
+import { sanitizeHtml, htmlToText } from '../utils/sanitize';
 
 export default function ChatBubble({
   answerText,
@@ -180,11 +181,7 @@ export default function ChatBubble({
     onActionButton(actionType);
   };
 
-  const stripHtml = (html) => {
-    const tmp = document.createElement('div');
-    tmp.innerHTML = html;
-    return tmp.textContent || tmp.innerText || '';
-  };
+  const stripHtml = (html) => htmlToText(html);
 
   const handleSpeak = async () => {
     if (isSpeaking) {
@@ -238,7 +235,7 @@ export default function ChatBubble({
       let cleanText = isTypewriterEnabled ? (displayedText || '&nbsp;') : (cleanTextContent || '&nbsp;');
       cleanText = cleanText.replace(/undefined/g, '');
       cleanText = linkifyUrls(cleanText);
-      return { __html: cleanText };
+      return { __html: sanitizeHtml(cleanText) };
     }
     return null;
   };

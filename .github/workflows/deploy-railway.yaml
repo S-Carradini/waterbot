@@ -19,7 +19,8 @@ concurrency:
 jobs:
   test:
     if: ${{ !inputs.skip_tests }}
-    runs-on: ubuntu-latest
+    # Pinned: Playwright 1.56 can't install browsers on ubuntu-latest (26.04) yet.
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -35,8 +36,15 @@ jobs:
         run: npm ci
         working-directory: frontend
 
+      - name: Audit frontend dependencies
+        run: npm audit --audit-level=high
+        working-directory: frontend
+
       - name: Install Playwright browsers
-        run: npx playwright install --with-deps chromium
+        # No --with-deps: the runner already has Chromium's system libraries, and
+        # the apt download of extra fonts kept failing on GitHub's network.
+        run: npx playwright install chromium
+        timeout-minutes: 10
         working-directory: frontend
 
       - name: Run Playwright tests
@@ -47,7 +55,7 @@ jobs:
 
   test-backend:
     if: ${{ !inputs.skip_tests }}
-    runs-on: ubuntu-latest
+    runs-on: ubuntu-24.04
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -68,21 +76,11 @@ jobs:
         run: pytest -v
         working-directory: application
 
-  deploy:
-    needs: [test, test-backend]
-    if: always() && (needs.test.result == 'success' || needs.test.result == 'skipped') && (needs.test-backend.result == 'success' || needs.test-backend.result == 'skipped')
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout
-        uses: actions/checkout@v4
+      - name: Audit Python dependencies
+        run: |
+          pip install pip-audit
+          pip-audit -r requirements_full.txt --no-deps --disable-pip
+        working-directory: application
 
-      - name: Install Railway CLI
-        run: npm install -g @railway/cli
-
-      - name: Deploy to Railway
-        run: railway up --service waterbot --detach
-        env:
-          RAILWAY_TOKEN: ${{ secrets.RAILWAY_TOKEN }}
-
-      - name: Print deployment URL
-        run: echo "Deployed to https://waterbot-production.up.railway.app"
+  # Deployment is handled by Railway's GitHub integration (it deploys main
+  # automatically), so there is no deploy job here.

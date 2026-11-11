@@ -1,4 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
+import { getStoredLanguage, storeLanguage } from '../i18n/languagePreference';
 import '../App.css';
 import Header from './Header';
 import ChatBubble from './ChatBubble';
@@ -38,7 +39,7 @@ const isSourcesAllowed = (messages) => {
 
 export default function MobileChatbot() {
   const isMobile = useMobileDetection();
-  const [language, setLanguage] = useState('en');
+  const [language, setLanguage] = useState(getStoredLanguage);
   const [messages, setMessages] = useState([buildDefaultMessage('en')]);
   const [isLoading, setIsLoading] = useState(false);
   const [isTyping, setIsTyping] = useState(false);
@@ -232,6 +233,7 @@ export default function MobileChatbot() {
 
     // Switch language and static UI immediately (optimistic update)
     setLanguage(nextLanguage);
+    storeLanguage(nextLanguage);
     setMessages([buildDefaultMessage(nextLanguage), ...updatedFiltered]);
 
     if (textsToTranslate.length === 0) return;

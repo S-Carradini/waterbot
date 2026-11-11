@@ -1,5 +1,6 @@
 export const uiText = {
   en: {
+    tellMeAbout: 'Tell me about',
     // Splash
     splashSubline: 'Ask questions about water in Arizona.',
     enterChat: 'Enter Chat',
@@ -78,6 +79,7 @@ export const uiText = {
     backToChat: 'Back to Chat',
   },
   es: {
+    tellMeAbout: 'Cuéntame sobre',
     splashSubline: 'Haz preguntas sobre el agua en Arizona.',
     enterChat: 'Entrar al Chat',
     howItWorks: 'C\u00f3mo funciona',

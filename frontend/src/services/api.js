@@ -5,6 +5,18 @@ const API_BASE_URL = ''; // Use relative URLs for same-origin requests
 /**
  * Send a chat message to the backend
  */
+// 429 (too many requests) and 503 (AI service unavailable) carry a friendly reply in
+// `resp`; show it instead of a generic error, with no follow-up buttons.
+async function friendlyReply(response) {
+  if (response.status !== 429 && response.status !== 503) return null;
+  try {
+    const data = await response.clone().json();
+    return typeof data?.resp === 'string' ? { ...data, refused: true } : null;
+  } catch (e) {
+    return null;
+  }
+}
+
 export async function sendChatMessage(userQuery, language = 'en') {
   const formData = new FormData();
   formData.append('user_query', userQuery);
@@ -18,6 +30,8 @@ export async function sendChatMessage(userQuery, language = 'en') {
     });
 
     if (!response.ok) {
+      const friendly = await friendlyReply(response);
+      if (friendly) return friendly;
       // Try to get error details from response
       let errorMessage = `Failed to send chat message: ${response.status} ${response.statusText}`;
       try {
@@ -38,6 +52,26 @@ export async function sendChatMessage(userQuery, language = 'en') {
 }
 
 /**
+ * Send a message to the River persona (/riverbot page)
+ */
+export async function sendRiverbotMessage(userQuery) {
+  const formData = new FormData();
+  formData.append('user_query', userQuery);
+
+  const response = await fetch(`${API_BASE_URL}/riverbot_chat_api`, {
+    method: 'POST',
+    body: formData,
+    credentials: 'include',
+  });
+
+  if (!response.ok) {
+    throw new Error(`Riverbot request failed: ${response.status} ${response.statusText}`);
+  }
+
+  return response.json();
+}
+
+/**
  * Get more detailed response
  */
 export async function getDetailedResponse(language = 'en') {
@@ -51,6 +85,8 @@ export async function getDetailedResponse(language = 'en') {
     });
 
     if (!response.ok) {
+      const friendly = await friendlyReply(response);
+      if (friendly) return friendly;
       let errorMessage = `Failed to get detailed response: ${response.status} ${response.statusText}`;
       try {
         const errorData = await response.text();
@@ -83,6 +119,8 @@ export async function getActionItems(language = 'en') {
     });
 
     if (!response.ok) {
+      const friendly = await friendlyReply(response);
+      if (friendly) return friendly;
       let errorMessage = `Failed to get action items: ${response.status} ${response.statusText}`;
       try {
         const errorData = await response.text();
@@ -115,6 +153,8 @@ export async function getSources(language = 'en') {
     });
 
     if (!response.ok) {
+      const friendly = await friendlyReply(response);
+      if (friendly) return friendly;
       let errorMessage = `Failed to get sources: ${response.status} ${response.statusText}`;
       try {
         const errorData = await response.text();
@@ -148,6 +188,8 @@ export async function getExamples(language = 'en') {
     });
 
     if (!response.ok) {
+      const friendly = await friendlyReply(response);
+      if (friendly) return friendly;
       let errorMessage = `Failed to get examples: ${response.status} ${response.statusText}`;
       try {
         const errorData = await response.text();

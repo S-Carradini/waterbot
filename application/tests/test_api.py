@@ -103,22 +103,24 @@ class TestSessionTranscript:
 # POST /translate
 # ---------------------------------------------------------------------------
 class TestTranslateEndpoint:
-    async def test_translate_invalid_target_lang_returns_400(self, client):
+    # /translate calls the paid AI service, so it needs a server-issued session
+    # (session_client loads a page first, as a browser does).
+    async def test_translate_invalid_target_lang_returns_400(self, session_client):
         """POST /translate with unsupported target_lang should return 400."""
-        response = await client.post(
+        response = await session_client.post(
             "/translate",
             json={"texts": ["hello"], "target_lang": "fr"},
         )
         assert response.status_code == 400
 
-    async def test_translate_missing_body_returns_400(self, client):
+    async def test_translate_missing_body_returns_400(self, session_client):
         """POST /translate with missing fields should return 400."""
-        response = await client.post("/translate", json={})
+        response = await session_client.post("/translate", json={})
         assert response.status_code == 400
 
-    async def test_translate_valid_request(self, client):
+    async def test_translate_valid_request(self, session_client):
         """POST /translate with valid body should return translations list."""
-        response = await client.post(
+        response = await session_client.post(
             "/translate",
             json={"texts": ["Hello water system"], "target_lang": "es"},
         )
