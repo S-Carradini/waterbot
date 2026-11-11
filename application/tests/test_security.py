@@ -499,6 +499,22 @@ class TestHeadersAndRiverbot:
             assert websec.csp_header(path) is None
         assert "'unsafe-inline'" not in websec.SPA_CSP.split("script-src", 1)[1].split(";", 1)[0]
 
+    def test_csp_allows_cloudflare_web_analytics(self):
+        # Cloudflare injects its analytics beacon at the edge; blocking it stopped site analytics.
+        directives = dict(part.strip().split(" ", 1) for part in websec.SPA_CSP.split(";"))
+        assert "https://static.cloudflareinsights.com" in directives["script-src"].split()
+        assert "https://cloudflareinsights.com" in directives["connect-src"].split()
+        # Only those two were added: no wildcards or inline scripts.
+        assert "'unsafe-inline'" not in directives["script-src"] and "*" not in directives["script-src"]
+
+    def test_csp_allows_google_analytics(self):
+        # The React site loads Google Analytics from its bundle; the CSP must allow Google's hosts.
+        directives = dict(part.strip().split(" ", 1) for part in websec.SPA_CSP.split(";"))
+        assert "https://www.googletagmanager.com" in directives["script-src"].split()
+        for host in ("https://www.googletagmanager.com", "https://*.google-analytics.com", "https://*.google.com"):
+            assert host in directives["connect-src"].split()
+        assert "'unsafe-inline'" not in directives["script-src"] and "'unsafe-eval'" not in directives["script-src"]
+
     async def test_no_csp_on_riverbot_page(self, client):
         response = await client.get("/riverbot-old")
         assert "content-security-policy" not in response.headers

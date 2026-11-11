@@ -14,6 +14,9 @@ import MobileChatbot from './components/MobileChatbot'
 // Riverbot is lazy-loaded so Waterbot visitors don't download its code
 const RiverbotPage = lazy(() => import('./components/riverbot/RiverbotPage'))
 import './index.css'
+import { initAnalytics } from './utils/analytics'
+
+initAnalytics()
 
 ReactDOM.createRoot(document.getElementById('root')).render(
   <React.StrictMode>
