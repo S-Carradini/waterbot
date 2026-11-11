@@ -248,14 +248,20 @@ CSP_MODE = os.getenv("CSP_MODE", "enforce").lower()  # enforce | report-only | o
 # set e.g. "'self' https://partner.example" if the chat is embedded elsewhere.
 CSP_FRAME_ANCESTORS = os.getenv("CSP_FRAME_ANCESTORS", "'self'")
 
+# Cloudflare Web Analytics: Cloudflare injects its beacon script into every page at the
+# edge, so it is not in our code. Without these two entries the browser blocks it and
+# analytics stops (Cloudflare's documented CSP requirements).
+CLOUDFLARE_ANALYTICS_SCRIPT = "https://static.cloudflareinsights.com"
+CLOUDFLARE_ANALYTICS_CONNECT = "https://cloudflareinsights.com"
+
 SPA_CSP = "; ".join([
     "default-src 'self'",
-    "script-src 'self' https://cdnjs.cloudflare.com",
+    f"script-src 'self' https://cdnjs.cloudflare.com {CLOUDFLARE_ANALYTICS_SCRIPT}",
     "style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://cdnjs.cloudflare.com",
     "font-src 'self' data: https://fonts.gstatic.com https://cdnjs.cloudflare.com",
     "img-src 'self' data: blob: https:",
     "media-src 'self' data: blob:",
-    "connect-src 'self'",
+    f"connect-src 'self' {CLOUDFLARE_ANALYTICS_CONNECT}",
     "object-src 'none'",
     "base-uri 'self'",
     "form-action 'self'",
